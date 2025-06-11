@@ -1,0 +1,32 @@
+<!doctype html>
+<title>Case List</title>
+<h1>All Cases</h1>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Case Number</th>
+        <th>Year</th>
+        <th>Status</th>
+        <th>Assigned Office</th>
+        <th>Assigned Signatory</th>
+        <th>Assigned Pathologist</th>
+        <th>Created At</th>
+        <th>Details</th>
+    </tr>
+    {% for case in cases %}
+    <tr>
+        <td>{{ case.case_number }}</td>
+        <td>{{ case.year }}</td>
+        <td>{{ case.status }}</td>
+        <td>{{ case.assigned_office }}</td>
+        <td>{{ case.assigned_signatory }}</td>
+        <td>{{ case.assigned_pathologist }}</td>
+        <td>{{ case.created_at.strftime('%Y-%m-%d %H:%M') if case.created_at else '' }}</td>
+        <td>
+            <a href="#">View (coming soon)</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<hr>
+<a href="{{ url_for('auth.dashboard') }}">Back to Dashboard</a>

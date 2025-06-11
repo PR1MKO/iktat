@@ -7,13 +7,14 @@
     <h2>Admin Tools</h2>
     <ul>
         <li><a href="{{ url_for('auth.create_case') }}">Create New Case</a></li>
+        <li><a href="{{ url_for('auth.list_cases') }}">View All Cases</a></li>
         <li><a href="#">User Management (coming soon)</a></li>
-        <li><a href="#">All Cases (coming soon)</a></li>
     </ul>
 {% elif user.role == 'iroda' %}
     <h2>Iroda Tools</h2>
     <ul>
         <li><a href="{{ url_for('auth.create_case') }}">Create New Case</a></li>
+        <li><a href="{{ url_for('auth.list_cases') }}">View All Cases</a></li>
     </ul>
 {% elif user.role == 'szig' %}
     <h2>Szig Tools</h2>
