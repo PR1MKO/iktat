@@ -1,0 +1,33 @@
+<!doctype html>
+<title>Dashboard</title>
+<h1>Welcome, {{ user.username }}!</h1>
+<p>Your role: <strong>{{ user.role }}</strong></p>
+
+{% if user.role == 'admin' %}
+    <h2>Admin Tools</h2>
+    <ul>
+        <li><a href="{{ url_for('auth.create_case') }}">Create New Case</a></li>
+        <li><a href="#">User Management (coming soon)</a></li>
+        <li><a href="#">All Cases (coming soon)</a></li>
+    </ul>
+{% elif user.role == 'iroda' %}
+    <h2>Iroda Tools</h2>
+    <ul>
+        <li><a href="{{ url_for('auth.create_case') }}">Create New Case</a></li>
+    </ul>
+{% elif user.role == 'szig' %}
+    <h2>Szig Tools</h2>
+    <ul>
+        <li><a href="#">Assign Pathologist (coming soon)</a></li>
+    </ul>
+{% elif user.role == 'szak' %}
+    <h2>Szak Tools</h2>
+    <ul>
+        <li><a href="#">View Assigned Cases (coming soon)</a></li>
+    </ul>
+{% endif %}
+
+<hr>
+<a href="{{ url_for('hello') }}">Home</a> |
+<a href="{{ url_for('auth.dashboard') }}">Dashboard</a> |
+<a href="{{ url_for('auth.logout') }}">Logout</a>
