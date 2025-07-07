@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+{% block sidebar %}{% endblock %}
+
+{% block title %}Felhasználó szerkesztése – {{ user.screen_name or user.username }}{% endblock %}
+
+{% block content %}
+<div class="card-body d-flex align-items-center py-3">
+  <i class="bi bi-person-check fs-3 me-3 text-primary"></i>
+  <div>
+    <h3 class="h4 mb-0">
+      Felhasználó szerkesztése – {{ user.screen_name or user.username }}
+    </h3>
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='error' else category }}">{{ message|safe }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<form method="post" class="row g-3 needs-validation" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="col-md-6">
+    <label for="username" class="form-label">Felhasználónév *</label>
+    <input type="text"
+           id="username"
+           name="username"
+           class="form-control"
+           value="{{ user.username }}"
+           required aria-label="Felhasználónév" title="Felhasználónév" placeholder="Felhasználónév">
+    <div class="invalid-feedback">Kérjük, adja meg a felhasználónevet.</div>
+  </div>
+
+  <div class="col-md-6">
+    <label for="screen_name" class="form-label">Megjelenítendő név</label>
+    <input type="text"
+           id="screen_name"
+           name="screen_name"
+           class="form-control"
+           value="{{ user.screen_name }}"
+           aria-label="Megjelenítendő név" title="Megjelenítendő név" placeholder="Megjelenítendő név">
+  </div>
+
+  <div class="col-md-6">
+    <label for="password" class="form-label">Jelszó (változtatáshoz)</label>
+    <input type="password"
+           id="password"
+           name="password"
+           class="form-control"
+           aria-label="Jelszó" title="Jelszó" placeholder="Új jelszó (hagyja üresen, ha nem változik)">
+    <div class="form-text">Csak akkor adja meg, ha módosítani szeretné a jelszót.</div>
+  </div>
+
+  <div class="col-md-6">
+    {{ cm.select_block(
+        'role',
+        'role',
+        [
+          ('', '-- Válasszon --'),
+          ('admin', 'Admin'),
+          ('iroda', 'Iroda'),
+          ('szignáló', 'Szignáló'),
+          ('szakértő', 'Szakértő'),
+          ('leíró', 'Leíró')
+        ],
+        'Szerepkör *',
+        '-- Válasszon --',
+        selected=user.role
+    ) }}
+    <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
+  </div>
+
+  <div class="col-12 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">Mentés</button>
+    <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-secondary">Mégse</a>
+  </div>
+</form>
+
+{% if assigned_cases %}
+  <div class="card mt-5 shadow-sm">
+    <div class="card-header bg-light rounded-top fw-bold">
+      Hozzárendelt ügyek
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-striped table-bordered mb-0">
+        <thead>
+          <tr>
+            <th>Ügy azonosító</th>
+            <th>Elhunyt neve</th>
+            <th>Állapot</th>
+            <th>Határidő</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for case in assigned_cases %}
+            <tr>
+              <td>
+                <a href="{{ url_for('auth.case_detail', case_id=case.id) }}">
+                  {{ case.case_number }}
+                </a>
+              </td>
+              <td>{{ case.deceased_name }}</td>
+              <td>{{ case.status }}</td>
+              <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '–' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer">
+      <button id="copyTableBtn" class="btn btn-secondary mb-3 w-100">Másolás vágólapra</button>
+    </div>
+  </div>
+{% else %}
+  <p class="mt-5 fst-italic text-muted">Nincs hozzárendelt ügy.</p>
+{% endif %}
+
+<script>
+  (function() {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+<script>
+  document.getElementById('copyTableBtn').addEventListener('click', function() {
+    const rows = document.querySelectorAll('table tbody tr');
+    let text = '';
+
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      const rowText = Array.from(cells).map(cell => cell.innerText.trim()).join('\t');
+      text += rowText + '\n';
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Táblázat szöveges tartalma másolva a vágólapra!');
+    }).catch(err => {
+      alert('Hiba a másolás során: ' + err);
+    });
+  });
+</script>
+
+{% endblock %}

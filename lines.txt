@@ -1,0 +1,97 @@
+Got it! Here’s a quick breakdown and actionable fixes for your CSS warnings and dev tools notes:
+
+1. **`-webkit-text-size-adjust` is not supported broadly; add `text-size-adjust`:**
+
+```css
+/* Replace */
+-webkit-text-size-adjust: 100%;
+
+/* With */
+-webkit-text-size-adjust: 100%;
+text-size-adjust: 100%;
+```
+
+This will ensure support on Chrome, Edge, Firefox, Safari, etc.
+
+---
+
+2. **`text-align: -webkit-match-parent` not supported by Safari; add `text-align: match-parent`:**
+
+```css
+/* Replace */
+text-align: -webkit-match-parent;
+
+/* With */
+text-align: -webkit-match-parent;
+text-align: match-parent;
+```
+
+Safari 15.4+ supports `match-parent`.
+
+---
+
+3. **`color-adjust` is deprecated and unsupported in Chrome/Edge; use `print-color-adjust`:**
+
+```css
+/* Replace */
+color-adjust: exact;
+
+/* With */
+print-color-adjust: exact;
+```
+
+---
+
+4. **Performance — cache busting missing:**
+
+If you’re loading static files like JS or CSS, append a version query string or use hashed filenames:
+
+```html
+<link rel="stylesheet" href="/static/style.css?v=1.2.3">
+<script src="/static/app.js?v=1.2.3"></script>
+```
+
+Or configure your build tool to add unique hashes to filenames.
+
+---
+
+5. **Order your CSS declarations:**
+
+Put `text-align: inherit;` after `text-align: -webkit-match-parent;` for proper cascading.
+
+```css
+text-align: -webkit-match-parent;
+text-align: match-parent;
+text-align: inherit;
+```
+
+---
+
+6. **Move inline styles to external CSS:**
+
+Instead of:
+
+```html
+<div style="color: red; font-weight: bold;">Text</div>
+```
+
+Put these in your CSS file:
+
+```css
+.red-bold {
+  color: red;
+  font-weight: bold;
+}
+```
+
+Then:
+
+```html
+<div class="red-bold">Text</div>
+```
+
+---
+
+If you want, I can help you refactor specific inline styles from your templates or suggest a caching strategy.
+
+Want me to generate example CSS fixes for your project files?

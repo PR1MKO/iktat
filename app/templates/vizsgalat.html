@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block sidebar %}{% endblock %}
+
+{% block title %}Vizsgálat Elrendelése – {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+	<div class="card-body d-flex align-items-center py-3 mb-4">
+	  <i class="bi bi-file-medical fs-3 me-3 text-primary"></i>
+	  <div>
+		<h3 class="h4 mb-0">Vizsgálat Elrendelése – {{ case.case_number }}</h3>
+	  </div>
+	</div>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+	<div class="row">
+	  <!-- Left: Toxikológiai vizsgálatok -->
+	  <div class="col-md-8 mb-3">
+		<div class="card h-100">
+		  <div class="card-header">Toxikológiai vizsgálatok</div>
+		  <div class="card-body">
+
+			<!-- Alkohol group -->
+			<h6 class="fw-bold mb-2">Alkohol</h6>
+			{% for label, name in [
+			  ('Vér', 'alkohol_ver'),
+			  ('Vizelet', 'alkohol_vizelet'),
+			  ('Liquor', 'alkohol_liquor'),
+			  ('Egyéb', 'egyeb_alkohol'),
+			] %}
+			<div class="mb-2 d-flex align-items-center gap-3">
+			  <div class="form-check form-switch mb-0 d-flex align-items-center">
+				<input class="form-check-input tox-toggle" type="checkbox"
+					   id="{{ name }}_ordered" name="{{ name }}_ordered"
+					   {% if case[name + '_ordered'] %}checked{% endif %}>
+				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
+			  </div>
+			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+					 value="{{ case[name] or '' }}"
+					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+			</div>
+			{% endfor %}
+
+			<!-- Gyógyszer group -->
+			<h6 class="fw-bold mt-4 mb-2">Gyógyszer</h6>
+			{% for label, name in [
+			  ('Vér', 'tox_gyogyszer_ver'),
+			  ('Vizelet', 'tox_gyogyszer_vizelet'),
+			  ('Gyomortartalom', 'tox_gyogyszer_gyomor'),
+			  ('Máj', 'tox_gyogyszer_maj'),
+			] %}
+			<div class="mb-2 d-flex align-items-center gap-3">
+			  <div class="form-check form-switch mb-0 d-flex align-items-center">
+				<input class="form-check-input tox-toggle" type="checkbox"
+					   id="{{ name }}_ordered" name="{{ name }}_ordered"
+					   {% if case[name + '_ordered'] %}checked{% endif %}>
+				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
+			  </div>
+			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+					 value="{{ case[name] or '' }}"
+					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+			</div>
+			{% endfor %}
+
+			<!-- Kábítószer group -->
+			<h6 class="fw-bold mt-4 mb-2">Kábítószer</h6>
+			{% for label, name in [
+			  ('Vér', 'tox_kabitoszer_ver'),
+			  ('Vizelet', 'tox_kabitoszer_vizelet'),
+			] %}
+			<div class="mb-2 d-flex align-items-center gap-3">
+			  <div class="form-check form-switch mb-0 d-flex align-items-center">
+				<input class="form-check-input tox-toggle" type="checkbox"
+					   id="{{ name }}_ordered" name="{{ name }}_ordered"
+					   {% if case[name + '_ordered'] %}checked{% endif %}>
+				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
+			  </div>
+			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+					 value="{{ case[name] or '' }}"
+					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+			</div>
+			{% endfor %}
+
+			<!-- Other group -->
+			<h6 class="fw-bold mt-4 mb-2">Egyéb vizsgálatok</h6>
+			{% for label, name in [
+			  ('CPK', 'tox_cpk'),
+			  ('Szárazanyag', 'tox_szarazanyag'),
+			  ('Diatóma', 'tox_diatoma'),
+			  ('CO', 'tox_co'),
+			  ('Egyéb', 'egyeb_tox'),
+			] %}
+			<div class="mb-2 d-flex align-items-center gap-3">
+			  <div class="form-check form-switch mb-0 d-flex align-items-center">
+				<input class="form-check-input tox-toggle" type="checkbox"
+					   id="{{ name }}_ordered" name="{{ name }}_ordered"
+					   {% if case[name + '_ordered'] %}checked{% endif %}>
+				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
+			  </div>
+			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+					 value="{{ case[name] or '' }}"
+					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+			</div>
+			{% endfor %}
+
+		  </div>
+		</div>
+	  </div>
+
+	  <!-- Right: Szövettani vizsgálatok -->
+	  <div class="col-md-4 mb-3">
+		<div class="card h-100">
+		  <div class="card-header">Szövettani vizsgálatok</div>
+		  <div class="card-body">
+			{% for organ in [
+			  ('Szív', 'sziv'),
+			  ('Tüdő', 'tudo'),
+			  ('Máj', 'maj'),
+			  ('Vese', 'vese'),
+			  ('Agy', 'agy'),
+			  ('Mellékvese', 'mellekvese'),
+			  ('Pajzsmirigy', 'pajzsmirigy'),
+			  ('Hasnyálmirigy', 'hasnyalmirigy'),
+			  ('Lép', 'lep'),
+			] %}
+			<div class="mb-2">
+			  <label class="form-label d-block">{{ organ[0] }}</label>
+			  <div class="form-check form-check-inline">
+				<input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="spec"
+				  {% if case | getattr(organ[1] + '_spec') %}checked{% endif %}>
+				<label class="form-check-label">Spec fest</label>
+			  </div>
+			  <div class="form-check form-check-inline">
+				<input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="immun"
+				  {% if case | getattr(organ[1] + '_immun') %}checked{% endif %}>
+				<label class="form-check-label">Immun</label>
+			  </div>
+			</div>
+			{% endfor %}
+
+			<div class="mb-3">
+			  <label class="form-label">Egyéb szerv</label>
+			  <input type="text" name="egyeb_szerv" class="form-control" value="{{ case.egyeb_szerv or '' }}">
+			  <div class="form-check form-check-inline mt-1">
+				<input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="spec"
+				  {% if case.egyeb_szerv_spec %}checked{% endif %}>
+				<label class="form-check-label">Spec fest</label>
+			  </div>
+			  <div class="form-check form-check-inline">
+				<input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="immun"
+				  {% if case.egyeb_szerv_immun %}checked{% endif %}>
+				<label class="form-check-label">Immun</label>
+			  </div>
+			</div>
+		  </div>
+		</div>
+	  </div>
+	</div>
+
+    <div class="d-flex gap-2 mt-3">
+  <button type="submit" class="btn btn-primary">Mentés</button>
+  <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-outline-secondary">Mégse</a>
+</div>
+
+  </form>
+</div>
+
+<script>
+  document.querySelectorAll('.tox-toggle').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const input = this.closest('.mb-2').querySelector('input[type="text"]');
+      input.disabled = !this.checked;
+      if (!this.checked) input.value = '';
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Szignálási Ügyek – CaseTracker{% endblock %}
+
+{# remove the usual dashboard sidebar entirely #}
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Szignálási Ügyek</h1>
+
+  {# First table: neither szakértő 1 nor 2 assigned #}
+  <h2><span class="badge bg-danger">Szignálandó</span></h2>
+  <table class="table table-hover mb-5">
+    <thead class="table-light">
+      <tr>
+        <th>Boncszám</th>
+        <th>Elhunyt neve</th>
+        <th>Állapot</th>
+        <th>Regisztrálva</th>
+        <th>Határidő</th>
+        <th>Műveletek</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set ns1 = namespace(count=0) %}
+      {% for case in szignalando_cases %}
+        {% set ns1.count = ns1.count + 1 %}
+        <tr>
+          <td>{{ case.case_number }}</td>
+          <td>{{ case.deceased_name }}</td>
+          <td>{{ case.status }}</td>
+          <td>{{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '' }}</td>
+          <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-info"
+               href="{{ url_for('auth.case_detail', case_id=case.id) }}">
+              Megtekintés
+            </a>
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
+              Szakértő kijelölése
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if ns1.count == 0 %}
+        <tr>
+          <td colspan="6" class="text-center fst-italic">Nincs szignálandó ügy.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  {# Second table: ALL cases that have any szakértő assigned (expert_1 or expert_2) #}
+  <h2><span class="badge bg-primary">Szakértők szerkesztése</span></h2>
+  <table class="table table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Boncszám</th>
+        <th>Elhunyt neve</th>
+        <th>Állapot</th>
+        <th>Regisztrálva</th>
+        <th>Határidő</th>
+        <th>Műveletek</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set ns2 = namespace(count=0) %}
+      {% for case in szerkesztheto_cases %}
+        {% set ns2.count = ns2.count + 1 %}
+        <tr>
+          <td>{{ case.case_number }}</td>
+          <td>{{ case.deceased_name }}</td>
+          <td>{{ case.status }}</td>
+          <td>{{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '' }}</td>
+          <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
+          <td>
+            <a class="btn btn-sm btn-outline-info"
+               href="{{ url_for('auth.case_detail', case_id=case.id) }}">
+              Megtekintés
+            </a>
+            <a class="btn btn-sm btn-outline-primary"
+               href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
+              Szakértő szerkesztése
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if ns2.count == 0 %}
+        <tr>
+          <td colspan="6" class="text-center fst-italic">Nincs szerkeszthető szakértős ügy.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+  
+  <div class="mb-3">
+    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary">Vissza</a>
+  </div>
+  
+{% endblock %}

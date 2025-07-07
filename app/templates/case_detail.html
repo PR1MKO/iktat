@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Ügy részletei – {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  {# Flash messages #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category!='error' and category or 'danger' }}" role="alert">
+          {{ message|safe }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Alapadatok -->
+  <div class="row mb-4">
+    <div class="col-12">
+      {{ cm.alapadatok(case) }}
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="mb-3">
+        {{ cm.file_upload_block(
+          url_for('auth.upload_file', case_id=case.id),
+          input_name='file',
+          form_id='file-upload-form',
+          multiple=True,
+          label='Fájl feltöltése',
+          btn_label='Feltöltés'
+        ) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Vizsgálatok elrendelése & Feltöltött fájlok -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      {{ cm.orders_block(case.tox_orders) }}
+    </div>
+    <div class="col-md-6 mb-3">
+      {% if current_user.role == 'iroda' %}
+        {# Reserved for iroda role actions, if any #}
+      {% endif %}
+      {{ cm.uploaded_files(case) }}
+    </div>
+  </div>
+
+  <!-- Jegyzetek & Változásnapló -->
+  <div class="row mb-4">
+    <div class="col-md-6 d-flex flex-column" id="notes-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {{ cm.notes_block(case) }}
+    </div>
+    <div class="col-md-6 d-flex">
+      {{ cm.changelog_block(changelog_entries) }}
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('add_note_btn')?.addEventListener('click', function() {
+      const txt = document.getElementById('new_note');
+      if (!txt.value.trim()) {
+        txt.classList.add('is-invalid');
+        return;
+      }
+      fetch("/cases/{{ case.id }}/add_note", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ new_note: txt.value.trim() })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(data => {
+        const container = document.querySelector('#notes-form .card-body');
+        container.insertAdjacentHTML('afterbegin', data.html);
+        txt.value = '';
+      })
+      .catch(() => alert('Hiba a megjegyzés mentésekor'));
+    });
+  </script>
+
+  <!-- Vissza az ügyekhez -->
+  <a class="btn btn-outline-primary" href="{{ url_for('auth.list_cases') }}">
+    Vissza az ügyekhez
+  </a>
+</div>
+{% endblock %}

@@ -1,81 +1,180 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_user, logout_user, login_required, current_user
-from ..models import db, User, Case  # <-- import Case here
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
 
-auth_bp = Blueprint('auth', __name__)
+{% block title %}Új ügy létrehozása{% endblock %}
 
-@auth_bp.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        role = request.form['role']
-        # Check if user exists
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.')
-            return redirect(url_for('auth.register'))
-        # Create new user
-        user = User(username=username, role=role)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        flash('Registration successful. Please log in.')
-        return redirect(url_for('auth.login'))
-    return render_template('register.html')
+{% block content %}
+<h1>Új ügy létrehozása</h1>
 
-@auth_bp.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            login_user(user)
-            flash('Logged in successfully.')
-            return redirect(url_for('auth.dashboard'))
-        flash('Invalid username or password.')
-    return render_template('login.html')
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='error' else category }}">{{ message|safe }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-@auth_bp.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('Logged out.')
-    return redirect(url_for('auth.login'))
+<form method="post" class="row g-3 needs-validation" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-@auth_bp.route('/dashboard')
-@login_required
-def dashboard():
-    return render_template('dashboard.html', user=current_user)
+  <!-- Case type -->
+  <div class="col-md-6">
+    <label for="case_type" class="form-label">Típus</label>
+    {{ cm.select_block(
+        'case_type',
+        'case_type',
+        [
+          ('', '-- Válasszon --'),
+          ('hatósági', 'hatósági'),
+          ('klinikai', 'klinikai'),
+          ('igazságügyi', 'igazságügyi'),
+          ('kórboncolási', 'kórboncolási'),
+          ('elengedés', 'elengedés')
+        ],
+        'Típus *',
+        '-- Válasszon --',
+        selected=case.case_type if case and case.case_type else ''
+    ) }}
+    <div class="invalid-feedback">Kérjük, válasszon típust.</div>
+  </div>
 
-@auth_bp.route('/cases/new', methods=['GET', 'POST'])
-@login_required
-def create_case():
-    if request.method == 'POST':
-        case_number = request.form['case_number']
-        year = request.form['year']
-        status = request.form['status']
-        assigned_office = request.form['assigned_office']
-        assigned_signatory = request.form['assigned_signatory']
-        assigned_pathologist = request.form['assigned_pathologist']
-        notes = request.form['notes']
+  <!-- Registration time -->
+  <div class="col-md-6">
+    <label for="registration_time" class="form-label">Regisztrálva</label>
+    <input type="datetime-local"
+      id="registration_time"
+      name="registration_time"
+      class="form-control"
+      placeholder="Regisztrálva"
+      aria-label="Regisztrálva" title="Regisztrálva">
+  </div>
 
-        # Prevent duplicate case numbers
-        if db.session.query(db.exists().where(Case.case_number == case_number)).scalar():
-            flash('Case number already exists.')
-            return redirect(url_for('auth.create_case'))
+  <!-- Deceased name -->
+  <div class="col-md-6">
+    <label for="deceased_name" class="form-label">Elhunyt neve</label>
+    <input type="text"
+      id="deceased_name"
+      name="deceased_name"
+      class="form-control"
+      aria-label="Elhunyt neve" title="Elhunyt neve" placeholder="Elhunyt neve">
+  </div>
 
-        case = Case(
-            case_number=case_number,
-            year=year,
-            status=status,
-            assigned_office=assigned_office,
-            assigned_signatory=assigned_signatory,
-            assigned_pathologist=assigned_pathologist,
-            notes=notes
-        )
-        db.session.add(case)
-        db.session.commit()
-        flash('New case created successfully!')
-        return redirect(url_for('auth.dashboard'))
-    return render_template('create_case.html')
+  <!-- Experts & Describer -->
+  {% if current_user.role in ['admin','szignáló'] %}
+    <div class="col-md-4">
+      {{ cm.select_block(
+        'szakerto',
+        'szakerto',
+        szakerto_choices,
+        'Szakértő (opcionális)',
+        '(opcionális)',
+        selected=case.szakerto if case and case.szakerto else ''
+      ) }}
+    </div>
+    <div class="col-md-4">
+      {{ cm.select_block(
+        'expert_2',
+        'expert_2',
+        szakerto_choices,
+        'Szakértő 2',
+        '(opcionális)',
+        selected=case.expert_2 if case and case.expert_2 else ''
+      ) }}
+    </div>
+    <div class="col-md-4">
+      {{ cm.select_block(
+        'describer',
+        'describer',
+        leiro_choices,
+        'Leíró',
+        '(opcionális)',
+        selected=case.describer if case and case.describer else ''
+      ) }}
+    </div>
+  {% endif %}
+
+  <!-- Other fields -->
+  <div class="col-md-6">
+    <label for="institution_name" class="form-label">Intézmény neve</label>
+    <input type="text"
+      id="institution_name"
+      name="institution_name"
+      class="form-control"
+      aria-label="Intézmény neve" title="Intézmény neve" placeholder="Intézmény neve">
+  </div>
+  <div class="col-md-6">
+    <label for="external_case_number" class="form-label">Külső ügyirat szám</label>
+    <input type="text"
+      id="external_case_number"
+      name="external_case_number"
+      class="form-control"
+      aria-label="Külső ügyirat szám" title="Külső ügyirat szám" placeholder="Külső ügyirat szám">
+  </div>
+  <div class="col-md-4">
+    <label for="birth_date" class="form-label">Születési idő</label>
+    <input type="date"
+      id="birth_date"
+      name="birth_date"
+      class="form-control"
+      placeholder="Születési idő"
+      aria-label="Születési idő" title="Születési idő">
+  </div>
+
+<!-- További adatok -->
+<div class="col-12">
+  <div class="card mb-3">
+    <div class="card-header fw-bold">További adatok</div>
+    <div class="card-body row g-3">
+      <div class="col-md-4">
+        <label for="beerk_modja" class="form-label">Beérkezés módja</label>
+        <select class="form-select" id="beerk_modja" name="beerk_modja">
+          <option value="">-- Válasszon --</option>
+          <option value="Email" {% if case and case.beerk_modja == "Email" %}selected{% endif %}>Email</option>
+          <option value="Fax" {% if case and case.beerk_modja == "Fax" %}selected{% endif %}>Fax</option>
+          <option value="Posta" {% if case and case.beerk_modja == "Posta" %}selected{% endif %}>Posta</option>
+          <option value="Személyes" {% if case and case.beerk_modja == "Személyes" %}selected{% endif %}>Személyes</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="poszeidon" class="form-label">Poszeidon</label>
+        <input type="text" id="poszeidon" name="poszeidon" class="form-control" value="{{ case.poszeidon if case and case.poszeidon else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label for="lanykori_nev" class="form-label">Elhunyt lánykori neve</label>
+        <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ case.lanykori_nev if case and case.lanykori_nev else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label for="szul_hely" class="form-label">Születési hely</label>
+        <input type="text" id="szul_hely" name="szul_hely" class="form-control" value="{{ case.szul_hely if case and case.szul_hely else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label for="taj_szam" class="form-label">TAJ szám</label>
+        <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ case.taj_szam if case and case.taj_szam else '' }}">
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Submit buttons -->
+  <div class="col-12 d-flex gap-2">
+    <button type="submit" class="btn btn-success">Létrehozás</button>
+    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary">Mégse</a>
+  </div>
+</form>
+
+<script>
+  (() => {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(form => {
+      form.addEventListener('submit', e => {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          form.classList.add('was-validated');
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

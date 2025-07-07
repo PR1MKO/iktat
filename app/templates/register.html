@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Regisztráció – CaseTracker{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center login-viewport-center">
+  <div class="card shadow-sm login-card-max">
+    <div class="card-body">
+      <h3 class="card-title text-center mb-4">Regisztráció</h3>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="mb-3">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ message|safe }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="username" class="form-label visually-hidden">Felhasználónév</label>
+          <input type="text"
+                 class="form-control"
+                 id="username"
+                 name="username"
+                 required
+                 aria-label="Felhasználónév"
+                 title="Felhasználónév"
+                 placeholder="Felhasználónév">
+          <div class="invalid-feedback">Kérjük, adja meg a felhasználónevet.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label visually-hidden">Jelszó</label>
+          <input type="password"
+                 class="form-control"
+                 id="password"
+                 name="password"
+                 required
+                 aria-label="Jelszó"
+                 title="Jelszó"
+                 placeholder="Jelszó">
+          <div class="invalid-feedback">Kérjük, adja meg a jelszót.</div>
+        </div>
+
+        <div class="mb-3">
+          {{ cm.select_block(
+              'role',
+              'role',
+              [('', '-- Válasszon --'), ('admin', 'Admin'), ('iroda', 'Iroda'), ('szig', 'Szignáló'), ('szak', 'Szakértő')],
+              'Szerepkör',
+              '-- Válasszon --',
+              selected=role if role is defined else ''
+          ) }}
+          <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Regisztráció</button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="{{ url_for('auth.login') }}">Már van fiókod? Jelentkezz be</a>
+      </div>
+      <hr>
+      <div class="text-center">
+        <a href="{{ url_for('hello') }}">Kezdőlap</a> |
+        <a href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  })();
+</script>
+{% endblock %}

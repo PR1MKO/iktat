@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+{# Shared base for both szakértő and leíró elvégzem flows #}
+{% block sidebar %}{% endblock %}
+
+{% block title %}Ügy elvégzése – {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<div class="container pt-2 pb-4">
+
+  <!-- Page header -->
+  <h1 class="mb-4">Ügy elvégzése – {{ case.case_number }}</h1>
+
+  <!-- Alapadatok -->
+  <div class="card mb-4">
+    <div class="card-header">Alapadatok</div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <table class="table table-borderless mb-0">
+            <tr><th>Boncszám:</th><td>{{ case.case_number }}</td></tr>
+            <tr><th>Elhunyt neve:</th><td>{{ case.deceased_name }}</td></tr>
+            <tr><th>Típus:</th><td>{{ case.case_type }}</td></tr>
+            <tr><th>Állapot:</th><td>{{ case.status }}</td></tr>
+            <tr><th>Intézmény:</th><td>{{ case.institution_name or '–' }}</td></tr>
+            <tr><th>Külső ügyirat szám:</th><td>{{ case.external_case_number or '–' }}</td></tr>
+            <tr><th>Születési idő:</th><td>{{ case.birth_date or '–' }}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <table class="table table-borderless mb-0">
+            <tr><th>Regisztrálva:</th><td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') if case.registration_time else '–' }}</td></tr>
+            <tr><th>Határidő:</th><td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '–' }}</td></tr>
+            <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
+            <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
+            <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expert actions placeholder -->
+  {% block expert_actions %}{% endblock %}
+
+  <!-- Orders & Uploaded files -->
+  <div class="row mb-4">
+    <!-- Expert orders placeholder -->
+    {% block expert_orders %}{% endblock %}
+
+    <!-- Uploaded files -->
+    <div class="col-md-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">Feltöltött fájlok</div>
+        <div class="card-body">
+          {% if case.uploaded_file_records %}
+            <ul class="list-group list-group-flush mb-0">
+              {% for rec in case.uploaded_file_records %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
+                  <small class="text-muted">{{ rec.upload_time.strftime('%Y-%m-%d %H:%M') }} — {{ rec.uploader }}</small>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-muted">Nincs feltöltött fájl.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Notes & Change-log -->
+<div class="row mb-4 align-items-stretch">
+  <!-- Notes -->
+  <div class="col-md-6 mb-3 d-flex flex-column" id="notes-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ cm.notes_block(case) }}
+  </div>
+
+  <!-- Change-log -->
+  <div class="col-md-6 d-flex">
+    {{ cm.changelog_block(changelog_entries) }}
+  </div>
+</div>
+
+    <!-- Change-log placeholder -->
+    <div class="col-md-6 mb-3 d-flex">
+      <div class="card flex-fill d-flex flex-column h-100">
+        <div class="card-header">Változásnapló</div>
+        <div class="card-body flex-fill overflow-auto p-3">
+          <div class="list-group list-group-flush">
+            {% for entry in changelog_entries %}
+              <div class="list-group-item py-2">
+                [{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+              </div>
+            {% endfor %}
+            {% if not changelog_entries %}
+              <div class="list-group-item text-center text-muted">Nincs rögzített változás.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign describer placeholder -->
+  {% block assign_describer %}{% endblock %}
+
+  <!-- Submit -->
+  <div class="row mb-4">
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-success">Elvégezve</button>
+      <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Chat-style note submit
+  document.getElementById('add_note_btn').addEventListener('click', function() {
+    const txt = document.getElementById('new_note');
+    if (!txt.value.trim()) { txt.classList.add('is-invalid'); return; }
+    let hidden = document.createElement('input');
+    hidden.type='hidden'; hidden.name='new_note'; hidden.value=txt.value.trim();
+    this.closest('form').appendChild(hidden);
+    this.closest('form').submit();
+  });
+</script>
+
+{% endblock %}

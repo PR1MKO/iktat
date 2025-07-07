@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Ügyek Kezelése – CaseTracker{% endblock %}
+
+{% block content %}
+<div class="card-body d-flex align-items-center py-3">
+  <i class="bi bi-person-check fs-3 me-3 text-primary"></i>
+  <div>
+    <h3 class="h4 mb-0">Ügyek Kezelése</h4>
+  </div>
+</div>
+
+<table class="table table-hover">
+  <thead class="table-light">
+    <tr>
+      <!-- <th>ID</th> Removed -->
+      <th>Boncszám</th>
+      <th>Elhunyt neve</th>
+      <th>Állapot</th>
+      <th>Regisztrálva</th>
+      <th>Határidő</th>
+      <th>Műveletek</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for case in cases %}
+    <tr>
+      <!-- <td>{{ case.id }}</td> Removed -->
+      <td>{{ case.case_number }}</td>
+      <td>{{ case.deceased_name }}</td>
+      <td>{{ case.status }}</td>
+      <td>{{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '' }}</td>
+      <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
+		<td>
+		  <a class="btn btn-sm btn-outline-info"
+			 href="{{ url_for('auth.case_detail', case_id=case.id) }}"
+			 title="Ügy megtekintése" aria-label="Ügy megtekintése">
+			Megtekintés
+		  </a>
+		  <a class="btn btn-sm btn-outline-secondary ms-1"
+			 href="{{ url_for('auth.export_changelog_csv', case_id=case.id) }}"
+			 title="Changelog letöltése" aria-label="Changelog letöltése">
+			<i class="bi bi-download"></i>
+		  </a>
+		  <form method="post"
+				action="{{ url_for('auth.delete_case', case_id=case.id) }}"
+				class="d-inline-block ms-1"
+				onsubmit="return confirm('Biztos törölni akarod ezt az ügyet?');">
+			<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+			<button type="submit"
+					class="btn btn-sm btn-outline-danger"
+					aria-label="Ügy törlése"
+					title="Ügy törlése">
+			  Törlés
+			</button>
+		  </form>
+		</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="6" class="text-center fst-italic">Nincs ügy.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

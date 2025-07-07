@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Ügyeim</h1>
+
+  {# Pending cases table #}
+  <h2><span class="badge bg-danger">Elvégzendő</span></h2>
+  {% if pending_cases %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Boncszám</th>
+          <th>Elhunyt neve</th>
+          <th>Állapot</th>
+          <th>Regisztrálva</th>
+          <th>Határidő</th>
+          <th>Műveletek</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for case in pending_cases %}
+          <tr>
+            <td>{{ case.case_number }}</td>
+            <td>{{ case.deceased_name }}</td>
+            <td>{{ case.status }}</td>
+            <td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '' }}</td>
+            <td>
+              <a href="{{ url_for('auth.case_detail', case_id=case.id) }}"
+                 class="btn btn-outline-primary btn-sm">
+                Megtekintés
+              </a>
+              <a href="{{ url_for('main.elvegzem', case_id=case.id) }}"
+                 class="btn btn-outline-success btn-sm ms-1">
+                Elvégzem
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Nincsenek elvégzendő ügyeid.</p>
+  {% endif %}
+
+  {# Completed cases table #}
+  <h2><span class="badge bg-primary">Elvégzett</span></h2>
+  {% if completed_cases %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Boncszám</th>
+          <th>Elhunyt neve</th>
+          <th>Állapot</th>
+          <th>Regisztrálva</th>
+          <th>Határidő</th>
+          <th>Műveletek</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for case in completed_cases %}
+          <tr>
+            <td>{{ case.case_number }}</td>
+            <td>{{ case.deceased_name }}</td>
+            <td>{{ case.status }}</td>
+            <td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '' }}</td>
+           <td>
+  <a href="{{ url_for('auth.case_detail', case_id=case.id) }}"
+     class="btn btn-outline-primary btn-sm">
+    Megtekintés
+  </a>
+<a href="{{ url_for('main.elvegzem', case_id=case.id) }}"
+   class="btn btn-outline-secondary btn-sm ms-1">
+  Szerkeszt
+</a>
+</td>
+
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Nincsenek elvégzett ügyeid.</p>
+  {% endif %}
+{% endblock %}

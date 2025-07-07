@@ -1,0 +1,52 @@
+**Overview for IKTATAS2.0**
+
+The Flask Forensic Case Tracker is a web application designed to digitize and manage forensic/autopsy case workflows in line with Hungarian legal and procedural requirements. Its core purpose is to ensure that each case is properly logged, assigned to the relevant roles, and tracked through all stages—from initial data entry to completion—while providing an extensible foundation for future features such as file uploads, audit reporting, and AI-driven analysis .
+
+**Goals & Objectives**
+
+* **Primary Goal**: Fully digitize and manage forensic/autopsy case workflows in compliance with Hungarian law, guaranteeing accurate logging, assignment, and status tracking for every case .
+* **Key Objectives**:
+
+  1. **Secure User & Role Management** – Implement robust authentication, role-based access control (admin, iroda, szig, szak), and session handling.
+  2. **Case Lifecycle Tracking** – Auto-generate case numbers, capture all required metadata, and enable creation, filtering, and detailed views per role.
+  3. **Audit & Change Logging** – Record every edit (user, field, timestamp, previous vs. new value) via a ChangeLog model and present an audit UI.
+  4. **Status Indicators & Notifications** – Flag completed cases visually, send milestone emails via SMTP/Outlook, and maintain an email history.
+  5. **Document Management** – Attach and manage case-related files with permissions, structured storage, and access logs.
+  6. **Future-Proofing for AI & Reporting** – Provide data export endpoints, a report builder, and placeholders for AI integrations such as OCR and automated summaries .
+
+**Decisions Made**
+
+1. **Tech Stack & Tooling**
+
+   * Python virtual environment with `requirements.txt` and `.gitignore`.
+   * Flask as the web framework, backed by Git/GitHub for version control.
+   * SQLite via SQLAlchemy ORM and Alembic for schema migrations .
+2. **Project Structure**
+
+   * Repository laid out with `src`, `tests`, `migrations`, `static`, and `templates`.
+   * README for setup and local-run instructions.
+   * Feature progress logged with “start/end” markers for traceability .
+3. **Data Model Design**
+
+   * **User/Role** models with hashed passwords and role assignments.
+   * **Case** model capturing number, year, status, assigned roles, and timestamps.
+   * **CaseSheetFields** for individual field values and edit metadata.
+   * **ChangeLog** to audit all field updates.
+   * **EmailNotification** for milestone email records.
+   * **Attachment** model for file uploads per case .
+4. **Phased Roadmap & Estimates**
+
+   * Seven MVP phases (Setup → Finalization/Testing) totalling 41 hours, plus 15–20% contingency (48–50 hours).
+   * Phase breakdown: core auth (5 h), case management (7 h), permissions/logging (5 h), notifications (6 h), uploads (6 h), AI/reporting stubs (4 h), wrap-up/testing (4 h) .
+
+**Next Steps**
+
+1. **Finalize Project Scaffold** – Create the Python virtual environment, populate `requirements.txt` and `.gitignore`, and push the initial Flask “hello world” app with README instructions.
+2. **Implement Authentication & Roles** – Build User and Role models in SQLAlchemy, integrate Flask-Login for session handling, and enforce role-based access.
+3. **Database Setup & Migrations** – Configure Alembic, then create the initial migration for User, Role, Case, CaseSheetFields, ChangeLog, EmailNotification, and Attachment tables.
+4. **Case Management Endpoints & UI** – Develop APIs and templates for case creation, listing, filtering, and detail views, including auto-generation of case numbers.
+5. **Audit Logging & ChangeLog UI** – Hook into field updates to record ChangeLog entries and build an admin interface to review edit history.
+6. **Status Indicators & Notifications** – Implement UI flags for case status and integrate SMTP/Outlook email sending, recording results in the EmailNotification model.
+7. **File Uploads & Document Management** – Add endpoints for file attachments, establish storage folder structure, and enforce permission checks.
+8. **Testing & CI Setup** – Write unit and integration tests for all core features and configure GitHub Actions (or equivalent) for automated test runs on push.
+9. **Future-Proofing for AI & Reporting** – Stub out export/report endpoints and annotate integration points for future AI pipelines (OCR, summarization).

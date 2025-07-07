@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Felhasználók listája</h2>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <ul class="flashes">
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+
+  <table border="1">
+    <tr>
+      <th>ID</th>
+      <th>Felhasználónév</th>
+      <th>Szerepkör</th>
+      <th>Utolsó belépés</th>
+      <th>Művelet</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.id }}</td>
+      <td>{{ user.username }}</td>
+      <td>{{ user.role }}</td>
+      <td>{{ user.last_login or '–' }}</td>
+      <td><a href="{{ url_for('auth.edit_user', user_id=user.id) }}">Szerkeszt</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <br>
+  <a href="{{ url_for('auth.add_user') }}">+ Új felhasználó hozzáadása</a>
+{% endblock %}

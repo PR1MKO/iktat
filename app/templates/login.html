@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{# Remove sidebar and navbar on login page #}
+{% block sidebar %}{% endblock %}
+{% block navbar %}{% endblock %}
+
+{% block title %}Bejelentkezés – CaseTracker{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center login-viewport-center">
+  <div class="card shadow-sm login-card-max">
+    <div class="card-body">
+      <h3 class="card-title text-center mb-4">Bejelentkezés</h3>
+      <form method="post" class="needs-validation" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ 'danger' if category == 'error' else category }}" role="alert">
+                {{ message|safe }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="mb-3">
+          <label for="username" class="form-label visually-hidden">Felhasználónév</label>
+          <input type="text"
+                 class="form-control"
+                 id="username"
+                 name="username"
+                 required
+                 aria-label="Felhasználónév"
+                 title="Felhasználónév"
+                 placeholder="Felhasználónév">
+          <div class="invalid-feedback">Kérjük, adja meg a felhasználónevét.</div>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label visually-hidden">Jelszó</label>
+          <input type="password"
+                 class="form-control"
+                 id="password"
+                 name="password"
+                 required
+                 aria-label="Jelszó"
+                 title="Jelszó"
+                 placeholder="Jelszó">
+          <div class="invalid-feedback">Kérjük, adja meg a jelszavát.</div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Bejelentkezés</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  (function() {
+    'use strict';
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+      if (!form.checkValidity()) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }, false);
+  })();
+</script>
+{% endblock %}

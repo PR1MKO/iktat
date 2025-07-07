@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+<!doctype html>
+<title>Igazgató Dashboard</title>
+<h1>Üdvözöljük, {{ user.screen_name or user.username }}!</h1>
+
+<!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul>
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message|safe }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<p>Szerepkör: <strong>{{ user.role }}</strong></p>
+
+<h2>Igazgatói Funkciók</h2>
+<ul>
+  <li><a href="#">Ügyek áttekintése (hamarosan)</a></li>
+  <li><a href="{{ url_for('auth.list_cases') }}">Összes ügy megtekintése</a></li>
+  <li><a href="{{ url_for('auth.closed_cases') }}">Lezárt ügyek</a></li>
+</ul>
+
+<hr>
+<a href="{{ url_for('auth.logout') }}">Kilépés</a>

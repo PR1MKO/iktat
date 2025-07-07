@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+{% block sidebar %}{% endblock %}
+{% block title %}Szakértők hozzárendelése – {{ case.case_number }}{% endblock %}
+
+{% block content %}
+<div class="container pt-2 pb-4">
+
+  <!-- Alapadatok -->
+  <div class="row mb-4">
+    <div class="col-12">
+      {{ cm.alapadatok(case) }}
+    </div>
+  </div>
+
+  <!-- Jegyzetek & Változásnapló -->
+  <div class="row mb-4">
+    <div class="col-md-6 d-flex flex-column" id="notes-form">
+      {{ cm.notes_block(case) }}
+    </div>
+    <div class="col-md-6 d-flex">
+      {{ cm.changelog_block(changelog_entries) }}
+    </div>
+  </div>
+
+  <script>
+    // Chat-style “add note” button
+    document.getElementById('add_note_btn').addEventListener('click', function() {
+      const txt = document.getElementById('new_note');
+      if (!txt.value.trim()) {
+        txt.classList.add('is-invalid');
+        return;
+      }
+      fetch("/cases/{{ case.id }}/add_note", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ new_note: txt.value.trim() })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(data => {
+        const container = document.querySelector('#notes-form .card-body');
+        if (container && data.html) {
+          container.insertAdjacentHTML('afterbegin', data.html);
+          txt.value = '';
+        } else {
+          alert('Nem található notes container vagy üres válasz.');
+        }
+      })
+      .catch(() => alert('Hiba a megjegyzés mentésekor'));
+    });
+  </script>
+
+  <form method="post" class="row g-3 needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Expert assignment fields using macros -->
+    <div class="col-md-6">
+      {{ cm.select_block(
+          'expert_1',
+          'expert_1',
+          szakerto_choices,
+          'Szakértő 1 *',
+          '-- Válasszon --',
+          selected=case.expert_1 if case.expert_1 else ''
+      ) }}
+      <div class="invalid-feedback">Kérjük, válassza ki az 1. szakértőt.</div>
+    </div>
+
+    <div class="col-md-6">
+      {{ cm.select_block(
+          'expert_2',
+          'expert_2',
+          szakerto_choices_2,
+          'Szakértő 2 (opcionális)',
+          '-- Válasszon --',
+          selected=case.expert_2 if case.expert_2 else ''
+      ) }}
+    </div>
+
+    <!-- Actions -->
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Hozzárendelés</button>
+      <a href="{{ url_for('auth.szignal_cases') }}"
+         class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </form>
+
+</div>
+
+<script>
+  // Bootstrap form validation
+  (function() {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(form => {
+      form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const expert1Select = document.getElementById('expert_1');
+  const expert2Select = document.getElementById('expert_2');
+
+  // Store original options for expert_2
+  const originalExpert2Options = Array.from(expert2Select.options);
+
+  function updateExpert2Options() {
+    const selected1 = expert1Select.value;
+    expert2Select.innerHTML = '';
+    originalExpert2Options.forEach(opt => {
+      // Always show empty option
+      if (!opt.value || opt.value !== selected1) {
+        expert2Select.appendChild(opt.cloneNode(true));
+      }
+    });
+    // If current value became hidden, reset selection
+    if (expert2Select.value === selected1) {
+      expert2Select.value = '';
+    }
+  }
+
+  expert1Select.addEventListener('change', updateExpert2Options);
+
+  // Run once on page load (handles edit page or when pre-filled)
+  updateExpert2Options();
+});
+</script>
+
+{% endblock %}

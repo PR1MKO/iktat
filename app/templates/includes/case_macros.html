@@ -1,0 +1,406 @@
+{# templates/includes/case_macros.html #}
+
+{% macro alapadatok(case) %}
+<!-- Adatok (merged Alapadatok + További adatok) -->
+<div class="card">
+  <div class="card-header fw-bold">Adatok</div>
+  <div class="card-body">
+    <div class="row">
+      <!-- 1st Column -->
+      <div class="col-md-4">
+        <table class="table table-borderless mb-0">
+          <tr><th>Boncszám:</th><td>{{ case.case_number }}</td></tr>
+          <tr><th>Elhunyt neve:</th><td>{{ case.deceased_name }}</td></tr>
+          <tr><th>Típus:</th><td>{{ case.case_type }}</td></tr>
+          <tr><th>Állapot:</th><td>{{ case.status }}</td></tr>
+          <tr><th>Intézmény:</th><td>{{ case.institution_name or '–' }}</td></tr>
+          <tr><th>Külső ügyirat szám:</th><td>{{ case.external_case_number or '–' }}</td></tr>
+          <tr><th>Születési idő:</th><td>{{ case.birth_date or '–' }}</td></tr>
+        </table>
+      </div>
+      <!-- 2nd Column -->
+      <div class="col-md-4">
+        <table class="table table-borderless mb-0">
+          <tr><th>Beérkezés módja:</th><td>{{ case.beerk_modja or '–' }}</td></tr>
+          <tr><th>Poszeidon:</th><td>{{ case.poszeidon or '–' }}</td></tr>
+          <tr><th>Elhunyt lánykori neve:</th><td>{{ case.lanykori_nev or '–' }}</td></tr>
+          <tr><th>Születési hely:</th><td>{{ case.szul_hely or '–' }}</td></tr>
+          <tr><th>TAJ szám:</th><td>{{ case.taj_szam or '–' }}</td></tr>
+        </table>
+      </div>
+      <!-- 3rd Column -->
+      <div class="col-md-4">
+        <table class="table table-borderless mb-0">
+          <tr><th>Regisztrálva:</th><td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') if case.registration_time else '–' }}</td></tr>
+          <tr><th>Határidő:</th><td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '–' }}</td></tr>
+          <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
+          <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
+          <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro uploaded_files(case) %}
+<div class="card h-100">
+  <div class="card-header">Feltöltött fájlok</div>
+  <div class="card-body">
+    {% if case.uploaded_file_records %}
+      <ul class="list-group list-group-flush mb-0">
+        {% for rec in case.uploaded_file_records %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">
+              {{ rec.filename }}
+            </a>
+            <small class="text-muted">
+              {{ rec.upload_time.strftime('%Y-%m-%d %H:%M') }} &mdash; {{ rec.uploader }}
+            </small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="text-muted p-3">Nincs feltöltött fájl.</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro notes_block(case) %}
+<div class="card flex-fill d-flex flex-column h-100">
+  <div class="card-header">Jegyzetek</div>
+  <div class="card-body flex-fill overflow-auto p-3">
+    {% if case.notes %}
+      {% for line in case.notes.split('\n')|reverse %}
+        <div class="alert alert-secondary py-2">{{ line }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted fst-italic">Nincsenek megjegyzések.</div>
+    {% endif %}
+
+    <label for="new_note" class="form-label visually-hidden">Új megjegyzés</label>
+    <textarea id="new_note" name="new_note"
+              class="form-control mb-2"
+              rows="2"
+              aria-label="Új megjegyzés"
+              placeholder="Új megjegyzés..."></textarea>
+    <button type="button" id="add_note_btn" class="btn btn-primary">Hozzáadás</button>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro changelog_block(changelog_entries) %}
+<div class="card flex-fill d-flex flex-column h-100">
+  <div class="card-header">Változásnapló</div>
+  <div class="card-body flex-fill overflow-auto p-3">
+    {% if changelog_entries %}
+      <ul class="list-group list-group-flush mb-0">
+        {% for entry in changelog_entries %}
+          <li class="list-group-item py-2">
+            [{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }} &ndash; {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="text-center text-muted p-3">Nincs rögzített változás.</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{# File upload block with accessible labeling #}
+{% macro file_upload_block(upload_url, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés') %}
+<form id="{{ form_id }}"
+      action="{{ upload_url }}"
+      method="post"
+      enctype="multipart/form-data"
+      class="needs-validation d-flex align-items-center"
+      novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="{{ input_name }}" class="form-label me-2 visually-hidden">{{ label }}</label>
+  <input type="file"
+         id="{{ input_name }}"
+         name="{{ input_name }}"
+         class="form-control me-2"
+         {% if multiple %}multiple{% endif %}
+         required
+         aria-label="{{ label }}"
+         title="{{ label }}">
+  <button type="submit" class="btn btn-outline-success">{{ btn_label }}</button>
+</form>
+{% endmacro %}
+
+{% macro select_block(select_id, name, options, label='Válasszon', placeholder='Válasszon...', selected=None) %}
+<label for="{{ select_id }}" class="form-label">{{ label }}</label>
+<select id="{{ select_id }}"
+        name="{{ name }}"
+        class="form-select"
+        aria-label="{{ label }}"
+        title="{{ label }}">
+  {% for value, text in options %}
+    <option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ text }}</option>
+  {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro orders_block(tox_orders) %}
+<div class="card h-100">
+  <div class="card-header">Elrendelt vizsgálatok</div>
+  <div class="card-body p-0">
+    {% if tox_orders %}
+      <table class="table mb-0">
+        <tbody>
+          {% for line in tox_orders.strip().split('\n') %}
+            {% set parts = line.split(': ',1) %}
+            {% set name = parts[0] %}
+            {% set rest = parts[1].split(' – ',1) %}
+            <tr>
+              <td>{{ name }}</td>
+              <td>{{ rest[0] }}</td>
+              <td>{{ rest|length>1 and rest[1] or '–' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="p-3 text-muted">Nincsenek elrendelt vizsgálatok.</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+{% macro notes_ajax_block(case) %}
+<div class="col-md-6 d-flex flex-column" id="notes-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {{ notes_block(case) }}
+</div>
+
+<script>
+  document.getElementById('add_note_btn').addEventListener('click', function() {
+    const txt = document.getElementById('new_note');
+    if (!txt.value.trim()) {
+      txt.classList.add('is-invalid');
+      return;
+    }
+    fetch("/cases/{{ case.id }}/add_note", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ new_note: txt.value.trim() })
+    })
+    .then(r => {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(data => {
+      const container = document.querySelector('#notes-form .card-body');
+      container.insertAdjacentHTML('afterbegin', data.html);
+      txt.value = '';
+    })
+    .catch(() => alert('Hiba a megjegyzés mentésekor'));
+  });
+</script>
+{% endmacro %}
+
+{% macro cases_filter_form(search_query='', case_type_filter='', status_filter='') %}
+<form method="get" action="{{ url_for('auth.list_cases') }}" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label for="search" class="form-label">Keress bármire</label>
+    <input type="text"
+           class="form-control"
+           id="search"
+           name="search"
+           value="{{ search_query }}"
+           aria-label="Keresés"
+           title="Keresés"
+           placeholder="Keresés...">
+  </div>
+  <div class="col-md-3">
+    {{ select_block(
+      'case_type',
+      'case_type',
+      [
+        ('', 'Mind'),
+        ('hatósági', 'hatósági'),
+        ('klinikai', 'klinikai'),
+        ('igazságügyi', 'igazságügyi'),
+        ('kórboncolási', 'kórboncolási'),
+        ('elengedés', 'elengedés')
+      ],
+      'Típus szerint',
+      'Mind',
+      selected=case_type_filter if case_type_filter else ''
+    ) }}
+  </div>
+
+  <div class="col-md-3">
+    {{ select_block(
+      'status',
+      'status',
+      [
+        ('', 'Mind'),
+        ('beérkezett', 'beérkezett'),
+        ('boncolva-leírónál', 'boncolva-leírónál'),
+        ('boncolva-orvosnál', 'boncolva-orvosnál'),
+        ('leiktatva', 'leiktatva'),
+        ('szignálva', 'szignálva'),
+        ('lezárva', 'lezárva'),
+        ('lejárt', 'lejárt'),
+        ('rendőrségre küldve', 'rendőrségre küldve'),
+        ('számla megérkezett', 'számla megérkezett'),
+        ('postafakkba', 'postafakkba')
+      ],
+      'Állapot szerint',
+      'Mind',
+      selected=status_filter if status_filter else ''
+    ) }}
+  </div>
+
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary me-2">Szűrés</button>
+    <a href="{{ url_for('auth.list_cases') }}" class="btn btn-outline-secondary">Törlés</a>
+  </div>
+</form>
+{% endmacro %}
+
+{# Macro to build query string from params dict #}
+{% macro query_string(params) %}
+  {%- if params -%}
+    ?{%- for k, v in params.items() -%}
+      {{ k }}={{ v }}{% if not loop.last %}&{% endif %}
+    {%- endfor -%}
+  {%- else -%}
+    ''
+  {%- endif -%}
+{% endmacro %}
+
+{% macro cases_table(cases, users_map, sort_by='', sort_order='', query_params={}) %}
+<div class="card shadow-sm mb-4">
+  <table class="table table-bordered align-middle mb-0">
+    <thead class="table-light">
+      <tr class="fw-bold text-secondary">
+        <th>
+          {# Prepare params for case_number sorting link #}
+          {% set new_params = query_params.copy() %}
+          {% set _ = new_params.update({'sort_by': 'case_number', 'sort_order': 'asc' if sort_by != 'case_number' or sort_order == 'desc' else 'desc'}) %}
+          <a href="{{ url_for(request.endpoint) -}}{{ query_string(new_params) }}">
+            Boncszám
+            {% if sort_by == 'case_number' %}
+              {% if sort_order == 'asc' %}
+                ▲
+              {% else %}
+                ▼
+              {% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th>Elhunyt</th>
+        <th>Típus</th>
+        <th>Állapot</th>
+        <th>Intézmény</th>
+        <th>Regisztrálva</th>
+        <th>
+          {# Prepare params for deadline sorting link #}
+          {% set new_params = query_params.copy() %}
+          {% set _ = new_params.update({'sort_by': 'deadline', 'sort_order': 'asc' if sort_by != 'deadline' or sort_order == 'desc' else 'desc'}) %}
+          <a href="{{ url_for(request.endpoint) -}}{{ query_string(new_params) }}">
+            Határidő
+            {% if sort_by == 'deadline' %}
+              {% if sort_order == 'asc' %}
+                ▲
+              {% else %}
+                ▼
+              {% endif %}
+            {% endif %}
+          </a>
+        </th>
+        <th>Szakértő 1</th>
+        <th>Szakértő 2</th>
+        <th>Leíró</th>
+        <th>Részletek</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for case in cases %}
+      <tr
+        {% if case.is_overdue %}
+          style="background-color: #8B0000; color: #fff;"
+        {% elif case.due_soon %}
+          class="table-warning"
+        {% endif %}
+      >
+        <td>{{ case.case_number }}</td>
+        <td>{{ case.deceased_name }}</td>
+        <td>{{ case.case_type }}</td>
+        <td>
+          {{ case.status }}
+          {% if case.is_overdue %}
+            <span class="badge bg-danger ms-2">KÉSÉSBEN</span>
+          {% endif %}
+        </td>
+        <td>{{ case.institution_name }}</td>
+        <td>{{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '' }}</td>
+        <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
+        <td>{{ users_map[case.expert_1].screen_name if case.expert_1 in users_map else case.expert_1 or '–' }}</td>
+        <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
+        <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
+        <td>
+          <a class="btn btn-outline-primary btn-sm"
+             href="{{ url_for('auth.case_detail', case_id=case.id) }}"
+             aria-label="Ügy megtekintése"
+             title="Ügy megtekintése">
+            Megtekintés
+          </a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="11" class="text-center">Nincs megjeleníthető ügy.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% macro dashboard_card(title, items=[], icon=None, icon_class='', empty_text='Nincs ilyen ügy.', link_view='auth.case_detail', value_format='%Y-%m-%d %H:%M') %}
+<div class="card h-100 shadow-sm mb-3">
+  <div class="card-header fw-bold">
+    {% if icon %}
+      <i class="{{ icon }} me-2 {{ icon_class }}"></i>
+    {% endif %}
+    {{ title }}
+  </div>
+  <div class="card-body p-0">
+    <ul class="list-group list-group-flush">
+      {% if items %}
+        {% for item in items %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              {% if item.__class__.__name__ not in ['tuple', 'list'] %}
+                <a href="{{ url_for(link_view, case_id=item.id) }}">{{ item.case_number }}</a>
+              {% else %}
+                {{ item[0] }}
+              {% endif %}
+            </span>
+            <span>
+              <strong>
+                {% if item.__class__.__name__ not in ['tuple', 'list'] %}
+                  {{ item.deadline.strftime(value_format) if item.deadline else '' }}
+                {% else %}
+                  {{ item[1] }}
+                {% endif %}
+              </strong>
+            </span>
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="list-group-item">{{ empty_text }}</li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
+{% endmacro %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Iroda Dashboard – CaseTracker{% endblock %}
+
+{% block content %}
+<div class="card-body d-flex align-items-center py-3">
+  <i class="bi bi-person-check fs-3 me-3 text-primary"></i>
+  <div>
+    <h3 class="h4 mb-0"><small>Kezdőlap:</small> Iroda</h4>
+  </div>
+</div>
+
+<p>
+  <a class="btn btn-success text-white d-inline-flex align-items-center" href="{{ url_for('auth.create_case') }}">
+    <i class="bi bi-plus-circle me-2"></i> Új ügy rögzítése
+  </a>
+</p>
+
+<hr>
+
+<div class="row mb-4 g-3">
+  <div class="col-md-6">
+    {{ cm.dashboard_card(
+      'Késésben (határidő lejárt)',
+      overdue_cases,
+      icon='bi bi-bell-fill',
+      icon_class='text-danger',
+      value_format='%Y-%m-%d'
+    ) }}
+  </div>
+  <div class="col-md-6">
+    {{ cm.dashboard_card(
+      '🗓 Közelgő határidők (14 napon belül)',
+      upcoming_deadlines
+    ) }}
+  </div>
+</div>
+
+<div class="row mb-4 g-3">
+	<div class="col-md-6">
+	  {{ cm.dashboard_card(
+		'📊 Gyors statisztikák',
+		items=[
+		  ('Új ügyek ma', new_today),
+		  ('Új ügyek ezen a héten', new_this_week),
+		  ('Új ügyek ebben a hónapban', new_this_month),
+		  ('Nyitott ügyek', total_open),
+		  ('Lezárt ügyek', closed_cases)
+		]
+	  ) }}
+	</div>
+  <div class="col-md-6">
+    {{ cm.dashboard_card(
+      '🟡 Állapot szerinti bontás',
+      items=status_counts_list
+    ) }}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,33 @@
+/* Compatibility overrides for Bootstrap quirks */
+
+/* 1. Fix text-size-adjust for all browsers */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* 2. Fix color-adjust for Chromium and add print-color-adjust for modern browsers */
+html, body {
+  /* color-adjust is deprecated but left for legacy reasons */
+  color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* 3. Fix text-align: -webkit-match-parent for Safari 15.4+ */
+[class*="match-parent"], [style*="text-align: -webkit-match-parent"] {
+  text-align: match-parent !important;
+}
+
+/* Utility classes for your layout */
+.sidebar-width {
+  width: 200px;
+}
+
+.login-viewport-center {
+  min-height: 60vh;
+}
+
+.login-card-max {
+  width: 100%;
+  max-width: 400px;
+}

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+<div class="container pt-2 pb-4">
+
+  <!-- Alapadatok -->
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      {{ cm.alapadatok(case) }}
+    </div>
+  </div>
+
+  <!-- Feltöltött fájlok -->
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      {{ cm.uploaded_files(case) }}
+    </div>
+  </div>
+
+  <!-- Fájl feltöltése (standard POST, NO AJAX) -->
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      <form
+        action="{{ url_for('main.leiro_upload_file', case_id=case.id) }}"
+        method="post"
+        enctype="multipart/form-data"
+        class="mb-3"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="result_file" class="form-label visually-hidden">Fájl feltöltése</label>
+        <input type="file" id="result_file" name="result_file" class="form-control d-inline w-auto" required>
+        <button type="submit" class="btn btn-outline-success ms-2">Feltöltés</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Jegyzet & Változásnapló -->
+  <div class="row mb-4">
+    <div class="col-md-6 d-flex flex-column" id="notes-form">
+      {{ cm.notes_block(case) }}
+    </div>
+    <div class="col-md-6 d-flex">
+      {{ cm.changelog_block(changelog_entries) }}
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <form method="post"
+        action="{{ url_for('main.leiro_elvegzem', case_id=case.id) }}"
+        class="row g-3 needs-validation"
+        novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-success">Elvégezve</button>
+      <a href="{{ url_for('main.leiro_ugyeim') }}"
+         class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Notes AJAX handler
+  document.getElementById('add_note_btn').addEventListener('click', function() {
+    const txt = document.getElementById('new_note');
+    if (!txt.value.trim()) {
+      txt.classList.add('is-invalid');
+      return;
+    }
+    fetch("/cases/{{ case.id }}/add_note", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ new_note: txt.value.trim() })
+    })
+    .then(r => {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(data => {
+      const container = document.querySelector('#notes-form .card-body');
+      if (container && data.html) {
+        container.insertAdjacentHTML('afterbegin', data.html);
+        txt.value = '';
+      } else {
+        alert('Nem található notes container vagy üres válasz.');
+      }
+    })
+    .catch(() => alert('Hiba a megjegyzés mentésekor'));
+  });
+
+  // Bootstrap form validation
+  (function() {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(form => {
+      form.addEventListener('submit', e => {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          form.classList.add('was-validated');
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

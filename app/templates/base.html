@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Forensic Case Tracker{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+  <style>
+    /* Ensure content sits below the fixed navbar */
+    body { padding-top: 36px; }
+    /* Sidebar custom style */
+    .sidebar-width {
+      width: 240px;
+      min-width: 180px;
+      min-height: calc(100vh - 56px); /* navbar height */
+      background: #f8f9fa;
+      box-shadow: 2px 0 8px 0 rgba(0,0,0,0.03);
+      padding-top: 24px;
+      padding-bottom: 24px;
+      position: relative;
+      z-index: 100;
+    }
+    #sidebar .nav-link {
+      color: #212529;
+      font-weight: 500;
+      border-radius: 0.5rem;
+      margin: 0.15rem 0.2rem;
+      transition: background 0.18s, color 0.18s;
+    }
+    #sidebar .nav-link.active, #sidebar .nav-link:focus, #sidebar .nav-link:hover {
+      background: #0d6efd;
+      color: #fff;
+    }
+    #sidebar .nav-item + .nav-item {
+      margin-top: 0.2rem;
+    }
+    #sidebar .nav-link .bi {
+      margin-right: 0.5em;
+      font-size: 1.1em;
+      vertical-align: -0.05em;
+    }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  {% block navbar %}
+    <!-- Top navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">IKTATÁS 2.0</a>
+        <ul class="navbar-nav ms-auto align-items-center">
+          {% if current_user.is_authenticated %}
+            <li class="nav-item me-3 text-light">{{ current_user.screen_name or current_user.username }}</li>
+            <li class="nav-item">
+              <a class="nav-link px-2 text-danger small" href="{{ url_for('auth.logout') }}">Kilépés</a>
+            </li>
+          {% else %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Bejelentkezés</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </nav>
+  {% endblock %}
+
+  <div class="d-flex flex-grow-1">
+    {% block sidebar %}
+      {% if current_user.is_authenticated %}
+        <nav id="sidebar" class="bg-light border-end sidebar-width">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.dashboard' %}active{% endif %}" href="{{ url_for('auth.dashboard') }}">
+                <i class="bi bi-house-door"></i> KEZDŐLAP
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.list_cases' %}active{% endif %}" href="{{ url_for('auth.list_cases') }}">
+                <i class="bi bi-folder2-open"></i> Összes ügy
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.closed_cases' %}active{% endif %}" href="{{ url_for('auth.closed_cases') }}">
+                <i class="bi bi-archive"></i> Lezárt ügyek
+              </a>
+            </li>
+            {% if current_user.role == 'admin' %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.admin_users' %}active{% endif %}" href="{{ url_for('auth.admin_users') }}">
+                <i class="bi bi-people"></i> Felhasználók
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    {% endblock %}
+
+    <main class="flex-grow-1 p-4">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <footer class="bg-light py-3 mt-auto">
+    <div class="container text-center">
+      <small>&copy; 2025 IKTATAS2.0</small>
+    </div>
+  </footer>
+  
+  <script>
+  document.querySelectorAll('.ajax-file-upload-form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const fileInput = form.querySelector('input[type="file"]');
+      if (!fileInput.files.length) {
+        fileInput.classList.add('is-invalid');
+        return;
+      }
+      const formData = new FormData(form);
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+      })
+      .then(resp => resp.json())
+      .then(data => {
+        if (data.success) {
+          alert('Fájl feltöltve: ' + data.filename);
+          fileInput.value = '';
+          // Optional: call a function here to reload/update the uploaded files list
+        } else {
+          alert(data.error || 'Ismeretlen hiba!');
+        }
+      })
+      .catch(() => alert('Hiba a fájl feltöltésekor!'));
+    });
+  });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

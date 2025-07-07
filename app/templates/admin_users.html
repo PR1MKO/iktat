@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Felhasználók Kezelése – CaseTracker{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Felhasználók Kezelése</h1>
+
+<p class="mb-3">
+  <a class="btn btn-primary" href="{{ url_for('auth.add_user') }}">➕ Új felhasználó</a>
+</p>
+
+<table class="table table-striped table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>
+      <th>Felhasználónév</th>
+      <th>Megjelenítési név</th>
+      <th>Szerepkör</th>
+      <th>Utolsó belépés</th>
+      <th>Műveletek</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.screen_name or '-' }}</td>
+      <td>{{ u.role }}</td>
+      <td>{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '-' }}</td>
+      <td>
+        <a class="btn btn-sm btn-outline-secondary"
+           href="{{ url_for('auth.edit_user', user_id=u.id) }}"
+           aria-label="Felhasználó szerkesztése"
+           title="Felhasználó szerkesztése">Szerkesztés</a>
+        {# Removed Ügyei button/link here #}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="text-center fst-italic">Nincs felhasználó.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

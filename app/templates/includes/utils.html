@@ -1,0 +1,3 @@
+{% macro attr(obj, name) %}
+  {{ getattr(obj, name, '') }}
+{% endmacro %}
