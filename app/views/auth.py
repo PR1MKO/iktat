@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, date
 from collections import defaultdict
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
-    flash, current_app, send_from_directory
+    flash, current_app, send_from_directory, jsonify, Response
 )
 from flask_login import (
     login_user, logout_user,
@@ -11,26 +11,22 @@ from flask_login import (
 )
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_, func
-from app.models import UploadedFile
-from app import csrf                    # ← import the CSRFProtect instance
-from app.models import User, Case, AuditLog, ChangeLog
-from app import db                      # ← import the one-and-only SQLAlchemy
+from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
+from app import csrf                    # CSRFProtect instance
+from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
 from app.audit import log_action
 from app.tasks import auto_close_stale_cases
 from ..utils.case_helpers import build_case_context
-from flask import jsonify
-from flask import request
+import csv
+import io
+import codecs
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
 @login_required
 def export_changelog_csv(case_id):
-    from flask import Response
-    import csv, io, codecs
-    from datetime import timedelta
-
     case = Case.query.get_or_404(case_id)
     entries = ChangeLog.query.filter_by(case_id=case.id).order_by(ChangeLog.timestamp).all()
 
@@ -275,25 +271,6 @@ def case_detail(case_id):
         grouped_orders=grouped_orders
     )
 
-    grouped_orders = []
-    if case.tox_orders:
-        order_map = {}
-        for line in case.tox_orders.strip().split('\n'):
-            try:
-                test_name, rest = line.split(': ', 1)
-                ts = rest.split(' – ', 1)[0]
-                order_map.setdefault(ts, []).append(test_name)
-            except ValueError:
-                continue
-        grouped_orders = sorted(order_map.items())[-5:]
-
-    return render_template(
-        'case_detail.html',
-        case=case,
-        changelog_entries=changelog_entries,
-        grouped_orders=grouped_orders
-    )
-    
 @auth_bp.route('/cases/closed')
 @login_required
 def closed_cases():
@@ -672,7 +649,6 @@ def delete_case(case_id):
 @auth_bp.route('/cases/<int:case_id>/add_note', methods=['POST'])
 @login_required
 def add_note_universal(case_id):
-    from flask import current_app
     data = request.get_json() or {}
     note_text = data.get('new_note', '').strip()
 

@@ -5,7 +5,6 @@ from flask import (
     redirect, url_for, flash, current_app,
     jsonify
 )
-from flask import jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
@@ -14,6 +13,42 @@ from app import db
 from app import csrf
 
 main_bp = Blueprint('main', __name__)
+
+# --- Helpers ---
+
+def append_note(case, note_text, author=None):
+    """Appends a note to the case.notes field with timestamp and author."""
+    ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+    if author is None:
+        author = current_user.screen_name or current_user.username
+    entry = f"[{ts} – {author}] {note_text}"
+    case.notes = (case.notes + "\n" if case.notes else "") + entry
+    return entry
+
+def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER'):
+    """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
+    if not file or not file.filename:
+        return None
+    fn = secure_filename(file.filename)
+    upload_dir = os.path.join(current_app.config[folder_key], str(case.id))
+    os.makedirs(upload_dir, exist_ok=True)
+    file.save(os.path.join(upload_dir, fn))
+    rec = UploadedFile(
+        case_id=case.id,
+        filename=fn,
+        uploader=current_user.screen_name or current_user.username,
+        upload_time=datetime.utcnow()
+    )
+    db.session.add(rec)
+    return fn
+
+def is_expert_for_case(user, case):
+    return user.username in (case.expert_1, case.expert_2)
+
+def is_describer_for_case(user, case):
+    return user.username == case.describer
+
+# --- Routes ---
 
 @main_bp.route('/ugyeim')
 @login_required
@@ -28,7 +63,7 @@ def ugyeim():
                            pending_cases=pending,
                            completed_cases=completed)
 
-# ─── AJAX add-note ───────────────────────────────────────────────
+# AJAX add-note
 @main_bp.route('/ugyeim/<int:case_id>/add_note', methods=['POST'])
 @login_required
 def add_note(case_id):
@@ -38,64 +73,50 @@ def add_note(case_id):
         return jsonify({'error':'Empty note'}), 400
 
     case = Case.query.get_or_404(case_id)
-    ts     = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-    author = current_user.screen_name or current_user.username
-    entry  = f"[{ts} – {author}] {note_text}"
-
-    case.notes = (case.notes + "\n" if case.notes else "") + entry
+    entry = append_note(case, note_text)
     db.session.commit()
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
 
-# ─── Unified elvégzem (szakértő & leíró) ─────────────────────────
+# Unified elvégzem (szakértő & leíró)
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
 def elvegzem(case_id):
     case = Case.query.get_or_404(case_id)
 
     # Authorization
-    if current_user.role=='szakértő':
-        if current_user.username not in (case.expert_1, case.expert_2):
+    if current_user.role == 'szakértő':
+        if not is_expert_for_case(current_user, case):
             flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
             return redirect(url_for('main.ugyeim'))
     else:
-        if current_user.username != case.describer:
+        if not is_describer_for_case(current_user, case):
             flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
             return redirect(url_for('main.leiro_ugyeim'))
 
-    if request.method=='POST':
+    if request.method == 'POST':
         # 1) Chat-style note
         new_note = request.form.get('new_note','').strip()
+        note_added = False
         if new_note:
-            ts     = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-            author = current_user.screen_name or current_user.username
-            entry  = f"[{ts} – {author}] {new_note}"
-            case.notes = (case.notes + "\n" if case.notes else "") + entry
-            db.session.commit()
-            flash('Megjegyzés hozzáadva.', 'success')
-            return redirect(url_for('main.elvegzem', case_id=case.id))
+            append_note(case, new_note)
+            note_added = True
 
         # 2) File upload
         f = request.files.get('result_file')
-        if f and f.filename:
-            fn = secure_filename(f.filename)
-            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
-            os.makedirs(upload_dir, exist_ok=True)
-            f.save(os.path.join(upload_dir, fn))
-            # record in UploadedFile
-            rec = UploadedFile(
-                case_id     = case.id,
-                filename    = fn,
-                uploader    = current_user.screen_name or current_user.username,
-                upload_time = datetime.utcnow()
-            )
-            db.session.add(rec)
+        file_uploaded = handle_file_upload(case, f) if f else None
 
         # 3) Status transition
+        previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
         db.session.commit()
-        flash('Művelet sikeresen rögzítve.', 'success')
+        if note_added:
+            flash('Megjegyzés hozzáadva.', 'success')
+        if file_uploaded:
+            flash(f'Fájl feltöltve: {file_uploaded}', 'success')
+        if previous_status != case.status:
+            flash('Művelet sikeresen rögzítve.', 'success')
         return redirect(
             url_for('main.ugyeim') if current_user.role=='szakértő'
             else url_for('main.leiro_ugyeim')
@@ -148,12 +169,12 @@ def elvegzem(case_id):
 
     return render_template(template, **ctx)
 
-# ─── Vizsgálat elrendelése ────────────────────────────────────────
+# Vizsgálat elrendelése
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
 @login_required
 def vizsgalat_elrendelese(case_id):
     case = Case.query.get_or_404(case_id)
-    if current_user.username not in (case.expert_1, case.expert_2):
+    if not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod vizsgálatot elrendelni.', 'danger')
         return redirect(url_for('main.ugyeim'))
 
@@ -238,17 +259,14 @@ def vizsgalat_elrendelese(case_id):
 
     return render_template('vizsgalat.html', case=case)
 
-# ─── Extra file‐upload for szakértő flow ─────────────────────────
+# Extra file‐upload for szakértő flow
 @main_bp.route('/ugyeim/<int:case_id>/upload_elvegzes_files', methods=['POST'])
 @login_required
 def upload_elvegzes_files(case_id):
     case = Case.query.get_or_404(case_id)
-    if current_user.username not in (case.expert_1, case.expert_2):
+    if not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod fájlokat feltölteni.', 'danger')
         return redirect(url_for('main.elvegzem', case_id=case.id))
-
-    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
-    os.makedirs(upload_folder, exist_ok=True)
 
     files = request.files.getlist('extra_files')
     if not files:
@@ -257,16 +275,8 @@ def upload_elvegzes_files(case_id):
 
     saved = []
     for f in files:
-        if f and f.filename:
-            fn = secure_filename(f.filename)
-            f.save(os.path.join(upload_folder, fn))
-            rec = UploadedFile(
-                case_id     = case.id,
-                filename    = fn,
-                uploader    = current_user.screen_name or current_user.username,
-                upload_time = datetime.utcnow()
-            )
-            db.session.add(rec)
+        fn = handle_file_upload(case, f)
+        if fn:
             saved.append(fn)
 
     if saved:
@@ -275,7 +285,7 @@ def upload_elvegzes_files(case_id):
 
     return redirect(url_for('main.elvegzem', case_id=case.id))
 
-# ─── Leíró’s dashboard & flow ─────────────────────────────────────
+# Leíró’s dashboard & flow
 @main_bp.route('/leiro/ugyeim')
 @login_required
 def leiro_ugyeim():
@@ -290,39 +300,28 @@ def leiro_ugyeim():
 @login_required
 def leiro_elvegzem(case_id):
     case = Case.query.get_or_404(case_id)
-    if current_user.username != case.describer:
+    if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
         return redirect(url_for('main.leiro_ugyeim'))
 
     if request.method == 'POST':
         # 1) Handle file upload
         file = request.files.get('result_file')
-        if file and file.filename:
-            fn = secure_filename(file.filename)
-            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
-            os.makedirs(upload_dir, exist_ok=True)
-            file.save(os.path.join(upload_dir, fn))
-
-            rec = UploadedFile(
-                case_id     = case.id,
-                filename    = fn,
-                uploader    = current_user.screen_name or current_user.username,
-                upload_time = datetime.utcnow()
-            )
-            db.session.add(rec)
+        file_uploaded = handle_file_upload(case, file)
 
         # 2) Add any new note
         new_note = request.form.get('new_note','').strip()
         if new_note:
-            ts     = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
-            author = current_user.screen_name or current_user.username
-            entry  = f"[{ts} – {author}] {new_note}"
-            case.notes = (case.notes + "\n" if case.notes else "") + entry
+            append_note(case, new_note)
 
         # 3) Mark the case as completed by the describer
         case.status = 'leiktatva'
         db.session.commit()
 
+        if file_uploaded:
+            flash(f'Fájl feltöltve: {file_uploaded}', 'success')
+        if new_note:
+            flash('Megjegyzés hozzáadva.', 'success')
         flash('Ügy elvégzése sikeresen rögzítve.', 'success')
         # Redirect to the listing page, not back to the same form
         return redirect(url_for('main.leiro_ugyeim'))
@@ -354,28 +353,16 @@ def assign_describer(case_id):
 @login_required
 def leiro_upload_file(case_id):
     case = Case.query.get_or_404(case_id)
-    if current_user.username != case.describer:
+    if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod!', 'danger')
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
     file = request.files.get('result_file')
-    if not file or not file.filename:
+    file_uploaded = handle_file_upload(case, file)
+    if not file_uploaded:
         flash('Nincs kiválasztott fájl!', 'warning')
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
-    fn = secure_filename(file.filename)
-    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
-    os.makedirs(upload_dir, exist_ok=True)
-    file.save(os.path.join(upload_dir, fn))
-
-    rec = UploadedFile(
-        case_id=case.id,
-        filename=fn,
-        uploader=current_user.screen_name or current_user.username,
-        upload_time=datetime.utcnow()
-    )
-    db.session.add(rec)
     db.session.commit()
-
-    flash(f'Fájl feltöltve: {fn}', 'success')
+    flash(f'Fájl feltöltve: {file_uploaded}', 'success')
     return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
