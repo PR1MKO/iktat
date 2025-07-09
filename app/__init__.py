@@ -14,8 +14,11 @@ mail  = Mail()
 csrf  = CSRFProtect()
 
 def create_app():
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI']       = 'sqlite:///forensic_cases.db'
+    # Use Flask's instance folder for a persistent DB file
+    app = Flask(__name__, instance_relative_config=True)
+    os.makedirs(app.instance_path, exist_ok=True)
+    db_path = os.path.join(app.instance_path, 'forensic_cases.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY']                    = os.environ.get('SECRET_KEY', 'supersecretkey')
 
@@ -60,6 +63,26 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+
+    _checked_tables = False
+
+    @app.before_request
+    def check_essential_tables_once():
+        nonlocal _checked_tables
+        if (
+            _checked_tables or app.config.get('TESTING')
+            or app.config.get('ENV') != 'production'
+        ):
+            return
+        from sqlalchemy import inspect
+        required_tables = [
+            'user', 'case', 'change_log', 'uploaded_file'
+        ]
+        inspector = inspect(db.engine)
+        missing = [t for t in required_tables if not inspector.has_table(t)]
+        if missing:
+            raise RuntimeError(f"Missing tables: {missing}")
+        _checked_tables = True
 
     @app.route("/")
     def hello():
