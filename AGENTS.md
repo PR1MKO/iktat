@@ -37,10 +37,6 @@ python run_tasks.py      # alternative scheduler
 
 ## Coding conventions and pre‑commit steps
 
-- Keep code formatted with `flake8` and run it before committing:
-  ```bash
-  flake8
-  ```
 - Ensure all tests pass before pushing changes:
   ```bash
   pytest
