@@ -1,0 +1,11 @@
+[flake8]
+exclude =
+    migrations,
+    app/uploads,
+    venv,
+    .venv,
+    env,
+    *.egg-info,
+    build,
+    dist
+max-line-length = 88
