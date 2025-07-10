@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
+from config import Config
 
 # ⛔️ Removed this line to prevent circular import
 # from app.models import AuditLog
@@ -17,15 +18,22 @@ mail = Mail()
 csrf = CSRFProtect()
 login_manager = LoginManager()
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     os.makedirs(app.instance_path, exist_ok=True)
 
-    # Persistent SQLite DB
-    db_path = os.path.join(app.instance_path, 'forensic_cases.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
+    # Base configuration
+    app.config.from_object(Config)
+    if test_config:
+        if isinstance(test_config, dict):
+            app.config.update(test_config)
+        else:
+            app.config.from_object(test_config)
+
+    db_name = 'test.db' if app.config.get('TESTING') else 'forensic_cases.db'
+    db_path = os.path.join(app.instance_path, db_name)
+    app.config.setdefault('SQLALCHEMY_DATABASE_URI', f'sqlite:///{db_path}')
+    app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
     # Upload config
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
