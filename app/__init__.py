@@ -7,6 +7,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
+from app.models import AuditLog
 
 # Instantiate extensions
 db = SQLAlchemy()
