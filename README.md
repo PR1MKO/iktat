@@ -11,10 +11,10 @@ This project is a modern replacement for legacy Excel workflows, with future AI-
    - `venv\Scripts\activate`
 3. Install requirements:
    - `pip install -r requirements.txt`
-4. Create a `.env` file or export these environment variables:
+4. Copy `.env.example` to `.env` and update the values or export these variables:
    - `MAIL_USERNAME` – your email account for outgoing mail
    - `MAIL_PASSWORD` – the password or app token
-   - `MAIL_DEFAULT_SENDER` – default sender address
+   - `MAIL_DEFAULT_SENDER` – default sender address (falls back to `MAIL_USERNAME` if omitted)
    - `SECRET_KEY` – Flask secret key
 5. Run the development server:
    - `flask run`
