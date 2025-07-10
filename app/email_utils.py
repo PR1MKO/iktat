@@ -13,6 +13,7 @@ def send_email(subject, recipients, body):
     sender = (
         current_app.config.get("MAIL_DEFAULT_SENDER")
         or current_app.config.get("MAIL_USERNAME")
+        or "no-reply@example.com"
     )
     msg = Message(subject, recipients=recipients, body=body, sender=sender)
     mail.send(msg)
