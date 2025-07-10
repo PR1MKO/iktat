@@ -7,7 +7,9 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
-from app.models import AuditLog
+
+# ⛔️ Removed this line to prevent circular import
+# from app.models import AuditLog
 
 # Instantiate extensions
 db = SQLAlchemy()
@@ -47,8 +49,10 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
-    # Import models after db.init_app to avoid circular imports
+    # ✅ Local import to avoid circular reference
     from .models import User
+    with app.app_context():
+        from app import models
 
     @login_manager.user_loader
     def load_user(user_id):
