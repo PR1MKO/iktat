@@ -16,4 +16,7 @@ def send_email(subject, recipients, body):
         or "no-reply@example.com"
     )
     msg = Message(subject, recipients=recipients, body=body, sender=sender)
-    mail.send(msg)
+    try:
+        mail.send(msg)
+    except Exception as e:  # pragma: no cover - log but don't fail
+        current_app.logger.error("Failed to send email: %s", e)
