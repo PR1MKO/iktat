@@ -8,25 +8,30 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 
-# ← 1) Instantiate extensions before anything else
-db    = SQLAlchemy()
-mail  = Mail()
-csrf  = CSRFProtect()
+# ⛔️ Removed this line to prevent circular import
+# from app.models import AuditLog
+
+# Instantiate extensions
+db = SQLAlchemy()
+mail = Mail()
+csrf = CSRFProtect()
+login_manager = LoginManager()
 
 def create_app():
-    # Use Flask's instance folder for a persistent DB file
     app = Flask(__name__, instance_relative_config=True)
     os.makedirs(app.instance_path, exist_ok=True)
+
+    # Persistent SQLite DB
     db_path = os.path.join(app.instance_path, 'forensic_cases.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SECRET_KEY']                    = os.environ.get('SECRET_KEY', 'supersecretkey')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'supersecretkey')
 
-    # Upload configuration
-    app.config['UPLOAD_FOLDER']      = os.path.join(app.root_path, 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    # Upload config
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 
-    # Email configuration
+    # Email config
     app.config.update(
         MAIL_SERVER='smtp.gmail.com',
         MAIL_PORT=587,
@@ -36,34 +41,34 @@ def create_app():
         MAIL_DEFAULT_SENDER='kiss.istvan.professional@gmail.com'
     )
 
-    # ← 2) Initialize each extension with the app
+    # Init extensions
     db.init_app(app)
     Migrate(app, db)
     mail.init_app(app)
     csrf.init_app(app)
-
-    # ← 3) Login manager setup
-    login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
-    # ← 4) Import models *after* db is initialized to avoid circular imports
+    # ✅ Local import to avoid circular reference
     from .models import User
+    with app.app_context():
+        from app import models
 
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ← 4b) Exempt login route from CSRF (so POST /login doesn’t require a token)
-    csrf.exempt('auth.login')
-
-    # ← 5) Now import and register your blueprints
+    # Register blueprints
     from .views.auth import auth_bp
-    from .routes       import main_bp
+    from .routes import main_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
+    # Exempt login route from CSRF (to avoid token error)
+    csrf.exempt(auth_bp)
+
+    # One-time check for essential tables
     _checked_tables = False
 
     @app.before_request
@@ -75,9 +80,7 @@ def create_app():
         ):
             return
         from sqlalchemy import inspect
-        required_tables = [
-            'user', 'case', 'change_log', 'uploaded_file'
-        ]
+        required_tables = ['user', 'case', 'change_log', 'uploaded_file']
         inspector = inspect(db.engine)
         missing = [t for t in required_tables if not inspector.has_table(t)]
         if missing:
@@ -88,14 +91,8 @@ def create_app():
     def hello():
         return "Hello, world! Forensic Case Tracker is running."
 
-    # ← 6) Jinja filter for <input type="datetime-local">
-    def datetimeformat(value):
-        return value.strftime('%Y-%m-%dT%H:%M') if value else ''
-    app.jinja_env.filters['datetimeformat'] = datetimeformat
-
-    # ← 7) Register a working getattr filter for dynamic template access
-    def safe_getattr(obj, name):
-        return getattr(obj, name, '')
-    app.jinja_env.filters['getattr'] = safe_getattr
+    # Jinja filter for <input type="datetime-local">
+    app.jinja_env.filters['datetimeformat'] = lambda value: value.strftime('%Y-%m-%dT%H:%M') if value else ''
+    app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
 
     return app
