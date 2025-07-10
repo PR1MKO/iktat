@@ -14,6 +14,21 @@ This project is a modern replacement for legacy Excel workflows, with future AI-
 4. Run the development server:
    - `flask run`
 
+## Development Setup
+
+To run the unit tests, first ensure all required packages are installed in your
+activated virtual environment. Install dependencies from `requirements.txt`:
+
+```bash
+pip install -r requirements.txt
+```
+
+Once the packages are installed you can execute the test suite with:
+
+```bash
+pytest
+```
+
 ## Folder Structure
 
 - `app/` - main application package (code, logic)
