@@ -131,18 +131,18 @@ def elvegzem(case_id):
 
     ctx = build_case_context(case)
     ctx['case'] = case
-        if current_user.role=='szakértő':
-            leiro_users = (User.query
-                .filter_by(role='leíró')
-                .order_by(User.username)
-                .all())
-            leiro_choices = [('', '(válasszon)')] + [
-                (u.username, u.screen_name or u.username) for u in leiro_users
-            ]
-            ctx['leiro_users'] = leiro_users
-            ctx['leiro_choices'] = leiro_choices
+    if current_user.role=='szakértő':
+        leiro_users = (User.query
+            .filter_by(role='leíró')
+            .order_by(User.username)
+            .all())
+        leiro_choices = [('', '(válasszon)')] + [
+            (u.username, u.screen_name or u.username) for u in leiro_users
+        ]
+        ctx['leiro_users'] = leiro_users
+        ctx['leiro_choices'] = leiro_choices
 
-        return render_template(template, **ctx)
+    return render_template(template, **ctx)
 
 # Vizsgálat elrendelése
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
