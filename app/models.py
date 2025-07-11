@@ -179,7 +179,7 @@ def _audit_case_changes(mapper, connection, target):
         old = hist.deleted[0] if hist.deleted else None
         new = hist.added[0] if hist.added else None
         
-        if field == "tox_orders":
+        if field in ("tox_orders", "notes"):
             old_lines = set(old.splitlines()) if old else set()
             new_lines = set(new.splitlines()) if new else set()
             added = [line for line in new_lines if line not in old_lines]
