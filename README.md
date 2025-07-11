@@ -16,10 +16,24 @@ This project is a modern replacement for legacy Excel workflows, with future AI-
    - `MAIL_PASSWORD` – the password or app token
    - `MAIL_DEFAULT_SENDER` – default sender address (falls back to `MAIL_USERNAME` if omitted)
    - `SECRET_KEY` – Flask secret key
+   - `SMTP_USER` – account for `test_smtp.py`
+   - `SMTP_PASSWORD` – password or token for `test_smtp.py`
 5. Run the development server:
-   - `export FLASK_APP=run.py`  # Windows: `set FLASK_APP=run.py`
+   - **Set the module for `flask run`:** `export FLASK_APP=run.py`  \
+     Windows: `set FLASK_APP=run.py`
    - `flask run`
-   - or `python run.py`
+   - or simply `python run.py` (no `FLASK_APP` needed)
+   
+### Testing SMTP settings
+
+Run `test_smtp.py` to verify your mail credentials. Set the following
+environment variables before executing the script:
+
+```bash
+export SMTP_USER=your@gmail.com
+export SMTP_PASSWORD=your-app-password
+python test_smtp.py
+```
 
 ## Development Setup
 
