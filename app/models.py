@@ -155,22 +155,30 @@ _TRACKED_FIELDS = [
 
 @event.listens_for(Case, 'before_update')
 def _audit_case_changes(mapper, connection, target):
-    sess = object_session(target)
+    """Record changes to Case fields in ChangeLog without using Session.add."""    
     state = inspect(target)
+    log_entries = []
+    
     for field in _TRACKED_FIELDS:
         hist = state.attrs[field].history
         if not hist.has_changes():
             continue
+            
         old = hist.deleted[0] if hist.deleted else None
-        new = hist.added[0]   if hist.added   else None
+        new = hist.added[0] if hist.added else None
+        
         if old != new:
-            sess.add(ChangeLog(
-                case_id    = target.id,
-                field_name = field,
-                old_value  = str(old) if old is not None else None,
-                new_value  = str(new) if new is not None else None,
-                edited_by  = getattr(current_user, 'username', 'system')
-            ))
+            log_entries.append({
+                "case_id": target.id,
+                "field_name": field,
+                "old_value": str(old) if old is not None else None,
+                "new_value": str(new) if new is not None else None,
+                "edited_by": getattr(current_user, "username", "system"),
+                "timestamp": datetime.utcnow(),
+            })
+
+    if log_entries:
+        connection.execute(ChangeLog.__table__.insert(), log_entries)           
 
 class UploadedFile(db.Model):
     __tablename__ = 'uploaded_file'
