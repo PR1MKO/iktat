@@ -120,7 +120,7 @@
         novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <div class="col-md-6 d-flex">
+    <div class="col-md-6 d-flex flex-column" id="notes-form">
       {{ cm.notes_block(case) }}
     </div>
     <div class="col-md-6 d-flex">
@@ -189,12 +189,28 @@
       txt.classList.add('is-invalid');
       return;
     }
-    let hidden = document.createElement('input');
-    hidden.type = 'hidden';
-    hidden.name = 'new_note';
-    hidden.value = txt.value.trim();
-    this.closest('form').appendChild(hidden);
-    this.closest('form').submit();
+    fetch("/cases/{{ case.id }}/add_note", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ new_note: txt.value.trim() })
+    })
+    .then(r => {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(data => {
+      const container = document.querySelector('#notes-form .card-body');
+      if (container && data.html) {
+        container.insertAdjacentHTML('afterbegin', data.html);
+        txt.value = '';
+      } else {
+        alert('Nem található notes container vagy üres válasz.');
+      }
+    })
+    .catch(() => alert('Hiba a megjegyzés mentésekor'));
   });
 
   (function() {
