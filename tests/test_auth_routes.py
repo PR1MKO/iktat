@@ -2,23 +2,9 @@ import pytest
 from flask import session
 
 from app.models import User, db
+from tests.helpers import create_user, login
 
 # --- Login Tests ---
-
-def create_user(username="admin", password="secret", role="admin"):
-    user = User(username=username, role=role)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-def login(client, username, password):
-    return client.post('/login', data={
-        'username': username,
-        'password': password
-    }, follow_redirects=False)
-
 
 def test_login_form_renders(client):
     resp = client.get('/login')

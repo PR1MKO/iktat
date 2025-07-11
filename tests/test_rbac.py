@@ -1,18 +1,6 @@
 import io
 from app.models import User, Case, db
-
-
-def create_user(username, password, role):
-    user = User(username=username, role=role)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-    return user
-
-
-def login(client, username, password):
-    return client.post('/login', data={'username': username, 'password': password})
-
+from tests.helpers import create_user, login
 
 def test_protected_routes_require_login(client):
     resp = client.get('/dashboard')
