@@ -3,7 +3,7 @@ import time
 import pytz
 from datetime import datetime
 from app import create_app, db
-from app.tasks import send_deadline_warning_emails
+from app.tasks import send_deadline_warning_email
 
 # Timezone for Budapest
 budapest = pytz.timezone("Europe/Budapest")
@@ -14,7 +14,7 @@ app.app_context().push()
 def job():
     now = datetime.now(budapest).strftime("%Y-%m-%d %H:%M")
     print(f"[{now}] Running deadline warning task...")
-    count = send_deadline_warning_emails()
+    count = send_deadline_warning_email()
     print(f"Email sent for {count} upcoming case(s).")
 
 # Schedule: 8:00 AM CET, Mon-Fri
