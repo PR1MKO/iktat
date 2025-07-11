@@ -17,7 +17,9 @@ This project is a modern replacement for legacy Excel workflows, with future AI-
    - `MAIL_DEFAULT_SENDER` – default sender address (falls back to `MAIL_USERNAME` if omitted)
    - `SECRET_KEY` – Flask secret key
 5. Run the development server:
+   - `export FLASK_APP=run.py`  # Windows: `set FLASK_APP=run.py`
    - `flask run`
+   - or `python run.py`
 
 ## Development Setup
 
