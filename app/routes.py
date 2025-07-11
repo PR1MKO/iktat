@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app,
-    jsonify
+    jsonify, abort
 )
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -72,7 +72,7 @@ def add_note(case_id):
     if not note_text:
         return jsonify({'error':'Empty note'}), 400
 
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     entry = append_note(case, note_text)
     db.session.commit()
 
@@ -83,7 +83,7 @@ def add_note(case_id):
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
 def elvegzem(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
 
     # Authorization
     if current_user.role == 'szakértő':
@@ -173,7 +173,7 @@ def elvegzem(case_id):
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
 @login_required
 def vizsgalat_elrendelese(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod vizsgálatot elrendelni.', 'danger')
         return redirect(url_for('main.ugyeim'))
@@ -263,7 +263,7 @@ def vizsgalat_elrendelese(case_id):
 @main_bp.route('/ugyeim/<int:case_id>/upload_elvegzes_files', methods=['POST'])
 @login_required
 def upload_elvegzes_files(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod fájlokat feltölteni.', 'danger')
         return redirect(url_for('main.elvegzem', case_id=case.id))
@@ -299,7 +299,7 @@ def leiro_ugyeim():
 @main_bp.route('/leiro/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
 def leiro_elvegzem(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
         return redirect(url_for('main.leiro_ugyeim'))
@@ -343,7 +343,7 @@ def leiro_elvegzem(case_id):
 @login_required
 def assign_describer(case_id):
     data = request.get_json() or {}
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     case.describer = data.get('describer')
     db.session.commit()
     flash('Leíró sikeresen hozzárendelve.', 'success')
@@ -352,7 +352,7 @@ def assign_describer(case_id):
 @main_bp.route('/leiro/ugyeim/<int:case_id>/upload_file', methods=['POST'])
 @login_required
 def leiro_upload_file(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod!', 'danger')
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))

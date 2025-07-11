@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, date
 from collections import defaultdict
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
-    flash, current_app, send_from_directory, jsonify, Response
+    flash, current_app, send_from_directory, jsonify, Response, abort
 )
 from flask_login import (
     login_user, logout_user,
@@ -27,7 +27,7 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
 @login_required
 def export_changelog_csv(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     entries = ChangeLog.query.filter_by(case_id=case.id).order_by(ChangeLog.timestamp).all()
 
     # Group entries by same editor within 5 minutes
@@ -241,7 +241,7 @@ def list_cases():
 @auth_bp.route('/cases/<int:case_id>')
 @login_required
 def case_detail(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
 
     changelog_entries = (
         ChangeLog.query
@@ -372,7 +372,7 @@ def create_case():
 @auth_bp.route('/cases/<int:case_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_case(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
     if request.method == 'POST':
@@ -390,7 +390,7 @@ def edit_case(case_id):
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
 def upload_file(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
@@ -465,7 +465,7 @@ def assign_pathologist(case_id):
     if current_user.role != 'szignáló':
         flash("Nincs jogosultságod hozzárendelni.", 'danger')
         return redirect(url_for('auth.dashboard'))
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     # First expert: only "-- Válasszon --" as empty
     szakerto_choices = [('', '-- Válasszon --')] + [
@@ -555,7 +555,7 @@ def edit_user(user_id):
         flash("Nincs jogosultságod.", 'danger')
         return redirect(url_for('auth.dashboard'))
 
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
 
     if request.method == 'POST':
         old_data = (user.username, user.role, user.screen_name)
@@ -591,7 +591,7 @@ def delete_user(user_id):
     if current_user.role != 'admin':
         flash("Nincs jogosultságod.", 'danger')
         return redirect(url_for('auth.dashboard'))
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id) or abort(404)
     if user.id == current_user.id:
         flash("Saját magad nem törölheted.", 'warning')
     else:
@@ -638,7 +638,7 @@ def delete_case(case_id):
         flash("Nincs jogosultságod.", 'danger')
         return redirect(url_for('auth.dashboard'))
 
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
 
     ChangeLog.query.filter_by(case_id=case.id).delete()
 
@@ -659,7 +659,7 @@ def add_note_universal(case_id):
         current_app.logger.warning("Empty note submitted.")
         return jsonify({'error': 'Empty note'}), 400
 
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id) or abort(404)
     ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
     author = current_user.screen_name or current_user.username
     entry = f"[{ts} – {author}] {note_text}"

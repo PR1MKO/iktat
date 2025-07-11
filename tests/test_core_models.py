@@ -58,7 +58,7 @@ def test_case_defaults(app):
         db.session.add(case)
         db.session.commit()
 
-        loaded = Case.query.get(case.id)
+        loaded = db.session.get(Case, case.id)
         assert loaded.status == "new"
         assert loaded.registration_time is not None
 
@@ -88,7 +88,7 @@ def test_uploaded_file_association(app):
         db.session.add(uf)
         db.session.commit()
 
-        loaded_case = Case.query.get(case.id)
+        loaded_case = db.session.get(Case, case.id)
         assert len(loaded_case.uploaded_file_records) == 1
         rec = loaded_case.uploaded_file_records[0]
         assert rec.filename == "report.txt"
