@@ -391,6 +391,9 @@ def edit_case(case_id):
 @login_required
 def upload_file(case_id):
     case = Case.query.get_or_404(case_id)
+    if case.status == 'lezárva':
+        flash('Case is finalized. Uploads are disabled.', 'danger')
+        return redirect(url_for('auth.case_detail', case_id=case_id))
     upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
     os.makedirs(upload_folder, exist_ok=True)
     files = request.files.getlist('file')
