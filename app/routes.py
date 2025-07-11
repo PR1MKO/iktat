@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from app.utils.time_utils import now_local
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app,
@@ -19,7 +20,7 @@ main_bp = Blueprint('main', __name__)
 
 def append_note(case, note_text, author=None):
     """Appends a note to the case.notes field with timestamp and author."""
-    ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+    ts = now_local().strftime('%Y-%m-%d %H:%M')
     if author is None:
         author = current_user.screen_name or current_user.username
     entry = f"[{ts} – {author}] {note_text}"
@@ -154,7 +155,7 @@ def vizsgalat_elrendelese(case_id):
         return redirect(url_for('main.ugyeim'))
 
     if request.method == 'POST':
-        now    = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+        now    = now_local().strftime('%Y-%m-%d %H:%M')
         author = current_user.screen_name or current_user.username
         entries = []
 

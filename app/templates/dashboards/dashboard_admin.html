@@ -92,7 +92,7 @@
           {% if recent_logins %}
             {% for entry in recent_logins %}
               <li class="list-group-item">
-                {{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }} – {{ entry.username }}
+                {{ entry.timestamp|localtime }} – {{ entry.username }}
               </li>
             {% endfor %}
           {% else %}

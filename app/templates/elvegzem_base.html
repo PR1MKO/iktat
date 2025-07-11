@@ -29,8 +29,8 @@
         </div>
         <div class="col-md-6">
           <table class="table table-borderless mb-0">
-            <tr><th>Regisztrálva:</th><td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') if case.registration_time else '–' }}</td></tr>
-            <tr><th>Határidő:</th><td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '–' }}</td></tr>
+            <tr><th>Regisztrálva:</th><td>{{ case.registration_time|localtime if case.registration_time else '–' }}</td></tr>
+            <tr><th>Határidő:</th><td>{{ case.deadline|localtime if case.deadline else '–' }}</td></tr>
             <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
             <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
             <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
@@ -58,7 +58,7 @@
               {% for rec in case.uploaded_file_records %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
-                  <small class="text-muted">{{ rec.upload_time.strftime('%Y-%m-%d %H:%M') }} — {{ rec.uploader }}</small>
+                  <small class="text-muted">{{ rec.upload_time|localtime }} — {{ rec.uploader }}</small>
                 </li>
               {% endfor %}
             </ul>
@@ -92,7 +92,7 @@
           <div class="list-group list-group-flush">
             {% for entry in changelog_entries %}
               <div class="list-group-item py-2">
-                [{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+                [{{ entry.timestamp|localtime }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
               </div>
             {% endfor %}
             {% if not changelog_entries %}

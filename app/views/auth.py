@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, date
+from app.utils.time_utils import now_local
 from collections import defaultdict
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
@@ -643,7 +644,7 @@ def add_note_universal(case_id):
         return jsonify({'error': 'Empty note'}), 400
 
     case = db.session.get(Case, case_id) or abort(404)
-    ts = datetime.utcnow().strftime('%Y-%m-%d %H:%M')
+    ts = now_local().strftime('%Y-%m-%d %H:%M')
     author = current_user.screen_name or current_user.username
     entry = f"[{ts} – {author}] {note_text}"
 

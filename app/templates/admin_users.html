@@ -28,7 +28,7 @@
       <td>{{ u.username }}</td>
       <td>{{ u.screen_name or '-' }}</td>
       <td>{{ u.role }}</td>
-      <td>{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else '-' }}</td>
+      <td>{{ u.last_login|localtime if u.last_login else '-' }}</td>
       <td>
         <a class="btn btn-sm btn-outline-secondary"
            href="{{ url_for('auth.edit_user', user_id=u.id) }}"

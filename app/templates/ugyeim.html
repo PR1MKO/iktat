@@ -23,8 +23,8 @@
             <td>{{ case.case_number }}</td>
             <td>{{ case.deceased_name }}</td>
             <td>{{ case.status }}</td>
-            <td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '' }}</td>
+            <td>{{ case.registration_time|localtime }}</td>
+            <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
             <td>
               <a href="{{ url_for('auth.case_detail', case_id=case.id) }}"
                  class="btn btn-outline-primary btn-sm">
@@ -63,8 +63,8 @@
             <td>{{ case.case_number }}</td>
             <td>{{ case.deceased_name }}</td>
             <td>{{ case.status }}</td>
-            <td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '' }}</td>
+            <td>{{ case.registration_time|localtime }}</td>
+            <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
            <td>
   <a href="{{ url_for('auth.case_detail', case_id=case.id) }}"
      class="btn btn-outline-primary btn-sm">

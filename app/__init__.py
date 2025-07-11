@@ -1,14 +1,17 @@
 # app/__init__.py
 
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask
+import pytz
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from config import Config
+from app.utils.time_utils import BUDAPEST_TZ
 
 # ⛔️ Removed this line to prevent circular import
 # from app.models import AuditLog
@@ -106,6 +109,15 @@ def create_app(test_config=None):
     # Jinja filter for <input type="datetime-local">
     app.jinja_env.filters['datetimeformat'] = lambda value: value.strftime('%Y-%m-%dT%H:%M') if value else ''
     app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
+
+    def localtime(value: datetime | None):
+        if not value:
+            return ''
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=pytz.utc)
+        return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
+
+    app.jinja_env.filters['localtime'] = localtime
 
     return app
 

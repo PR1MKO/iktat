@@ -31,8 +31,8 @@
       <!-- 3rd Column -->
       <div class="col-md-4">
         <table class="table table-borderless mb-0">
-          <tr><th>Regisztrálva:</th><td>{{ case.registration_time.strftime('%Y-%m-%d %H:%M') if case.registration_time else '–' }}</td></tr>
-          <tr><th>Határidő:</th><td>{{ case.deadline.strftime('%Y-%m-%d %H:%M') if case.deadline else '–' }}</td></tr>
+          <tr><th>Regisztrálva:</th><td>{{ case.registration_time|localtime if case.registration_time else '–' }}</td></tr>
+          <tr><th>Határidő:</th><td>{{ case.deadline|localtime if case.deadline else '–' }}</td></tr>
           <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
           <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
           <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
@@ -55,7 +55,7 @@
               {{ rec.filename }}
             </a>
             <small class="text-muted">
-              {{ rec.upload_time.strftime('%Y-%m-%d %H:%M') }} &mdash; {{ rec.uploader }}
+              {{ rec.upload_time|localtime }} &mdash; {{ rec.uploader }}
             </small>
           </li>
         {% endfor %}
@@ -98,7 +98,7 @@
       <ul class="list-group list-group-flush mb-0">
         {% for entry in changelog_entries %}
           <li class="list-group-item py-2">
-            [{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }} &ndash; {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+            [{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}] {{ entry.new_value or '–' }}
           </li>
         {% endfor %}
       </ul>
