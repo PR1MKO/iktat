@@ -2,7 +2,7 @@ import schedule
 import time
 import pytz
 from datetime import datetime
-from app import create_app, db
+from app import create_app
 from app.tasks import send_deadline_warning_email
 
 # Timezone for Budapest
