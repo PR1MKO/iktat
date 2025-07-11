@@ -10,3 +10,4 @@ def test_create_user(app):
         loaded = User.query.filter_by(username="testuser").first()
         assert loaded is not None
         assert loaded.check_password("testpass")
+

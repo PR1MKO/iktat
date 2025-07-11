@@ -41,4 +41,3 @@ python run_tasks.py      # alternative scheduler
   ```bash
   pytest
   ```
-  

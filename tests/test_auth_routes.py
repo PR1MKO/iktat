@@ -110,3 +110,4 @@ def test_register_duplicate_username(client, app):
         assert resp.status_code == 200
         with app.app_context():
             assert User.query.filter_by(username='dup').count() == 1
+            

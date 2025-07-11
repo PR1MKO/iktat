@@ -112,3 +112,4 @@ def test_change_log_created_on_update(app):
         assert log.new_value == "New"
         assert log.edited_by == "system"
         assert log.case == case
+

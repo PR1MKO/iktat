@@ -12,3 +12,4 @@ def test_send_email_handles_error(caplog):
         with patch.object(mail, "send", side_effect=Exception("fail")):
             send_email("subject", ["test@example.com"], "body")
         assert "Failed to send email" in caplog.text
+

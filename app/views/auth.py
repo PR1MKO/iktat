@@ -670,3 +670,4 @@ def add_note_universal(case_id):
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     current_app.logger.info(f"Returning note HTML: {html}")
     return jsonify({'html': html})
+

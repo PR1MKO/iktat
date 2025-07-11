@@ -365,4 +365,5 @@ def leiro_upload_file(case_id):
 
     db.session.commit()
     flash(f'Fájl feltöltve: {file_uploaded}', 'success')
-    return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
+    return redirect(url_for('main.leiro_elvegzem', case_id=case.id))    
+    

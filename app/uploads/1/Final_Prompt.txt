@@ -53,3 +53,4 @@ You are a Hungarian-speaking medical text specialist. A feladatod az, hogy a fel
 
 ––––––––––––––––––––  
 Ez a prompt biztosítja, hogy a kész dokumentum teljesen megegyezzen Dr. Németi Balázs eredeti RTF-sablonjának formázásával, szerkezetével és stílusával, minimális kézi utómunkára hagyva helyet a hiányzó kezdeti szavaknak.
+

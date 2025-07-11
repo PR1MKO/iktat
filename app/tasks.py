@@ -48,3 +48,4 @@ def send_deadline_warning_email():
     )
 
     return len(cases_due)
+

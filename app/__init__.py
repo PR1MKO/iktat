@@ -108,3 +108,4 @@ def create_app(test_config=None):
     app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
 
     return app
+

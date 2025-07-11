@@ -43,3 +43,4 @@ class EditCaseForm(FlaskForm):
     expert_2 = SelectField('Szakértő 2', coerce=str, validators=[Optional()])
     describer = SelectField('Leíró', coerce=str, validators=[Optional()])
     notes = TextAreaField('Megjegyzés', validators=[Optional()])
+

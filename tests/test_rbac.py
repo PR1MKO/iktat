@@ -73,3 +73,4 @@ def test_szakerto_permissions(client, app):
         # cannot access admin or assignment routes
         assert client.get('/admin/users').status_code == 302
         assert client.get('/szignal_cases').status_code == 302
+

@@ -16,3 +16,4 @@ def log_action(action: str, details: str = None):
     )
     db.session.add(log_entry)
     db.session.commit()
+

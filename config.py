@@ -15,4 +15,6 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     @staticmethod
     def init_app(app):
-        pass
+        pass    
+    
+    

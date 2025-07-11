@@ -26,3 +26,4 @@ def build_case_context(case):
         'grouped_orders': grouped_orders,
         'changelog_entries': changelog_entries
     }
+
