@@ -178,6 +178,31 @@ def _audit_case_changes(mapper, connection, target):
             
         old = hist.deleted[0] if hist.deleted else None
         new = hist.added[0] if hist.added else None
+        
+        if field == "tox_orders":
+            old_lines = set(old.splitlines()) if old else set()
+            new_lines = set(new.splitlines()) if new else set()
+            added = [line for line in new_lines if line not in old_lines]
+            for line in added:
+                log_entries.append({
+                    "case_id": target.id,
+                    "field_name": field,
+                    "old_value": None,
+                    "new_value": line,
+                    "edited_by": getattr(current_user, "username", "system"),
+                    "timestamp": datetime.now(pytz.UTC),
+                })
+            continue
+
+        if old != new:
+            log_entries.append({
+                "case_id": target.id,
+                "field_name": field,
+                "old_value": str(old) if old is not None else None,
+                "new_value": str(new) if new is not None else None,
+                "edited_by": getattr(current_user, "username", "system"),
+                "timestamp": datetime.now(pytz.UTC),
+            })
 
     if log_entries:
         connection.execute(ChangeLog.__table__.insert(), log_entries)           
