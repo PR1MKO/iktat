@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime, timedelta, date
+import pytz
 
 from app.models import User, Case, UploadedFile, ChangeLog, db
 from app.tasks import auto_close_stale_cases
@@ -42,7 +43,7 @@ def test_case_creation_full(app):
             institution_name="Inst",
             external_case_number="E1",
             birth_date=date(2000, 1, 1),
-            deadline=datetime.utcnow() + timedelta(days=1),
+            deadline=datetime.now(pytz.UTC) + timedelta(days=1),
         )
         db.session.add(case)
         db.session.commit()
@@ -65,7 +66,7 @@ def test_case_defaults(app):
 
 def test_case_deadline_auto_close(app):
     with app.app_context():
-        past_deadline = datetime.utcnow() - timedelta(days=1)
+        past_deadline = datetime.now(pytz.UTC) - timedelta(days=1)
         case = Case(case_number="CASE3", deadline=past_deadline, status="open")
         db.session.add(case)
         db.session.commit()

@@ -4,6 +4,7 @@ from flask_login import UserMixin, current_user
 from app import db                # ← your single SQLAlchemy instance
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import pytz
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import object_session
 
@@ -29,8 +30,11 @@ class Case(db.Model):
     institution_name     = db.Column(db.String(128))
     external_case_number = db.Column(db.String(64))
     birth_date           = db.Column(db.Date)
-    registration_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    deadline             = db.Column(db.DateTime)
+    registration_time    = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(pytz.UTC)
+    )
+    deadline             = db.Column(db.DateTime(timezone=True))
     expert_1             = db.Column(db.String(128))
     expert_2             = db.Column(db.String(128))
     describer            = db.Column(db.String(128))
@@ -119,7 +123,12 @@ class Case(db.Model):
 
 class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True, nullable=False)
+    timestamp = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(pytz.UTC),
+        index=True,
+        nullable=False,
+    )
     user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     username  = db.Column(db.String(64), nullable=False)
     role      = db.Column(db.String(20), nullable=False)
@@ -138,7 +147,10 @@ class ChangeLog(db.Model):
     old_value  = db.Column(db.Text)
     new_value  = db.Column(db.Text)
     edited_by  = db.Column(db.String(64), nullable=False)
-    timestamp  = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp  = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(pytz.UTC)
+    )
 
     case = db.relationship('Case', backref=db.backref('change_logs', lazy='dynamic'))
 
@@ -174,7 +186,7 @@ def _audit_case_changes(mapper, connection, target):
                 "old_value": str(old) if old is not None else None,
                 "new_value": str(new) if new is not None else None,
                 "edited_by": getattr(current_user, "username", "system"),
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(pytz.UTC),
             })
 
     if log_entries:
@@ -185,7 +197,11 @@ class UploadedFile(db.Model):
     id          = db.Column(db.Integer, primary_key=True)
     case_id     = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     filename    = db.Column(db.String(256), nullable=False)
-    upload_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    upload_time = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(pytz.UTC),
+        nullable=False,
+    )
     uploader    = db.Column(db.String(64), nullable=False)
 
     case = db.relationship('Case', back_populates='uploaded_file_records')

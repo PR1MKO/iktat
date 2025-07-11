@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pytz
 from app.utils.time_utils import now_local
 from flask import (
     Blueprint, render_template, request,
@@ -39,7 +40,7 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER'):
         case_id=case.id,
         filename=fn,
         uploader=current_user.screen_name or current_user.username,
-        upload_time=datetime.utcnow()
+        upload_time=datetime.now(pytz.UTC)
     )
     db.session.add(rec)
     return fn

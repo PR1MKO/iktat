@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, date
+import pytz
 from app.utils.time_utils import now_local
 from collections import defaultdict
 from flask import (
@@ -111,10 +112,10 @@ def dashboard():
     if num_closed:
         flash(f"{num_closed} case(s) auto-closed as 'lejárt'.", "info")
 
-    now = datetime.utcnow()
-    today_start = datetime(now.year, now.month, now.day)
+    now = datetime.now(pytz.UTC)
+    today_start = datetime(now.year, now.month, now.day, tzinfo=pytz.UTC)
     week_start = today_start - timedelta(days=now.weekday())
-    month_start = datetime(now.year, now.month, 1)
+    month_start = datetime(now.year, now.month, 1, tzinfo=pytz.UTC)
 
     total_open    = Case.query.filter(Case.status != 'lezárva').count()
     new_today     = Case.query.filter(Case.registration_time >= today_start).count()
@@ -300,9 +301,9 @@ def create_case():
             birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
         reg_time_str = request.form.get('registration_time')
         if reg_time_str:
-            registration_time = datetime.strptime(reg_time_str, '%Y-%m-%dT%H:%M')
+            registration_time = datetime.strptime(reg_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=pytz.UTC)
         else:
-            registration_time = datetime.utcnow()
+            registration_time = datetime.now(pytz.UTC)
         year = registration_time.year
         count = Case.query.filter(
             func.strftime("%Y", Case.registration_time) == str(year)
@@ -393,7 +394,7 @@ def upload_file(case_id):
                 case_id   = case.id,
                 filename  = fn,
                 uploader  = current_user.username,
-                upload_time = datetime.utcnow()
+                upload_time = datetime.now(pytz.UTC)
             )
             db.session.add(upload_rec)
             saved.append(fn)

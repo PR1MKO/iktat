@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+import pytz
 from app.models import db, Case, User
 from app.audit import log_action
 from app.email_utils import send_email
 
 def auto_close_stale_cases():
-    now = datetime.utcnow()
+    now = datetime.now(pytz.UTC)
 
     # Consider all cases with a past deadline as stale
     stale_cases = Case.query.filter(Case.deadline < now).all()
@@ -21,7 +22,7 @@ def auto_close_stale_cases():
     return count
 
 def send_deadline_warning_email():
-    today = datetime.utcnow()
+    today = datetime.now(pytz.UTC)
     upcoming = today + timedelta(days=14)
 
     cases_due = Case.query.filter(
