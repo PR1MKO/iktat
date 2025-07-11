@@ -3,7 +3,7 @@ import schedule
 import pytz
 from datetime import datetime
 from app import create_app
-from app.tasks import send_deadline_warning_emails
+from app.tasks import send_deadline_warning_email
 
 app = create_app()
 
