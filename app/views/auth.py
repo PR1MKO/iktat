@@ -243,32 +243,15 @@ def list_cases():
 def case_detail(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
-    changelog_entries = (
-        ChangeLog.query
-                 .filter_by(case_id=case.id)
-                 .filter(ChangeLog.field_name != 'notes')  # exclude notes from changelog
-                 .order_by(ChangeLog.timestamp.desc())
-                 .limit(5)
-                 .all()
-    )
-
-    grouped_orders = []
-    if case.tox_orders:
-        order_map = {}
-        for line in case.tox_orders.strip().split('\n'):
-            try:
-                test_name, rest = line.split(': ', 1)
-                ts = rest.split(' – ', 1)[0]
-                order_map.setdefault(ts, []).append(test_name)
-            except ValueError:
-                continue
-        grouped_orders = sorted(order_map.items())[-5:]
+    ctx = build_case_context(case)
+    ctx['changelog_entries'] = [
+        e for e in ctx['changelog_entries'] if e.field_name != 'notes'
+    ]
 
     return render_template(
         'case_detail.html',
         case=case,
-        changelog_entries=changelog_entries,
-        grouped_orders=grouped_orders
+        **ctx
     )
 
 @auth_bp.route('/cases/closed')

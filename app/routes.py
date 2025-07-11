@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 from app.models import User, Case, ChangeLog, UploadedFile
 from app import db
 from app import csrf
+from app.utils.case_helpers import build_case_context
 
 main_bp = Blueprint('main', __name__)
 
@@ -128,46 +129,20 @@ def elvegzem(case_id):
         else 'elvegzem_leiro.html'
     )
 
-    # build grouped_orders (latest-first, up to 5)
-    grouped_orders = []
-    if case.tox_orders:
-        order_map = {}
-        for line in case.tox_orders.strip().split('\n'):
-            try:
-                test_name, rest = line.split(': ',1)
-            except ValueError:
-                continue
-            ts = rest.split(' – ',1)[0]
-            order_map.setdefault(ts,[]).append(test_name)
-        grouped_orders = sorted(order_map.items(),
-                                key=lambda x:x[0],
-                                reverse=True)[:5]
+    ctx = build_case_context(case)
+    ctx['case'] = case
+        if current_user.role=='szakértő':
+            leiro_users = (User.query
+                .filter_by(role='leíró')
+                .order_by(User.username)
+                .all())
+            leiro_choices = [('', '(válasszon)')] + [
+                (u.username, u.screen_name or u.username) for u in leiro_users
+            ]
+            ctx['leiro_users'] = leiro_users
+            ctx['leiro_choices'] = leiro_choices
 
-    # fetch latest 5 ChangeLog entries
-    changelog_entries = (ChangeLog.query
-        .filter_by(case_id=case.id)
-        .order_by(ChangeLog.timestamp.desc())
-        .limit(5)
-        .all()
-    )
-
-    ctx = {
-        'case': case,
-        'grouped_orders': grouped_orders,
-        'changelog_entries': changelog_entries
-    }
-    if current_user.role=='szakértő':
-        leiro_users = (User.query
-            .filter_by(role='leíró')
-            .order_by(User.username)
-            .all())
-        leiro_choices = [('', '(válasszon)')] + [
-            (u.username, u.screen_name or u.username) for u in leiro_users
-        ]
-        ctx['leiro_users'] = leiro_users
-        ctx['leiro_choices'] = leiro_choices
-
-    return render_template(template, **ctx)
+        return render_template(template, **ctx)
 
 # Vizsgálat elrendelése
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
