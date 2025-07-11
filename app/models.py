@@ -178,16 +178,6 @@ def _audit_case_changes(mapper, connection, target):
             
         old = hist.deleted[0] if hist.deleted else None
         new = hist.added[0] if hist.added else None
-        
-        if old != new:
-            log_entries.append({
-                "case_id": target.id,
-                "field_name": field,
-                "old_value": str(old) if old is not None else None,
-                "new_value": str(new) if new is not None else None,
-                "edited_by": getattr(current_user, "username", "system"),
-                "timestamp": datetime.now(pytz.UTC),
-            })
 
     if log_entries:
         connection.execute(ChangeLog.__table__.insert(), log_entries)           
