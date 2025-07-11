@@ -1,6 +1,7 @@
 # app/__init__.py
 
 import os
+from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -17,6 +18,9 @@ db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
 login_manager = LoginManager()
+
+# Load environment variables from .env if present
+load_dotenv()
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
