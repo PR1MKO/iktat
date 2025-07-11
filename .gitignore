@@ -5,3 +5,6 @@ instance/
 *.db
 .env
 app/uploads/
+# Ignore generated file lists
+*list.txt
+*structure.txt
