@@ -29,3 +29,21 @@ def test_note_changelog_records_incrementally(app, monkeypatch):
         assert logs[1].new_value == second
         assert logs[0].new_value != logs[1].new_value
         
+
+def test_duplicate_note_entries_create_separate_logs(app, monkeypatch):
+    base_time = datetime(2024, 1, 1, 10, 0, tzinfo=pytz.timezone('Europe/Budapest'))
+    monkeypatch.setattr('app.routes.now_local', lambda: base_time)
+    with app.app_context():
+        case = Case(case_number="NOTE2")
+        db.session.add(case)
+        db.session.commit()
+
+        first = append_note(case, 'repeat', author='U1')
+        db.session.commit()
+
+        second = append_note(case, 'repeat', author='U1')
+        db.session.commit()
+
+        logs = ChangeLog.query.filter_by(case_id=case.id, field_name="notes").order_by(ChangeLog.id).all()
+        assert len(logs) == 2
+        assert logs[0].new_value == logs[1].new_value == first

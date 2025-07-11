@@ -180,9 +180,9 @@ def _audit_case_changes(mapper, connection, target):
         new = hist.added[0] if hist.added else None
         
         if field in ("tox_orders", "notes"):
-            old_lines = set(old.splitlines()) if old else set()
-            new_lines = set(new.splitlines()) if new else set()
-            added = [line for line in new_lines if line not in old_lines]
+            old_lines = old.splitlines() if old else []
+            new_lines = new.splitlines() if new else []
+            added = new_lines[len(old_lines):]
             for line in added:
                 log_entries.append({
                     "case_id": target.id,
