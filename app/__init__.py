@@ -118,6 +118,27 @@ def create_app(test_config=None):
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     app.jinja_env.filters['localtime'] = localtime
+    
+    # --- Changelog helpers -------------------------------------------------
+    import re
+
+    TOX_ORDER_RE = re.compile(
+        r"^(?P<name>.+?) rendelve: (?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>.+)$"
+    )
+
+    def parse_tox_changelog(value: str | None):
+        if not value:
+            return None
+        m = TOX_ORDER_RE.match(value.strip())
+        if not m:
+            return None
+        return {
+            "name": m.group("name"),
+            "ts": m.group("ts"),
+            "user": m.group("user"),
+        }
+
+    app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
 
     return app
 

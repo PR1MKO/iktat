@@ -98,7 +98,16 @@
       <ul class="list-group list-group-flush mb-0">
         {% for entry in changelog_entries %}
           <li class="list-group-item py-2">
-            [{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+            {% if entry.field_name == 'tox_orders' %}
+              {% set parsed = entry.new_value | parse_tox_changelog %}
+              {% if parsed %}
+                <span class="text-muted small">[{{ parsed.ts }} &ndash; {{ parsed.user }}]</span> {{ parsed.name }} rendelve
+              {% else %}
+                <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+              {% endif %}
+            {% else %}
+              <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+            {% endif %}
           </li>
         {% endfor %}
       </ul>
