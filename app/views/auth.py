@@ -264,7 +264,6 @@ def closed_cases():
     return render_template('closed_cases.html', cases=closed)
 
 @auth_bp.route('/cases/new', methods=['GET','POST'])
-@csrf.exempt
 @login_required
 def create_case():
     class DummyCase:
