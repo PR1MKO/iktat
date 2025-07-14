@@ -341,7 +341,20 @@ def create_case():
         )
         new_case.deadline = registration_time + timedelta(days=30)
         db.session.add(new_case)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return render_template(
+                'create_case.html',
+                szakerto_users=szakerto_users,
+                leiro_users=leiro_users,
+                szakerto_choices=szakerto_choices,
+                leiro_choices=leiro_choices,
+                case=case
+            )
         flash('New case created.', 'success')
         return redirect(url_for('auth.case_detail', case_id=new_case.id))
 
@@ -362,7 +375,13 @@ def edit_case(case_id):
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
     if request.method == 'POST':
         # ... existing field handling ...
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return render_template('edit_case.html', case=case, szakerto_users=szakerto_users, leiro_users=leiro_users)
         flash('Az ügy módosításai elmentve.', 'success')
         return redirect(url_for('auth.case_detail', case_id=case.id))
     return render_template(
@@ -389,7 +408,12 @@ def upload_file(case_id):
     for f in files:
         fn = secure_filename(f.filename)
         if fn:
-            f.save(os.path.join(upload_folder, fn))
+            try:
+                f.save(os.path.join(upload_folder, fn))
+            except Exception as e:
+                current_app.logger.error(f"File save failed: {e}")
+                flash("A fájl mentése nem sikerült.", "danger")
+                continue
             upload_rec = UploadedFile(
                 case_id   = case.id,
                 filename  = fn,
@@ -401,7 +425,13 @@ def upload_file(case_id):
             log_action("File uploaded", f"{fn} for case {case.case_number}")
     if saved:
         case.uploaded_files = ','.join(filter(None, (case.uploaded_files or '').split(',') + saved))
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
     flash(f'Uploaded: {", ".join(saved)}', 'success')
     if request.referrer and '/ugyeim/' in request.referrer:
         return redirect(url_for('main.elvegzem', case_id=case_id))
@@ -472,7 +502,13 @@ def assign_pathologist(case_id):
         case.expert_1 = expert_1
         case.expert_2 = expert_2
         case.status = 'szignálva'
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return redirect(url_for('auth.assign_pathologist', case_id=case.id))
         log_action(
             "Expert(s) assigned",
             f"{expert_1}" + (f", {expert_2}" if expert_2 else "") + f" for case {case.case_number}"
@@ -527,7 +563,13 @@ def add_user():
             user = User(username=username, role=role)
             user.set_password(password)
             db.session.add(user)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Database error: {e}")
+                flash("Valami hiba történt. Próbáld újra.", "danger")
+                return render_template('add_user.html')
             log_action("User created", f"{username} ({role})")
             flash("Felhasználó létrehozva.", 'success')
             return redirect(url_for('auth.admin_users'))
@@ -552,7 +594,13 @@ def edit_user(user_id):
         if password:
             user.set_password(password)
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return render_template('edit_user.html', user=user, assigned_cases=assigned_cases)
 
         log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
         flash("Felhasználó adatai frissítve.", 'success')
@@ -582,7 +630,13 @@ def delete_user(user_id):
     else:
         log_action("User deleted", f"{user.username}")
         db.session.delete(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return redirect(url_for('auth.admin_users'))
         flash("Felhasználó törölve.", 'success')
     return redirect(url_for('auth.admin_users'))
 
@@ -629,7 +683,13 @@ def delete_case(case_id):
 
     log_action("Case deleted", f"{case.case_number}")
     db.session.delete(case)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return redirect(url_for('auth.manage_cases'))
 
     flash(f"Eset {case.case_number} törölve.", 'success')
     return redirect(url_for('auth.manage_cases'))
@@ -650,7 +710,13 @@ def add_note_universal(case_id):
     entry = f"[{ts} – {author}] {note_text}"
 
     case.notes = (case.notes + "\n" if case.notes else "") + entry
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return jsonify({'error': 'DB error'}), 500
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     current_app.logger.info(f"Returning note HTML: {html}")

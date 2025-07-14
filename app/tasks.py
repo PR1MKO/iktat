@@ -18,7 +18,15 @@ def auto_close_stale_cases():
             log_action("Case auto-closed", f"{case.case_number}: {old_status} → lejárt")
             count += 1
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        # Logging without flash; may run without request context
+        from flask import current_app, has_request_context, flash
+        current_app.logger.error(f"Database error: {e}")
+        if has_request_context():
+            flash("Valami hiba történt. Próbáld újra.", "danger")
     return count
 
 def send_deadline_warning_email():

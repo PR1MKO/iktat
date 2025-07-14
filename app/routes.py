@@ -35,7 +35,12 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER'):
     fn = secure_filename(file.filename)
     upload_dir = os.path.join(current_app.config[folder_key], str(case.id))
     os.makedirs(upload_dir, exist_ok=True)
-    file.save(os.path.join(upload_dir, fn))
+    try:
+        file.save(os.path.join(upload_dir, fn))
+    except Exception as e:
+        current_app.logger.error(f"File save failed: {e}")
+        flash("A fájl mentése nem sikerült.", "danger")
+        return None
     rec = UploadedFile(
         case_id=case.id,
         filename=fn,
@@ -77,7 +82,13 @@ def add_note(case_id):
 
     case = db.session.get(Case, case_id) or abort(404)
     entry = append_note(case, note_text)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return jsonify({'error': 'DB error'}), 500
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
@@ -113,7 +124,13 @@ def elvegzem(case_id):
         # 3) Status transition
         previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return redirect(request.referrer or url_for('main.ugyeim'))
         if note_added:
             flash('Megjegyzés hozzáadva.', 'success')
         if file_uploaded:
@@ -227,7 +244,13 @@ def vizsgalat_elrendelese(case_id):
             else:
                 case.tox_orders = new_block
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Database error: {e}")
+                flash("Valami hiba történt. Próbáld újra.", "danger")
+                return redirect(url_for('main.elvegzem', case_id=case.id))
             flash('Vizsgálatok elrendelve.', 'success')
         else:
             flash('Nem választottál ki vizsgálatot.', 'warning')
@@ -257,7 +280,13 @@ def upload_elvegzes_files(case_id):
             saved.append(fn)
 
     if saved:
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return redirect(url_for('main.elvegzem', case_id=case.id))
         flash(f'Feltöltve: {", ".join(saved)}', 'success')
 
     return redirect(url_for('main.elvegzem', case_id=case.id))
@@ -293,7 +322,13 @@ def leiro_elvegzem(case_id):
 
         # 3) Mark the case as completed by the describer
         case.status = 'leiktatva'
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash("Valami hiba történt. Próbáld újra.", "danger")
+            return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
         if file_uploaded:
             flash(f'Fájl feltöltve: {file_uploaded}', 'success')
@@ -322,7 +357,13 @@ def assign_describer(case_id):
     data = request.get_json() or {}
     case = db.session.get(Case, case_id) or abort(404)
     case.describer = data.get('describer')
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return jsonify({'error': 'DB error'}), 500
     flash('Leíró sikeresen hozzárendelve.', 'success')
     return ('', 204)
 
@@ -340,7 +381,13 @@ def leiro_upload_file(case_id):
         flash('Nincs kiválasztott fájl!', 'warning')
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        flash("Valami hiba történt. Próbáld újra.", "danger")
+        return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
     flash(f'Fájl feltöltve: {file_uploaded}', 'success')
     return redirect(url_for('main.leiro_elvegzem', case_id=case.id))    
     
