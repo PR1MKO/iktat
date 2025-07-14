@@ -12,6 +12,10 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
+
+# Load environment variables from .env if present before importing Config
+load_dotenv()
+
 from config import Config
 from app.utils.time_utils import BUDAPEST_TZ
 
@@ -23,9 +27,6 @@ db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
 login_manager = LoginManager()
-
-# Load environment variables from .env if present
-load_dotenv()
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
