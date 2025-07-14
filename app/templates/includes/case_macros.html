@@ -105,6 +105,13 @@
               {% else %}
                 <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
               {% endif %}
+			{% elif entry.field_name == 'notes' %}
+            {% set parsed = entry.new_value | parse_note_changelog %}
+            {% if parsed %}
+              <span class="text-muted small">[{{ parsed.ts }} &ndash; {{ parsed.user }}]</span> {{ parsed.text }}
+            {% else %}
+                {{ entry.new_value or '–' }}
+              {% endif %}
             {% else %}
               <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
             {% endif %}
