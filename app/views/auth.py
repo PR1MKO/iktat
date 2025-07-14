@@ -20,6 +20,7 @@ from app.email_utils import send_email
 from app.audit import log_action
 from app.tasks import auto_close_stale_cases
 from ..utils.case_helpers import build_case_context
+from ..utils.roles import roles_required
 import csv
 import io
 import codecs
@@ -28,6 +29,7 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
 @login_required
+@roles_required('admin')
 def export_changelog_csv(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     entries = ChangeLog.query.filter_by(case_id=case.id).order_by(ChangeLog.timestamp).all()
@@ -265,6 +267,7 @@ def closed_cases():
 
 @auth_bp.route('/cases/new', methods=['GET','POST'])
 @login_required
+@roles_required('admin', 'iroda')
 def create_case():
     class DummyCase:
         notes = ''
@@ -368,6 +371,7 @@ def create_case():
 
 @auth_bp.route('/cases/<int:case_id>/edit', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin', 'iroda')
 def edit_case(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
@@ -392,6 +396,7 @@ def edit_case(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró')
 def upload_file(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
@@ -439,6 +444,7 @@ def upload_file(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/files/<filename>')
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró')
 def download_file(case_id, filename):
     folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
     log_action("File downloaded", f"{filename} from case {case_id}")
@@ -446,10 +452,8 @@ def download_file(case_id, filename):
 
 @auth_bp.route('/szignal_cases')
 @login_required
+@roles_required('szignáló')
 def szignal_cases():
-    if current_user.role != 'szignáló':
-        flash("Nincs jogosultságod", 'danger')
-        return redirect(url_for('auth.dashboard'))
 
     # Cases where both experts are missing (szignálandó)
     szignalando_cases = Case.query.filter(
@@ -475,10 +479,8 @@ def szignal_cases():
 
 @auth_bp.route('/szignal_cases/<int:case_id>/assign', methods=['GET', 'POST'])
 @login_required
+@roles_required('szignáló')
 def assign_pathologist(case_id):
-    if current_user.role != 'szignáló':
-        flash("Nincs jogosultságod hozzárendelni.", 'danger')
-        return redirect(url_for('auth.dashboard'))
     case = db.session.get(Case, case_id) or abort(404)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     # First expert: only "-- Válasszon --" as empty
@@ -537,19 +539,15 @@ def assign_pathologist(case_id):
 
 @auth_bp.route('/admin/users')
 @login_required
+@roles_required('admin')
 def admin_users():
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
     users = User.query.order_by(User.username).all()
     return render_template('admin_users.html', users=users)
 
 @auth_bp.route('/admin/users/add', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def add_user():
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
     if request.method == 'POST':
         username = request.form['username'].strip()
         password = request.form['password'].strip()
@@ -576,10 +574,8 @@ def add_user():
 
 @auth_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def edit_user(user_id):
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
 
     user = db.session.get(User, user_id) or abort(404)
 
@@ -619,10 +615,8 @@ def edit_user(user_id):
 
 @auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
+@roles_required('admin')
 def delete_user(user_id):
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
     user = db.session.get(User, user_id) or abort(404)
     if user.id == current_user.id:
         flash("Saját magad nem törölheted.", 'warning')
@@ -641,10 +635,8 @@ def delete_user(user_id):
 
 @auth_bp.route('/admin/cases')
 @login_required
+@roles_required('admin')
 def manage_cases():
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
 
     sort_by = request.args.get('sort_by', 'case_number')
     sort_order = request.args.get('sort_order', 'desc')
@@ -671,10 +663,8 @@ def manage_cases():
 
 @auth_bp.route('/admin/cases/<int:case_id>/delete', methods=['POST'])
 @login_required
+@roles_required('admin')
 def delete_case(case_id):
-    if current_user.role != 'admin':
-        flash("Nincs jogosultságod.", 'danger')
-        return redirect(url_for('auth.dashboard'))
 
     case = db.session.get(Case, case_id) or abort(404)
 

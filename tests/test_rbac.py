@@ -25,8 +25,7 @@ def test_admin_access_admin_routes(client, app):
         assert client.get('/admin/cases').status_code == 200
         # assignment routes restricted to szignáló in code
         resp = client.get('/szignal_cases')
-        assert resp.status_code == 302
-
+        assert resp.status_code == 403
 
 def test_iroda_permissions(client, app):
     with app.app_context():
@@ -42,9 +41,9 @@ def test_iroda_permissions(client, app):
         resp = client.post(f'/cases/{cid}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
         # forbidden actions
-        assert client.get('/admin/users').status_code == 302
-        assert client.post(f'/admin/cases/{cid}/delete').status_code == 302
-        assert client.get('/szignal_cases').status_code == 302
+        assert client.get('/admin/users').status_code == 403
+        assert client.post(f'/admin/cases/{cid}/delete').status_code == 403
+        assert client.get('/szignal_cases').status_code == 403
 
 
 def test_szakerto_permissions(client, app):
@@ -59,6 +58,6 @@ def test_szakerto_permissions(client, app):
         # access own case execution view
         assert client.get(f'/ugyeim/{cid}/elvegzem').status_code == 200
         # cannot access admin or assignment routes
-        assert client.get('/admin/users').status_code == 302
-        assert client.get('/szignal_cases').status_code == 302
+        assert client.get('/admin/users').status_code == 403
+        assert client.get('/szignal_cases').status_code == 403
 

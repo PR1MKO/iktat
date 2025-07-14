@@ -8,6 +8,7 @@ from flask import (
     jsonify, abort
 )
 from flask_login import login_required, current_user
+from app.utils.roles import roles_required
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 from app.models import User, Case, ChangeLog, UploadedFile
@@ -60,6 +61,7 @@ def is_describer_for_case(user, case):
 
 @main_bp.route('/ugyeim')
 @login_required
+@roles_required('szakértő')
 def ugyeim():
     base_q = Case.query.filter(or_(
         Case.expert_1 == current_user.username,
@@ -74,6 +76,7 @@ def ugyeim():
 # AJAX add-note
 @main_bp.route('/ugyeim/<int:case_id>/add_note', methods=['POST'])
 @login_required
+@roles_required('szakértő')
 def add_note(case_id):
     data = request.get_json() or {}
     note_text = data.get('new_note','').strip()
@@ -96,6 +99,7 @@ def add_note(case_id):
 # Unified elvégzem (szakértő & leíró)
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
+@roles_required('szakértő', 'leíró')
 def elvegzem(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
@@ -166,6 +170,7 @@ def elvegzem(case_id):
 # Vizsgálat elrendelése
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
 @login_required
+@roles_required('szakértő')
 def vizsgalat_elrendelese(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
@@ -262,6 +267,7 @@ def vizsgalat_elrendelese(case_id):
 # Extra file‐upload for szakértő flow
 @main_bp.route('/ugyeim/<int:case_id>/upload_elvegzes_files', methods=['POST'])
 @login_required
+@roles_required('szakértő')
 def upload_elvegzes_files(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
@@ -294,6 +300,7 @@ def upload_elvegzes_files(case_id):
 # Leíró’s dashboard & flow
 @main_bp.route('/leiro/ugyeim')
 @login_required
+@roles_required('leíró')
 def leiro_ugyeim():
     base_q = Case.query.filter_by(describer=current_user.username)
     pending   = base_q.filter(Case.status=='boncolva-leírónál').all()
@@ -304,6 +311,7 @@ def leiro_ugyeim():
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
+@roles_required('leíró')
 def leiro_elvegzem(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_describer_for_case(current_user, case):
@@ -353,6 +361,7 @@ def leiro_elvegzem(case_id):
 
 @main_bp.route('/ugyeim/<int:case_id>/assign_describer', methods=['POST'])
 @login_required
+@roles_required('szakértő')
 def assign_describer(case_id):
     data = request.get_json() or {}
     case = db.session.get(Case, case_id) or abort(404)
@@ -369,6 +378,7 @@ def assign_describer(case_id):
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/upload_file', methods=['POST'])
 @login_required
+@roles_required('leíró')
 def leiro_upload_file(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_describer_for_case(current_user, case):
