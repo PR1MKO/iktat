@@ -82,6 +82,8 @@ def create_app(test_config=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
 
+    from app.error_handlers import register_error_handlers
+    
     # Exempt login route from CSRF (to avoid token error)
     csrf.exempt(auth_bp)
 
