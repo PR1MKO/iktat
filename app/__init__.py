@@ -140,7 +140,7 @@ def create_app(test_config=None):
 
     app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
     
-       NOTE_RE = re.compile(
+    NOTE_RE = re.compile(
         r"^\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>[^\]]+)\]\s*(?P<text>.*)$"
     )
 
