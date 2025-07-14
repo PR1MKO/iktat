@@ -2,6 +2,8 @@
 
 import os
 from datetime import datetime
+import logging
+from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from flask import Flask
 import pytz
@@ -156,7 +158,22 @@ def create_app(test_config=None):
             "text": m.group("text"),
         }
 
-    app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog 
+    app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog
+
+    # Logging setup
+    if not app.debug and not app.testing:
+        log_dir = os.path.join(app.instance_path, 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        file_handler = RotatingFileHandler(
+            os.path.join(log_dir, 'app.log'), maxBytes=10240, backupCount=10
+        )
+        file_handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+        file_handler.setFormatter(formatter)
+        app.logger.addHandler(file_handler)
+
+        app.logger.setLevel(logging.INFO)
+        app.logger.info('Logging initialized.')
 
     return app
 
