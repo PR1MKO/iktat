@@ -14,7 +14,6 @@ from flask_login import (
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_, func
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
-from app.forms import CaseForm
 from app import csrf                    # CSRFProtect instance
 from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
@@ -282,11 +281,9 @@ def create_case():
     class DummyCase:
         notes = ''
         case_type = ''
-        beerk_modja = ''
         szakerto = ''
         expert_2 = ''
         describer = ''
-        registration_time = ''
         # Add more default fields as needed
 
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
@@ -300,16 +297,15 @@ def create_case():
     case = DummyCase()  # Always available for the template/macros
 
     if request.method == 'POST':
-        if not form.validate():
-            if 'case_type' in form.errors:
-                flash('Típus kitöltése kötelező.')
-            elif 'registration_time' in form.errors:
-                flash('Regisztrálva kitöltése kötelező.')
-            elif 'beerk_modja' in form.errors:
-                flash('Beérkezés módja kitöltése kötelező.')
-            # Preserve entered values
-            for field in ['case_type', 'beerk_modja', 'registration_time']:
-                setattr(case, field, request.form.get(field))
+        missing = []
+        if not request.form.get('case_type'):
+            missing.append('Típus')
+        if not request.form.get('registration_time'):
+            missing.append('Regisztrálva')
+        if not request.form.get('beerk_modja'):
+            missing.append('Beérkezés módja')
+        if missing:
+            flash(', '.join(missing) + ' kitöltése kötelező.')
             return render_template(
                 'create_case.html',
                 szakerto_users=szakerto_users,
@@ -321,7 +317,11 @@ def create_case():
         birth_date = None
         if request.form.get('birth_date'):
             birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
-        registration_time = form.registration_time.data.replace(tzinfo=pytz.UTC)
+        reg_time_str = request.form.get('registration_time')
+        if reg_time_str:
+            registration_time = datetime.strptime(reg_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=pytz.UTC)
+        else:
+            registration_time = datetime.now(pytz.UTC)
         year = registration_time.year
         count = Case.query.filter(
             func.strftime("%Y", Case.registration_time) == str(year)
@@ -330,6 +330,7 @@ def create_case():
         notes = request.form.get('notes', '').strip() or None
 
         # --- Handle the new "További adatok" fields ---
+        beerk_modja  = request.form.get('beerk_modja', '').strip() or None
         poszeidon    = request.form.get('poszeidon', '').strip() or None
         lanykori_nev = request.form.get('lanykori_nev', '').strip() or None
         szul_hely    = request.form.get('szul_hely', '').strip() or None
@@ -337,7 +338,7 @@ def create_case():
 
         new_case = Case(
             case_number=case_number,
-            case_type=form.case_type.data,
+            case_type=request.form['case_type'],
             deceased_name=request.form.get('deceased_name'),
             institution_name=request.form.get('institution_name'),
             external_case_number=request.form.get('external_case_number'),
@@ -350,7 +351,7 @@ def create_case():
             notes=notes,
 
             # Save new fields
-            beerk_modja=form.beerk_modja.data,
+            beerk_modja=beerk_modja,
             poszeidon=poszeidon,
             lanykori_nev=lanykori_nev,
             szul_hely=szul_hely,

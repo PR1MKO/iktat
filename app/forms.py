@@ -44,31 +44,3 @@ class EditCaseForm(FlaskForm):
     describer = SelectField('Leíró', coerce=str, validators=[Optional()])
     notes = TextAreaField('Megjegyzés', validators=[Optional()])
 
-
-class CaseForm(FlaskForm):
-    case_type = SelectField(
-        'Típus',
-        choices=[('', '-- Válasszon --')] + [
-            (v, v) for v in ['hatósági', 'klinikai', 'igazságügyi', 'kórboncolási', 'elengedés']
-        ],
-        validators=[DataRequired()],
-        validate_choice=False
-    )
-    registration_time = DateTimeLocalField(
-        'Regisztrálva',
-        format='%Y-%m-%dT%H:%M',
-        validators=[DataRequired()]
-    )
-    beerk_modja = SelectField(
-        'Beérkezés módja',
-        choices=[
-            ('', '-- Válasszon --'),
-            ('Email', 'Email'),
-            ('Fax', 'Fax'),
-            ('Posta', 'Posta'),
-            ('Személyes', 'Személyes'),
-        ],
-        validators=[DataRequired()],
-        validate_choice=False
-    )
-

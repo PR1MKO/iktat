@@ -37,7 +37,7 @@ def test_case_creation_missing_required(client, app):
         login(client, 'admin', 'secret')
         resp = client.post('/cases/new', data={}, follow_redirects=True)
         assert resp.status_code == 200
-        assert b'T\xc3\xadpus kit\xc3\xb6lt\xc3\xa9se k\xc3\xb6telez\xc5\x91' in resp.data
+        assert b'T\xc3\xadpus, Regisztr\xc3\xa1lva, Be\xc3\xa9rkez\xc3\xa9s m\xc3\xb3dja kit\xc3\xb6lt\xc3\xa9se k\xc3\xb6telez\xc5\x91' in resp.data
     with app.app_context():
         assert Case.query.count() == initial
 
