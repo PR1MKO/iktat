@@ -5,4 +5,6 @@ BUDAPEST_TZ = pytz.timezone("Europe/Budapest")
 
 
 def now_local() -> datetime:
-    return datetime.now(BUDAPEST_TZ)
+    return datetime.now(BUDAPEST_TZ) 
+    
+   
