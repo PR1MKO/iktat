@@ -35,20 +35,23 @@
         ],
         'Típus *',
         '-- Válasszon --',
-        selected=case.case_type if case and case.case_type else ''
+        selected=case.case_type if case and case.case_type else '',
+        required=True
     ) }}
     <div class="invalid-feedback">Kérjük, válasszon típust.</div>
   </div>
 
   <!-- Registration time -->
   <div class="col-md-6">
-    <label for="registration_time" class="form-label">Regisztrálva</label>
+    <label for="registration_time" class="form-label">Regisztrálva *</label>
     <input type="datetime-local"
       id="registration_time"
       name="registration_time"
       class="form-control"
       placeholder="Regisztrálva"
-      aria-label="Regisztrálva" title="Regisztrálva">
+      aria-label="Regisztrálva" title="Regisztrálva"
+      value="{{ case.registration_time }}"
+      required>
   </div>
 
   <!-- Deceased name -->
@@ -128,8 +131,8 @@
     <div class="card-header fw-bold">További adatok</div>
     <div class="card-body row g-3">
       <div class="col-md-4">
-        <label for="beerk_modja" class="form-label">Beérkezés módja</label>
-        <select class="form-select" id="beerk_modja" name="beerk_modja">
+        <label for="beerk_modja" class="form-label">Beérkezés módja *</label>
+        <select class="form-select" id="beerk_modja" name="beerk_modja" required>
           <option value="">-- Válasszon --</option>
           <option value="Email" {% if case and case.beerk_modja == "Email" %}selected{% endif %}>Email</option>
           <option value="Fax" {% if case and case.beerk_modja == "Fax" %}selected{% endif %}>Fax</option>

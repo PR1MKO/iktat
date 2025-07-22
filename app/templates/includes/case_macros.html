@@ -147,13 +147,14 @@
 </form>
 {% endmacro %}
 
-{% macro select_block(select_id, name, options, label='Válasszon', placeholder='Válasszon...', selected=None) %}
+{% macro select_block(select_id, name, options, label='Válasszon', placeholder='Válasszon...', selected=None, required=False) %}
 <label for="{{ select_id }}" class="form-label">{{ label }}</label>
 <select id="{{ select_id }}"
         name="{{ name }}"
         class="form-select"
         aria-label="{{ label }}"
-        title="{{ label }}">
+        title="{{ label }}"
+        {% if required %}required{% endif %}>
   {% for value, text in options %}
     <option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ text }}</option>
   {% endfor %}

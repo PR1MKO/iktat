@@ -15,6 +15,8 @@ def test_case_creation_success(client, app):
         data = {
             'case_type': 'test',
             'deceased_name': 'John Doe',
+            'registration_time': datetime.utcnow().strftime('%Y-%m-%dT%H:%M'),
+            'beerk_modja': 'Email',
         }
         resp = client.post('/cases/new', data=data, follow_redirects=False)
         assert resp.status_code == 302
