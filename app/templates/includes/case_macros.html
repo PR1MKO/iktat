@@ -343,9 +343,8 @@
       {% for case in cases %}
       <tr
         {% if case.is_overdue %}
-          style="background-color: #8B0000; color: #fff;"
-        {% elif case.due_soon %}
-          class="table-warning"
+        {% if case.deadline and case.deadline.date() < today %}
+          class="table-danger"
         {% endif %}
       >
         <td>{{ case.case_number }}</td>
@@ -353,7 +352,7 @@
         <td>{{ case.case_type }}</td>
         <td>
           {{ case.status }}
-          {% if case.is_overdue %}
+          {% if case.deadline and case.deadline.date() < today %}
             <span class="badge bg-danger ms-2">KÉSÉSBEN</span>
           {% endif %}
         </td>

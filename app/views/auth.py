@@ -220,7 +220,18 @@ def list_cases():
     else:
         order_col = order_col.asc()
 
-    cases = query.order_by(order_col).all()
+    now = datetime.now(pytz.UTC)
+    expired_cases = (
+        query.filter(Case.deadline < now)
+             .order_by(order_col)
+             .all()
+    )
+    active_cases = (
+        query.filter(or_(Case.deadline >= now, Case.deadline == None))
+             .order_by(order_col)
+             .all()
+    )
+    cases = expired_cases + active_cases
 
     users = User.query.all()
     users_map = {u.username: u for u in users}
@@ -236,7 +247,8 @@ def list_cases():
         query_params=query_params,
         status_filter=status_filter,
         case_type_filter=case_type_filter,
-        search_query=search_query
+        search_query=search_query,
+        today=now.date()
     )
 
 @auth_bp.route('/cases/<int:case_id>')
