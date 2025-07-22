@@ -341,7 +341,7 @@
     </thead>
     <tbody>
       {% for case in cases %}
-      <tr {% if case.is_overdue and case.deadline and case.deadline.date() < today %}class="table-danger"{% endif %}>
+      <tr {% if case.deadline and case.deadline.date() < today %}class="table-danger"{% endif %}>
 
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
