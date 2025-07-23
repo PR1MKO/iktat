@@ -31,14 +31,14 @@
 			] %}
 			<div class="mb-2 d-flex align-items-center gap-3">
 			  <div class="form-check form-switch mb-0 d-flex align-items-center">
-				<input class="form-check-input tox-toggle" type="checkbox"
-					   id="{{ name }}_ordered" name="{{ name }}_ordered"
-					   {% if case[name + '_ordered'] %}checked{% endif %}>
+                                <input class="form-check-input tox-toggle" type="checkbox"
+                                           id="{{ name }}_ordered" name="{{ name }}_ordered"
+                                           {% if case[name + '_ordered'] %}checked disabled{% endif %}>
 				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
 			  </div>
-			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
-					 value="{{ case[name] or '' }}"
-					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+                          <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+                                         value="{{ case[name] or '' }}"
+                                         {% if not case[name + '_ordered'] or case[name + '_ordered'] %}disabled{% endif %}>
 			</div>
 			{% endfor %}
 
@@ -52,14 +52,14 @@
 			] %}
 			<div class="mb-2 d-flex align-items-center gap-3">
 			  <div class="form-check form-switch mb-0 d-flex align-items-center">
-				<input class="form-check-input tox-toggle" type="checkbox"
-					   id="{{ name }}_ordered" name="{{ name }}_ordered"
-					   {% if case[name + '_ordered'] %}checked{% endif %}>
+                                <input class="form-check-input tox-toggle" type="checkbox"
+                                           id="{{ name }}_ordered" name="{{ name }}_ordered"
+                                           {% if case[name + '_ordered'] %}checked disabled{% endif %}>
 				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
 			  </div>
-			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
-					 value="{{ case[name] or '' }}"
-					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+                          <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+                                         value="{{ case[name] or '' }}"
+                                         {% if not case[name + '_ordered'] or case[name + '_ordered'] %}disabled{% endif %}>
 			</div>
 			{% endfor %}
 
@@ -71,14 +71,14 @@
 			] %}
 			<div class="mb-2 d-flex align-items-center gap-3">
 			  <div class="form-check form-switch mb-0 d-flex align-items-center">
-				<input class="form-check-input tox-toggle" type="checkbox"
-					   id="{{ name }}_ordered" name="{{ name }}_ordered"
-					   {% if case[name + '_ordered'] %}checked{% endif %}>
+                                <input class="form-check-input tox-toggle" type="checkbox"
+                                           id="{{ name }}_ordered" name="{{ name }}_ordered"
+                                           {% if case[name + '_ordered'] %}checked disabled{% endif %}>
 				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
 			  </div>
-			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
-					 value="{{ case[name] or '' }}"
-					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+                          <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+                                         value="{{ case[name] or '' }}"
+                                         {% if not case[name + '_ordered'] or case[name + '_ordered'] %}disabled{% endif %}>
 			</div>
 			{% endfor %}
 
@@ -93,14 +93,14 @@
 			] %}
 			<div class="mb-2 d-flex align-items-center gap-3">
 			  <div class="form-check form-switch mb-0 d-flex align-items-center">
-				<input class="form-check-input tox-toggle" type="checkbox"
-					   id="{{ name }}_ordered" name="{{ name }}_ordered"
-					   {% if case[name + '_ordered'] %}checked{% endif %}>
+                                <input class="form-check-input tox-toggle" type="checkbox"
+                                           id="{{ name }}_ordered" name="{{ name }}_ordered"
+                                           {% if case[name + '_ordered'] %}checked disabled{% endif %}>
 				<label class="form-check-label mb-0 ms-2" for="{{ name }}_ordered" style="min-width: 120px; display: inline-block;">{{ label }}</label>
 			  </div>
-			  <input type="text" name="{{ name }}" class="form-control flex-grow-1"
-					 value="{{ case[name] or '' }}"
-					 {% if not case[name + '_ordered'] %}disabled{% endif %}>
+                          <input type="text" name="{{ name }}" class="form-control flex-grow-1"
+                                         value="{{ case[name] or '' }}"
+                                         {% if not case[name + '_ordered'] or case[name + '_ordered'] %}disabled{% endif %}>
 			</div>
 			{% endfor %}
 
@@ -127,13 +127,15 @@
 			<div class="mb-2">
 			  <label class="form-label d-block">{{ organ[0] }}</label>
 			  <div class="form-check form-check-inline">
-				<input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="spec"
-				  {% if case | getattr(organ[1] + '_spec') %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="spec"
+                                  {% if case | getattr(organ[1] + '_spec') %}checked{% endif %}
+                                  {% if case | getattr(organ[1] + '_spec') or case | getattr(organ[1] + '_immun') %}disabled{% endif %}>
 				<label class="form-check-label">Spec fest</label>
 			  </div>
 			  <div class="form-check form-check-inline">
-				<input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="immun"
-				  {% if case | getattr(organ[1] + '_immun') %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" name="{{ organ[1] }}_marker" value="immun"
+                                  {% if case | getattr(organ[1] + '_immun') %}checked{% endif %}
+                                  {% if case | getattr(organ[1] + '_spec') or case | getattr(organ[1] + '_immun') %}disabled{% endif %}>
 				<label class="form-check-label">Immun</label>
 			  </div>
 			</div>
@@ -141,15 +143,18 @@
 
 			<div class="mb-3">
 			  <label class="form-label">Egyéb szerv</label>
-			  <input type="text" name="egyeb_szerv" class="form-control" value="{{ case.egyeb_szerv or '' }}">
+                          <input type="text" name="egyeb_szerv" class="form-control" value="{{ case.egyeb_szerv or '' }}"
+                                 {% if case.egyeb_szerv_spec or case.egyeb_szerv_immun %}disabled{% endif %}>
 			  <div class="form-check form-check-inline mt-1">
-				<input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="spec"
-				  {% if case.egyeb_szerv_spec %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="spec"
+                                  {% if case.egyeb_szerv_spec %}checked{% endif %}
+                                  {% if case.egyeb_szerv_spec or case.egyeb_szerv_immun %}disabled{% endif %}>
 				<label class="form-check-label">Spec fest</label>
 			  </div>
 			  <div class="form-check form-check-inline">
-				<input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="immun"
-				  {% if case.egyeb_szerv_immun %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" name="egyeb_szerv_marker" value="immun"
+                                  {% if case.egyeb_szerv_immun %}checked{% endif %}
+                                  {% if case.egyeb_szerv_spec or case.egyeb_szerv_immun %}disabled{% endif %}>
 				<label class="form-check-label">Immun</label>
 			  </div>
 			</div>
