@@ -14,25 +14,25 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Alapadatok -->
-  <div class="row mb-4">
-    <div class="col-12">
-      {{ cm.alapadatok(case) }}
-    </div>
+<!-- Alapadatok + Feltöltés -->
+<div class="row mb-4">
+  <div class="col-12 mb-3">
+    {{ cm.alapadatok(case) }}
   </div>
-  
-  <div class="col-12 mt-3">
+  <div class="col-12 mb-3">
     {{ cm.file_upload_block(
         url_for('auth.assign_pathologist', case_id=case.id),
         input_name='file',
         form_id='file-upload-form',
         label='Fájl feltöltése',
-        btn_label='Feltöltés'
+        btn_label='Feltöltés',
+        extra_fields={'action': 'upload'}
     ) }}
   </div>
-  <div class="col-12 mt-3">
+  <div class="col-12">
     {{ cm.uploaded_files(case) }}
   </div>
+</div>
 
   <!-- Jegyzetek & Változásnapló -->
   <div class="row mb-4">
