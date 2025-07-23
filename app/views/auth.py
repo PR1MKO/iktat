@@ -523,21 +523,22 @@ def assign_pathologist(case_id):
         (u.username, u.screen_name or u.username) for u in szakerto_users if u.username != expert_1_selected
     ]
 
-    if request.method == 'POST' and request.files.get('file'):
-        file = request.files['file']
-        fn = handle_file_upload(case, file)
-        if fn:
-            try:
-                db.session.commit()
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(f"Database error: {e}")
-                flash("Valami hiba történt. Próbáld újra.", "danger")
-                return redirect(url_for('auth.assign_pathologist', case_id=case.id))
-            flash('Fájl sikeresen feltöltve.', 'success')
+    if request.method == 'POST' and request.form.get('action') == 'upload':
+        file = request.files.get('file')
+        if file:
+            fn = handle_file_upload(case, file)
+            if fn:
+                try:
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    current_app.logger.error(f"Database error: {e}")
+                    flash("Valami hiba történt. Próbáld újra.", "danger")
+                    return redirect(url_for('auth.assign_pathologist', case_id=case.id))
+                flash('Fájl sikeresen feltöltve.', 'success')
         return redirect(url_for('auth.assign_pathologist', case_id=case.id))
 
-    if request.method == 'POST':
+    elif request.method == 'POST' and request.form.get('action') == 'assign':
         expert_1 = request.form.get('expert_1')
         expert_2 = request.form.get('expert_2') or None
         if not expert_1:
