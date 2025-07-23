@@ -76,6 +76,20 @@
     ) }}
     <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
   </div>
+  
+  {% if user.role == 'szakértő' %}
+    <div class="col-md-6">
+      <label for="default_leiro_id" class="form-label">Default leíró</label>
+      <select class="form-select" id="default_leiro_id" name="default_leiro_id">
+        <option value="">-- Válasszon --</option>
+        {% for leiro in leiro_users %}
+          <option value="{{ leiro.id }}" {% if user.default_leiro_id == leiro.id %}selected{% endif %}>
+            {{ leiro.screen_name or leiro.username }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  {% endif %}
 
   <div class="col-12 d-flex gap-2">
     <button type="submit" class="btn btn-primary">Mentés</button>

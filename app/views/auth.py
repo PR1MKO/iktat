@@ -647,6 +647,7 @@ def add_user():
 def edit_user(user_id):
 
     user = db.session.get(User, user_id) or abort(404)
+    leiro_users = User.query.filter_by(role='leíró').order_by(User.username).all()
 
     if request.method == 'POST':
         old_data = (user.username, user.role, user.screen_name)
@@ -658,13 +659,19 @@ def edit_user(user_id):
         if password:
             user.set_password(password)
 
+        if user.role == 'szakértő':
+            dl_id = request.form.get('default_leiro_id')
+            user.default_leiro_id = int(dl_id) if dl_id else None
+        else:
+            user.default_leiro_id = None
+
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash("Valami hiba történt. Próbáld újra.", "danger")
-            return render_template('edit_user.html', user=user, assigned_cases=assigned_cases)
+            return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 
         log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
         flash("Felhasználó adatai frissítve.", 'success')
@@ -680,7 +687,7 @@ def edit_user(user_id):
             )
         ).order_by(Case.registration_time.desc()).all()
 
-    return render_template('edit_user.html', user=user, assigned_cases=assigned_cases)
+    return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 
 @auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required

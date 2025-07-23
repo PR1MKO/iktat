@@ -14,6 +14,8 @@ class User(db.Model, UserMixin):
     screen_name   = db.Column(db.String(128), nullable=True)
     password_hash = db.Column(db.String(128), nullable=False)
     role          = db.Column(db.String(20), nullable=False)
+    default_leiro_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    default_leiro = db.relationship('User', foreign_keys=[default_leiro_id], lazy='joined')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
