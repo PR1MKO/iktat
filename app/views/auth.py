@@ -287,7 +287,7 @@ def create_case():
         describer = ''
         # Add more default fields as needed
         
-    form = CaseIdentifierForm()
+    form = CaseIdentifierForm(request.form if request.method == 'POST' else None)
 
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()

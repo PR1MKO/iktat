@@ -43,6 +43,17 @@ def test_case_creation_missing_required(client, app):
         assert Case.query.count() == initial
 
 
+def test_get_new_case_form(client, app):
+    with app.app_context():
+        create_user()
+    with client:
+        login(client, 'admin', 'secret')
+        resp = client.get('/cases/new')
+        assert resp.status_code == 200
+        assert b'name="external_id"' in resp.data
+        assert b'name="temp_id"' in resp.data
+
+
 def test_file_upload_success(client, app, tmp_path):
     with app.app_context():
         create_user()
