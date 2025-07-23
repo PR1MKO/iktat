@@ -14,6 +14,7 @@ from flask_login import (
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_, and_, func
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
+from app.forms import CaseIdentifierForm
 from app import csrf                    # CSRFProtect instance
 from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
@@ -285,6 +286,8 @@ def create_case():
         expert_2 = ''
         describer = ''
         # Add more default fields as needed
+        
+    form = CaseIdentifierForm()
 
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
@@ -306,13 +309,18 @@ def create_case():
             missing.append('Beérkezés módja')
         if missing:
             flash(', '.join(missing) + ' kitöltése kötelező.')
+        if not form.validate():
+            for err in form.external_id.errors:
+                flash(err)
+        if missing or form.errors:
             return render_template(
                 'create_case.html',
                 szakerto_users=szakerto_users,
                 leiro_users=leiro_users,
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
-                case=case
+                case=case,
+                form=form
             )
         birth_date = None
         if request.form.get('birth_date'):
@@ -341,7 +349,8 @@ def create_case():
             case_type=request.form['case_type'],
             deceased_name=request.form.get('deceased_name'),
             institution_name=request.form.get('institution_name'),
-            external_case_number=request.form.get('external_case_number'),
+            external_case_number=form.external_id.data,
+            temp_id=form.temp_id.data,
             birth_date=birth_date,
             registration_time=registration_time,
             status='beérkezett',
@@ -371,7 +380,8 @@ def create_case():
                 leiro_users=leiro_users,
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
-                case=case
+                case=case,
+                form=form
             )
         flash('New case created.', 'success')
         return redirect(url_for('auth.case_detail', case_id=new_case.id))

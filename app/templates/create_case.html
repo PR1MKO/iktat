@@ -106,13 +106,19 @@
       class="form-control"
       aria-label="Intézmény neve" title="Intézmény neve" placeholder="Intézmény neve">
   </div>
+    {{ form.external_id.label(class="form-label") }}
+    {{ form.external_id(class="form-control") }}
+    {% for error in form.external_id.errors %}
+      <div class="text-danger">{{ error }}</div>
+    {% endfor %}
+  </div>
+
   <div class="col-md-6">
-    <label for="external_case_number" class="form-label">Külső ügyirat szám</label>
-    <input type="text"
-      id="external_case_number"
-      name="external_case_number"
-      class="form-control"
-      aria-label="Külső ügyirat szám" title="Külső ügyirat szám" placeholder="Külső ügyirat szám">
+    {{ form.temp_id.label(class="form-label") }}
+    {{ form.temp_id(class="form-control") }}
+    {% for error in form.temp_id.errors %}
+      <div class="text-danger">{{ error }}</div>
+    {% endfor %}
   </div>
   <div class="col-md-4">
     <label for="birth_date" class="form-label">Születési idő</label>

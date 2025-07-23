@@ -44,3 +44,17 @@ class EditCaseForm(FlaskForm):
     describer = SelectField('Leíró', coerce=str, validators=[Optional()])
     notes = TextAreaField('Megjegyzés', validators=[Optional()])
 
+class CaseIdentifierForm(FlaskForm):
+    external_id = StringField("Külső ügyirat szám")
+    temp_id = StringField("Egyéb azonosító")
+
+    def validate(self, *args, **kwargs):
+        valid = super().validate(*args, **kwargs)
+        if not valid:
+            return False
+        if not self.external_id.data and not self.temp_id.data:
+            msg = "Legalább az egyik azonosítót meg kell adni."
+            self.external_id.errors.append(msg)
+            self.temp_id.errors.append(msg)
+            return False
+        return True

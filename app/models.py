@@ -29,6 +29,7 @@ class Case(db.Model):
     status               = db.Column(db.String(32), nullable=False, default='new')
     institution_name     = db.Column(db.String(128))
     external_case_number = db.Column(db.String(64))
+    temp_id             = db.Column(db.String(64))
     birth_date           = db.Column(db.Date)
     registration_time    = db.Column(
         db.DateTime(timezone=True),
