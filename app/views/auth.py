@@ -424,7 +424,7 @@ def edit_case(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
-@roles_required('admin', 'iroda', 'szakértő', 'leíró')
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')
 def upload_file(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
