@@ -509,18 +509,22 @@ def szignal_cases():
 @login_required
 @roles_required('szignáló')
 def assign_pathologist(case_id):
-    case = db.session.get(Case, case_id) or abort(404
+    case = db.session.get(Case, case_id) or abort(404)
     uploads = UploadedFile.query.filter_by(case_id=case.id).all()
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
+
     # First expert: only "-- Válasszon --" as empty
     szakerto_choices = [('', '-- Válasszon --')] + [
         (u.username, u.screen_name or u.username) for u in szakerto_users
     ]
+
     # Get current selection (POST: from form, GET: from case object)
     expert_1_selected = request.form.get('expert_1') if request.method == 'POST' else (case.expert_1 or '')
+
     # Second expert: "-- Válasszon (opcionális)" as empty, exclude expert_1
     szakerto_choices_2 = [('', '-- Válasszon (opcionális)')] + [
-        (u.username, u.screen_name or u.username) for u in szakerto_users if u.username != expert_1_selected
+        (u.username, u.screen_name or u.username)
+        for u in szakerto_users if u.username != expert_1_selected
     ]
 
     if request.method == 'POST' and request.form.get('action') == 'upload':
@@ -565,6 +569,7 @@ def assign_pathologist(case_id):
         )
         flash('Szakértők sikeresen hozzárendelve.', 'success')
         return redirect(url_for('auth.szignal_cases'))
+
     changelog_entries = (
         ChangeLog.query
                  .filter_by(case_id=case.id)
