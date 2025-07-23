@@ -11,7 +11,7 @@ from flask_login import (
     login_user, logout_user,
     login_required, current_user
 )
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, safe_join
 from sqlalchemy import or_, and_, func
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
 from app.forms import CaseIdentifierForm
@@ -470,13 +470,27 @@ def upload_file(case_id):
     else:
         return redirect(url_for('auth.case_detail', case_id=case_id))
 
-@auth_bp.route('/cases/<int:case_id>/files/<filename>')
+@auth_bp.route('/cases/<int:case_id>/files/<path:filename>')
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró')
 def download_file(case_id, filename):
-    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    try:
+        full_path = safe_join(base_dir, filename)
+    except Exception:
+        current_app.logger.warning(
+            f"Path traversal attempt for case {case_id}: {filename}"
+        )
+        abort(403)
+    if not full_path or not os.path.isfile(full_path):
+        current_app.logger.warning(
+            f"File not found for case {case_id}: {full_path}"
+        )
+        abort(404)
+    current_app.logger.info(f"Sending file: {full_path}")
     log_action("File downloaded", f"{filename} from case {case_id}")
-    return send_from_directory(folder, filename)
+    directory, fname = os.path.split(full_path)
+    return send_from_directory(directory, fname, as_attachment=True)
 
 @auth_bp.route('/szignal_cases')
 @login_required
