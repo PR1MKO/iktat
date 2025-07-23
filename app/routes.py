@@ -203,9 +203,13 @@ def vizsgalat_elrendelese(case_id):
         ]:
             val = (request.form.get(field) or "").strip()
             ordered = request.form.get(f"{field}_ordered") == "on"
-            setattr(case, field, val if ordered else None)
-            setattr(case, f"{field}_ordered", ordered)
+            already = getattr(case, f"{field}_ordered")
+            if already:
+                # Never unset previously ordered fields — they are permanent once submitted
+                continue
             if ordered:
+                setattr(case, field, val)
+                setattr(case, f"{field}_ordered", True)
                 if val:
                     lines.append(f"{label} rendelve ({val}): {now} – {author}")
                 else:
@@ -226,25 +230,34 @@ def vizsgalat_elrendelese(case_id):
             markers = request.form.getlist(f"{organ}_marker")
             spec = 'spec' in markers
             immun = 'immun' in markers
-            setattr(case, f"{organ}_spec", spec)
-            setattr(case, f"{organ}_immun", immun)
-            if spec or immun:
+            prev_spec = getattr(case, f"{organ}_spec")
+            prev_immun = getattr(case, f"{organ}_immun")
+            new_spec = prev_spec or spec
+            new_immun = prev_immun or immun
+            setattr(case, f"{organ}_spec", new_spec)
+            setattr(case, f"{organ}_immun", new_immun)
+            if (not prev_spec and spec) or (not prev_immun and immun):
                 badge = []
-                if spec: badge.append("Spec fest")
-                if immun: badge.append("Immun")
+                if new_spec: badge.append("Spec fest")
+                if new_immun: badge.append("Immun")
                 lines.append(f"{label} – {', '.join(badge)} rendelve: {now} – {author}")
 
         # Egyéb szerv
         egyeb_szerv = request.form.get('egyeb_szerv')
         markers = request.form.getlist('egyeb_szerv_marker')
-        case.egyeb_szerv = egyeb_szerv or None
-        case.egyeb_szerv_spec = 'spec' in markers
-        case.egyeb_szerv_immun = 'immun' in markers
-        if egyeb_szerv and (case.egyeb_szerv_spec or case.egyeb_szerv_immun):
-            badge = []
-            if case.egyeb_szerv_spec: badge.append("Spec fest")
-            if case.egyeb_szerv_immun: badge.append("Immun")
-            lines.append(f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)} rendelve: {now} – {author}")
+        prev_spec = case.egyeb_szerv_spec
+        prev_immun = case.egyeb_szerv_immun
+        if not prev_spec and not prev_immun:
+            case.egyeb_szerv = egyeb_szerv or None
+            spec = 'spec' in markers
+            immun = 'immun' in markers
+            case.egyeb_szerv_spec = spec
+            case.egyeb_szerv_immun = immun
+            if egyeb_szerv and (spec or immun):
+                badge = []
+                if spec: badge.append("Spec fest")
+                if immun: badge.append("Immun")
+                lines.append(f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)} rendelve: {now} – {author}")
 
         if lines:
             new_block = "\n".join(lines)
