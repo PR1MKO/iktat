@@ -20,6 +20,19 @@
       {{ cm.alapadatok(case) }}
     </div>
   </div>
+  
+  <div class="col-12 mt-3">
+    {{ cm.file_upload_block(
+        url_for('auth.assign_pathologist', case_id=case.id),
+        input_name='file',
+        form_id='file-upload-form',
+        label='Fájl feltöltése',
+        btn_label='Feltöltés'
+    ) }}
+  </div>
+  <div class="col-12 mt-3">
+    {{ cm.uploaded_files(case) }}
+  </div>
 
   <!-- Jegyzetek & Változásnapló -->
   <div class="row mb-4">
@@ -99,30 +112,6 @@
          class="btn btn-outline-secondary">Mégse</a>
     </div>
   </form>
-
-  <!-- File Upload -->
-  <form method="POST" enctype="multipart/form-data" class="mb-3">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="action" value="upload">
-    <div class="input-group">
-      <input type="file" name="file" class="form-control">
-      <button type="submit" class="btn btn-primary">Feltöltés</button>
-    </div>
-  </form>
-
-  <!-- Feltöltött fájlok -->
-  <div class="card mb-4">
-    <div class="card-header fw-bold">Feltöltött fájlok</div>
-    <ul class="list-group list-group-flush">
-      {% for file in uploads %}
-        <li class="list-group-item">
-          <a href="{{ url_for('auth.download_file', case_id=case.id, filename=file.filename) }}">{{ file.filename }}</a>
-        </li>
-      {% else %}
-        <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
-      {% endfor %}
-    </ul>
-  </div>
 
 </div>
 
