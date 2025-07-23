@@ -54,6 +54,24 @@ def test_get_new_case_form(client, app):
         assert b'name="temp_id"' in resp.data
 
 
+def test_case_creation_requires_identifier(client, app):
+    with app.app_context():
+        create_user()
+        initial = Case.query.count()
+    with client:
+        login(client, 'admin', 'secret')
+        data = {
+            'case_type': 'test',
+            'registration_time': datetime.utcnow().strftime('%Y-%m-%dT%H:%M'),
+            'beerk_modja': 'Email',
+        }
+        resp = client.post('/cases/new', data=data, follow_redirects=True)
+        assert resp.status_code == 200
+        assert b'Legal\xc3\xa1bb az egyik azonos\xc3\xadt\xc3\xb3t meg kell adni' in resp.data
+    with app.app_context():
+        assert Case.query.count() == initial
+
+
 def test_file_upload_success(client, app, tmp_path):
     with app.app_context():
         create_user()
