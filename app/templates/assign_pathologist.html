@@ -6,6 +6,14 @@
 {% block content %}
 <div class="container pt-2 pb-4">
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='error' else category }}" role="alert">{{ message|safe }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
   <!-- Alapadatok -->
   <div class="row mb-4">
     <div class="col-12">
@@ -90,6 +98,29 @@
          class="btn btn-outline-secondary">Mégse</a>
     </div>
   </form>
+
+  <!-- File Upload -->
+  <form method="POST" enctype="multipart/form-data" class="mb-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="input-group">
+      <input type="file" name="file" class="form-control">
+      <button type="submit" class="btn btn-primary">Feltöltés</button>
+    </div>
+  </form>
+
+  <!-- Feltöltött fájlok -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold">Feltöltött fájlok</div>
+    <ul class="list-group list-group-flush">
+      {% for file in uploads %}
+        <li class="list-group-item">
+          <a href="{{ url_for('auth.download_file', case_id=case.id, filename=file.filename) }}">{{ file.filename }}</a>
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
+      {% endfor %}
+    </ul>
+  </div>
 
 </div>
 

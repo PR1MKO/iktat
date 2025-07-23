@@ -22,6 +22,7 @@ from app.audit import log_action
 from app.tasks import auto_close_stale_cases
 from ..utils.case_helpers import build_case_context
 from ..utils.roles import roles_required
+from app.routes import handle_file_upload
 import csv
 import io
 import codecs
@@ -508,7 +509,8 @@ def szignal_cases():
 @login_required
 @roles_required('szignáló')
 def assign_pathologist(case_id):
-    case = db.session.get(Case, case_id) or abort(404)
+    case = db.session.get(Case, case_id) or abort(404
+    uploads = UploadedFile.query.filter_by(case_id=case.id).all()
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     # First expert: only "-- Válasszon --" as empty
     szakerto_choices = [('', '-- Válasszon --')] + [
@@ -520,6 +522,20 @@ def assign_pathologist(case_id):
     szakerto_choices_2 = [('', '-- Válasszon (opcionális)')] + [
         (u.username, u.screen_name or u.username) for u in szakerto_users if u.username != expert_1_selected
     ]
+
+    if request.method == 'POST' and request.files.get('file'):
+        file = request.files['file']
+        fn = handle_file_upload(case, file)
+        if fn:
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Database error: {e}")
+                flash("Valami hiba történt. Próbáld újra.", "danger")
+                return redirect(url_for('auth.assign_pathologist', case_id=case.id))
+            flash('Fájl sikeresen feltöltve.', 'success')
+        return redirect(url_for('auth.assign_pathologist', case_id=case.id))
 
     if request.method == 'POST':
         expert_1 = request.form.get('expert_1')
@@ -561,7 +577,8 @@ def assign_pathologist(case_id):
         szakerto_users=szakerto_users,
         szakerto_choices=szakerto_choices,
         szakerto_choices_2=szakerto_choices_2,
-        changelog_entries=changelog_entries
+        changelog_entries=changelog_entries,
+        uploads=uploads
     )
 
 @auth_bp.route('/admin/users')
