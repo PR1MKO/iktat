@@ -472,7 +472,7 @@ def upload_file(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')
 @login_required
-@roles_required('admin', 'iroda', 'szakértő', 'leíró')
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')
 def download_file(case_id, filename):
     base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
     

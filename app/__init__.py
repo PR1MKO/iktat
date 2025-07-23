@@ -19,9 +19,6 @@ load_dotenv()
 from config import Config
 from app.utils.time_utils import BUDAPEST_TZ
 
-# ⛔️ Removed this line to prevent circular import
-# from app.models import AuditLog
-
 # Instantiate extensions
 db = SQLAlchemy()
 mail = Mail()
@@ -45,7 +42,7 @@ def create_app(test_config=None):
     app.config.setdefault('SQLALCHEMY_DATABASE_URI', f'sqlite:///{db_path}')
     app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
-    # Upload config
+    # Upload config (✅ This is the fix that matters)
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
 
@@ -120,7 +117,7 @@ def create_app(test_config=None):
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     app.jinja_env.filters['localtime'] = localtime
-    
+
     # --- Changelog helpers -------------------------------------------------
     import re
 
@@ -141,7 +138,7 @@ def create_app(test_config=None):
         }
 
     app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
-    
+
     NOTE_RE = re.compile(
         r"^\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>[^\]]+)\]\s*(?P<text>.*)$"
     )
@@ -176,4 +173,3 @@ def create_app(test_config=None):
         app.logger.info('Logging initialized.')
 
     return app
-
