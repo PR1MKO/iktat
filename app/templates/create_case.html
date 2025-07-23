@@ -106,20 +106,23 @@
       class="form-control"
       aria-label="Intézmény neve" title="Intézmény neve" placeholder="Intézmény neve">
   </div>
-    {{ form.external_id.label(class="form-label") }}
-    {{ form.external_id(class="form-control") }}
-    {% for error in form.external_id.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
-  </div>
+<div class="col-md-6">
+  {{ form.external_id.label(class="form-label") }}
+  {{ form.external_id(class="form-control", placeholder="Külső ügyirat szám") }}
+  {% for error in form.external_id.errors %}
+    <div class="text-danger">{{ error }}</div>
+  {% endfor %}
+</div>
 
-  <div class="col-md-6">
-    {{ form.temp_id.label(class="form-label") }}
-    {{ form.temp_id(class="form-control") }}
-    {% for error in form.temp_id.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
-  </div>
+<div class="col-md-6">
+  {{ form.temp_id.label(class="form-label") }}
+  {{ form.temp_id(class="form-control", placeholder="Egyéb azonosító") }}
+  {% for error in form.temp_id.errors %}
+    <div class="text-danger">{{ error }}</div>
+  {% endfor %}
+</div>
+
+
   <div class="col-md-4">
     <label for="birth_date" class="form-label">Születési idő</label>
     <input type="date"
