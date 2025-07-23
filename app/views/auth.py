@@ -474,20 +474,27 @@ def upload_file(case_id):
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró')
 def download_file(case_id, filename):
-    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
-    full_path = os.path.abspath(os.path.join(folder, filename))
-
-    # Prevent path traversal
-    if not full_path.startswith(os.path.abspath(folder)):
-        current_app.logger.warning(f"Illegal file access attempt: {full_path}")
+    base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    
+    try:
+        full_path = safe_join(base_dir, filename)
+        if full_path is None:
+            raise ValueError("unsafe path")
+    except Exception:
+        current_app.logger.warning(
+            f"Path traversal attempt for case {case_id}: {filename}"
+        )
         abort(403)
 
     if not os.path.isfile(full_path):
-        current_app.logger.warning(f"File not found: {full_path}")
+        current_app.logger.warning(
+            f"File not found for case {case_id}: {full_path}"
+        )
         abort(404)
-
+        
+    current_app.logger.info(f"Sending file: {full_path}")
     log_action("File downloaded", f"{filename} from case {case_id}")
-    return send_from_directory(folder, filename, as_attachment=True)
+    return send_from_directory(base_dir, filename, as_attachment=True)
 
 
 @auth_bp.route('/szignal_cases')

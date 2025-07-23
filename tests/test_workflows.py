@@ -146,3 +146,51 @@ def test_upload_large_file_blocked(client, app):
     with app.app_context():
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
         
+def test_file_download_success(client, app):
+    with app.app_context():
+        create_user()
+        case = Case(case_number='DL1')
+        db.session.add(case)
+        db.session.commit()
+        case_id = case.id
+        upload_dir = os.path.join(app.root_path, 'uploads', str(case_id))
+        os.makedirs(upload_dir, exist_ok=True)
+        with open(os.path.join(upload_dir, 'file.txt'), 'wb') as f:
+            f.write(b'data')
+        db.session.add(
+            UploadedFile(case_id=case_id, filename='file.txt', uploader='admin')
+        )
+        db.session.commit()
+    with client:
+        login(client, 'admin', 'secret')
+        resp = client.get(f'/cases/{case_id}/files/file.txt')
+        assert resp.status_code == 200
+        assert resp.data == b'data'
+
+
+def test_file_download_not_found(client, app):
+    with app.app_context():
+        create_user()
+        case = Case(case_number='DL2')
+        db.session.add(case)
+        db.session.commit()
+        case_id = case.id
+    with client:
+        login(client, 'admin', 'secret')
+        resp = client.get(f'/cases/{case_id}/files/missing.txt')
+        assert resp.status_code == 404
+
+
+def test_file_download_traversal_blocked(client, app):
+    with app.app_context():
+        create_user()
+        case = Case(case_number='DL3')
+        db.session.add(case)
+        db.session.commit()
+        case_id = case.id
+    with client:
+        login(client, 'admin', 'secret')
+        resp = client.get(f'/cases/{case_id}/files/../secret.txt')
+        assert resp.status_code == 403       
+        
+ 
