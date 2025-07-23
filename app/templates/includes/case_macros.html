@@ -126,7 +126,7 @@
 {% endmacro %}
 
 {# File upload block with accessible labeling #}
-{% macro file_upload_block(upload_url, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés') %}
+{% macro file_upload_block(upload_url, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés', extra_fields={}) %}
 <form id="{{ form_id }}"
       action="{{ upload_url }}"
       method="post"
@@ -134,6 +134,9 @@
       class="needs-validation d-flex align-items-center"
       novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% for name, value in extra_fields.items() %}
+    <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
   <label for="{{ input_name }}" class="form-label me-2 visually-hidden">{{ label }}</label>
   <input type="file"
          id="{{ input_name }}"
