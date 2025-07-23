@@ -178,9 +178,10 @@ def vizsgalat_elrendelese(case_id):
         return redirect(url_for('main.ugyeim'))
 
     if request.method == 'POST':
-        now    = now_local().strftime('%Y-%m-%d %H:%M')
-        author = current_user.screen_name or current_user.username
-        entries = []
+        # Use UTC timestamp and the username for logging toxicology orders
+        now    = datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M')
+        author = current_user.username
+        lines = []
 
         # Tox text fields with checkbox state
         for label, field in [
@@ -200,12 +201,15 @@ def vizsgalat_elrendelese(case_id):
             ('CO', 'tox_co'),
             ('Egyéb toxikológia', 'egyeb_tox')
         ]:
-            val = request.form.get(field)
-            checked = request.form.get(f"{field}_ordered") == "on"
-            setattr(case, field, val if checked else None)
-            setattr(case, f"{field}_ordered", checked)
-            if checked and val:
-                entries.append(f"{label}: {val.strip()}")
+            val = (request.form.get(field) or "").strip()
+            ordered = request.form.get(f"{field}_ordered") == "on"
+            setattr(case, field, val if ordered else None)
+            setattr(case, f"{field}_ordered", ordered)
+            if ordered:
+                if val:
+                    lines.append(f"{label} rendelve ({val}): {now} – {author}")
+                else:
+                    lines.append(f"{label} rendelve: {now} – {author}")
 
         # Organs – checkboxes
         for organ, label in [
@@ -228,7 +232,7 @@ def vizsgalat_elrendelese(case_id):
                 badge = []
                 if spec: badge.append("Spec fest")
                 if immun: badge.append("Immun")
-                entries.append(f"{label} – {', '.join(badge)}")
+                lines.append(f"{label} – {', '.join(badge)} rendelve: {now} – {author}")
 
         # Egyéb szerv
         egyeb_szerv = request.form.get('egyeb_szerv')
@@ -240,10 +244,10 @@ def vizsgalat_elrendelese(case_id):
             badge = []
             if case.egyeb_szerv_spec: badge.append("Spec fest")
             if case.egyeb_szerv_immun: badge.append("Immun")
-            entries.append(f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)}")
+            lines.append(f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)} rendelve: {now} – {author}")
 
-        if entries:
-            new_block = "\n".join(f"{e} rendelve: {now} – {author}" for e in entries)
+        if lines:
+            new_block = "\n".join(lines)
             if case.tox_orders:
                 case.tox_orders = case.tox_orders.strip() + "\n" + new_block
             else:
