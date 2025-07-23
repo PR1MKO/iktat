@@ -286,7 +286,7 @@ def create_case():
         expert_2 = ''
         describer = ''
         # Add more default fields as needed
-        
+
     form = CaseIdentifierForm(request.form if request.method == 'POST' else None)
 
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
@@ -392,7 +392,8 @@ def create_case():
         leiro_users=leiro_users,
         szakerto_choices=szakerto_choices,
         leiro_choices=leiro_choices,
-        case=case
+        case=case,
+        form=form  # ✅ FIXED HERE
     )
 
 @auth_bp.route('/cases/<int:case_id>/edit', methods=['GET', 'POST'])
