@@ -357,7 +357,7 @@
           {% endif %}
         </td>
         <td>{{ case.institution_name }}</td>
-        <td>{{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '' }}</td>
+        <td>{{ case.registration_time|localtime if case.registration_time else '' }}</td>
         <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
         <td>{{ users_map[case.expert_1].screen_name if case.expert_1 in users_map else case.expert_1 or '–' }}</td>
         <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>

@@ -304,8 +304,6 @@ def create_case():
         missing = []
         if not request.form.get('case_type'):
             missing.append('Típus')
-        if not request.form.get('registration_time'):
-            missing.append('Regisztrálva')
         if not request.form.get('beerk_modja'):
             missing.append('Beérkezés módja')
         if missing:
@@ -326,11 +324,7 @@ def create_case():
         birth_date = None
         if request.form.get('birth_date'):
             birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
-        reg_time_str = request.form.get('registration_time')
-        if reg_time_str:
-            registration_time = datetime.strptime(reg_time_str, '%Y-%m-%dT%H:%M').replace(tzinfo=pytz.UTC)
-        else:
-            registration_time = datetime.now(pytz.UTC)
+        registration_time = now_local()
         year = registration_time.year
         count = Case.query.filter(
             func.strftime("%Y", Case.registration_time) == str(year)

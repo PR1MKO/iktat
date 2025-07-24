@@ -5,6 +5,7 @@ from app import db                # ← your single SQLAlchemy instance
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import pytz
+from app.utils.time_utils import BUDAPEST_TZ
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import object_session
 
@@ -35,7 +36,7 @@ class Case(db.Model):
     birth_date           = db.Column(db.Date)
     registration_time    = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(pytz.UTC)
+        default=lambda: datetime.now(BUDAPEST_TZ)
     )
     deadline             = db.Column(db.DateTime(timezone=True))
     expert_1             = db.Column(db.String(128))
