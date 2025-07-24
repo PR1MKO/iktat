@@ -154,6 +154,7 @@ def elvegzem(case_id):
 
     ctx = build_case_context(case)
     ctx['case'] = case
+    ctx['default_leiro_id'] = current_user.default_leiro_id
     if current_user.role=='szakértő':
         leiro_users = (User.query
             .filter_by(role='leíró')
