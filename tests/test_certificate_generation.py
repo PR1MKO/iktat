@@ -47,7 +47,8 @@ def test_certificate_generation_success(client, app):
     with client:
         login(client, 'doc', 'pw')
         resp = client.post(f'/ugyeim/{cid}/generate_certificate', data=form_data)
-        assert resp.status_code == 204
+        assert resp.status_code == 302
+        assert resp.headers['Location'].endswith(f'/ugyeim/{cid}/elvegzem')
     with app.app_context():
         case = db.session.get(Case, cid)
         assert case.certificate_generated is True

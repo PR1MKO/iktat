@@ -516,5 +516,5 @@ def generate_certificate(case_id):
     case.certificate_generated_at = datetime.utcnow()
     db.session.commit()
 
-    return ('', 204)
+    return redirect(url_for('main.elvegzem', case_id=case.id))
     
