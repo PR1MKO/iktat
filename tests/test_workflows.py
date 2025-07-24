@@ -189,6 +189,46 @@ def test_file_download_traversal_blocked(client, app):
     with client:
         login(client, 'admin', 'secret')
         resp = client.get(f'/cases/{case_id}/files/../secret.txt')
-        assert resp.status_code == 403       
+        assert resp.status_code == 403
+
+
+def test_elvegzem_auto_assigns_default_describer(client, app):
+    with app.app_context():
+        leiro = create_user('leiro', 'pw', role='leíró')
+        expert = create_user('doc', 'pw', role='szakértő')
+        expert.default_leiro_id = leiro.id
+        case = Case(case_number='AUTO1', expert_1='doc')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+
+    with client:
+        login(client, 'doc', 'pw')
+        resp = client.post(f'/ugyeim/{cid}/elvegzem', data={})
+        assert resp.status_code == 302
+
+    with app.app_context():
+        updated = db.session.get(Case, cid)
+        assert updated.describer == 'leiro'
+
+
+def test_elvegzem_keeps_existing_describer(client, app):
+    with app.app_context():
+        leiro = create_user('leiro2', 'pw', role='leíró')
+        expert = create_user('doc2', 'pw', role='szakértő')
+        expert.default_leiro_id = leiro.id
+        case = Case(case_number='AUTO2', expert_1='doc2', describer='other')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+
+    with client:
+        login(client, 'doc2', 'pw')
+        resp = client.post(f'/ugyeim/{cid}/elvegzem', data={})
+        assert resp.status_code == 302
+
+    with app.app_context():
+        updated = db.session.get(Case, cid)
+        assert updated.describer == 'other'    
         
  

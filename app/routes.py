@@ -128,6 +128,17 @@ def elvegzem(case_id):
         # 3) Status transition
         previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
+        
+        # Auto-assign default leíró if the expert has one and none selected
+        if (
+            current_user.role == 'szakértő'
+            and not case.describer
+            and current_user.default_leiro_id
+        ):
+            leiro = db.session.get(User, current_user.default_leiro_id)
+            if leiro:
+                case.describer = leiro.username
+                
         try:
             db.session.commit()
         except Exception as e:
