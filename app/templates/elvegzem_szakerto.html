@@ -176,22 +176,23 @@
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Történt-e boncolás?</label><br>
+              <input type="radio" name="boncolas_tortent" value="" checked hidden>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" {% if case.boncolas_tortent %}checked{% endif %} required>
+                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" required>
                 <label class="form-check-label" for="bonc-igen">igen</label>
               </div>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" {% if not case.boncolas_tortent %}checked{% endif %} required>
+                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" required>
                 <label class="form-check-label" for="bonc-nem">nem</label>
               </div>
-              <div id="further-tests" class="mt-2" style="display:{% if case.boncolas_tortent %}block{% else %}none{% endif %};">
+              <div id="tovabbi-vizsgalat-group" class="mt-2" style="display:none">
                 <label class="form-label">Ha igen, várhatók-e további vizsgálati eredmények?</label><br>
                 <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" id="further-igen" name="varhato_tovabbi_vizsgalat" value="igen" {% if case.varhato_tovabbi_vizsgalat %}checked{% endif %} required>
+                  <input class="form-check-input" type="radio" id="further-igen" name="varhato_tovabbi_vizsgalat" value="igen">
                   <label class="form-check-label" for="further-igen">igen</label>
                 </div>
                 <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" id="further-nem" name="varhato_tovabbi_vizsgalat" value="nem" {% if not case.varhato_tovabbi_vizsgalat %}checked{% endif %} required>
+                  <input class="form-check-input" type="radio" id="further-nem" name="varhato_tovabbi_vizsgalat" value="nem">
                   <label class="form-check-label" for="further-nem">nem</label>
                 </div>
               </div>
@@ -312,10 +313,19 @@
     .catch(() => alert('Hiba a megjegyzés mentésekor'));
   });
 
-  document.querySelectorAll('input[name="boncolas_tortent"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      const block = document.getElementById('further-tests');
-      block.style.display = document.getElementById('bonc-igen').checked ? 'block' : 'none';
+  const boncolasRadios = document.querySelectorAll('input[name="boncolas_tortent"]');
+  const tovabbiBox = document.getElementById('tovabbi-vizsgalat-group');
+  const tovabbiRadios = document.querySelectorAll('input[name="varhato_tovabbi_vizsgalat"]');
+
+  boncolasRadios.forEach(r => {
+    r.addEventListener('change', () => {
+      if (r.value === 'igen') {
+        tovabbiBox.style.display = 'block';
+        tovabbiRadios.forEach(x => x.required = true);
+      } else {
+        tovabbiBox.style.display = 'none';
+        tovabbiRadios.forEach(x => x.required = false);
+      }
     });
   });
 
