@@ -115,6 +115,20 @@ class Case(db.Model):
     egyeb_szerv_spec = db.Column(db.Boolean, default=False)
     egyeb_szerv_immun = db.Column(db.Boolean, default=False)
 
+    # --- Halotti bizonyítvány adatok ---
+    halalt_megallap_pathologus = db.Column(db.Boolean, default=False)
+    halalt_megallap_kezeloorvos = db.Column(db.Boolean, default=False)
+    halalt_megallap_mas_orvos = db.Column(db.Boolean, default=False)
+    boncolas_tortent = db.Column(db.Boolean, default=False)
+    varhato_tovabbi_vizsgalat = db.Column(db.Boolean, default=False)
+    kozvetlen_halalok = db.Column(db.String(256))
+    kozvetlen_halalok_ido = db.Column(db.String(64))
+    alapbetegseg_szovodmenyei = db.Column(db.String(256))
+    alapbetegseg_szovodmenyei_ido = db.Column(db.String(64))
+    alapbetegseg = db.Column(db.String(256))
+    alapbetegseg_ido = db.Column(db.String(64))
+    kiserobetegsegek = db.Column(db.Text)
+
     uploaded_file_records = db.relationship(
         'UploadedFile',
         order_by='UploadedFile.upload_time.desc()',

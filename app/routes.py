@@ -125,7 +125,21 @@ def elvegzem(case_id):
         f = request.files.get('result_file')
         file_uploaded = handle_file_upload(case, f) if f else None
 
-        # 3) Status transition
+        # 3) Halotti bizonyítvány mezők
+        case.halalt_megallap_pathologus = bool(request.form.get('halalt_megallap_pathologus'))
+        case.halalt_megallap_kezeloorvos = bool(request.form.get('halalt_megallap_kezeloorvos'))
+        case.halalt_megallap_mas_orvos = bool(request.form.get('halalt_megallap_mas_orvos'))
+        case.boncolas_tortent = bool(request.form.get('boncolas_tortent'))
+        case.varhato_tovabbi_vizsgalat = bool(request.form.get('varhato_tovabbi_vizsgalat'))
+        case.kozvetlen_halalok = request.form.get('kozvetlen_halalok') or None
+        case.kozvetlen_halalok_ido = request.form.get('kozvetlen_halalok_ido') or None
+        case.alapbetegseg_szovodmenyei = request.form.get('alapbetegseg_szovodmenyei') or None
+        case.alapbetegseg_szovodmenyei_ido = request.form.get('alapbetegseg_szovodmenyei_ido') or None
+        case.alapbetegseg = request.form.get('alapbetegseg') or None
+        case.alapbetegseg_ido = request.form.get('alapbetegseg_ido') or None
+        case.kiserobetegsegek = request.form.get('kiserobetegsegek') or None
+
+        # 4) Status transition
         previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
         
@@ -428,5 +442,67 @@ def leiro_upload_file(case_id):
         flash("Valami hiba történt. Próbáld újra.", "danger")
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
     flash(f'Fájl feltöltve: {file_uploaded}', 'success')
-    return redirect(url_for('main.leiro_elvegzem', case_id=case.id))    
+    return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
+
+
+@main_bp.route('/ugyeim/<int:case_id>/generate_certificate', methods=['POST'])
+@login_required
+@roles_required('szakértő')
+def generate_certificate(case_id):
+    """Generate death certificate text file for the given case."""
+    case = db.session.get(Case, case_id) or abort(404)
+    if not is_expert_for_case(current_user, case):
+        return abort(403)
+
+    lines = [
+        f'Ügy: {case.case_number} – {case.deceased_name}',
+        '',
+        'A halál okát megállapította:'
+    ]
+    if case.halalt_megallap_pathologus:
+        lines.append(' - pathológus')
+    if case.halalt_megallap_kezeloorvos:
+        lines.append(' - kezelőorvos')
+    if case.halalt_megallap_mas_orvos:
+        lines.append(' - más orvos')
+
+    lines.append('')
+    lines.append(f'Történt-e boncolás: {"igen" if case.boncolas_tortent else "nem"}')
+    if case.boncolas_tortent:
+        lines.append(
+            'További vizsgálati eredmények várhatók: ' +
+            ('igen' if case.varhato_tovabbi_vizsgalat else 'nem')
+        )
+    lines.extend([
+        '',
+        f'Közvetlen halálok: {case.kozvetlen_halalok or ""}',
+        f'Esemény kezdete és halál között eltelt idő: {case.kozvetlen_halalok_ido or ""}',
+        '',
+        f'Alapbetegség szövődményei: {case.alapbetegseg_szovodmenyei or ""}',
+        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_szovodmenyei_ido or ""}',
+        '',
+        f'Alapbetegség: {case.alapbetegseg or ""}',
+        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_ido or ""}',
+        '',
+        'Kísérő betegségek vagy állapotok:',
+        case.kiserobetegsegek or ''
+    ])
+
+    ts = now_local().strftime('%Y.%m.%d %H:%M')
+    lines.append('')
+    lines.append(f'Generálva: {ts}')
+
+    filename = f'halottvizsgalati_bizonyitvany-{case.case_number}.txt'
+    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, filename)
+
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(lines))
+    except Exception as e:
+        current_app.logger.error(f"Certificate generation failed: {e}")
+        return jsonify({'error': 'write_failed'}), 500
+
+    return ('', 204)
     
