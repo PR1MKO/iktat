@@ -48,6 +48,10 @@ def test_certificate_generation_success(client, app):
         login(client, 'doc', 'pw')
         resp = client.post(f'/ugyeim/{cid}/generate_certificate', data=form_data)
         assert resp.status_code == 204
+    with app.app_context():
+        case = db.session.get(Case, cid)
+        assert case.certificate_generated is True
+        assert case.certificate_generated_at is not None
     path = os.path.join(app.root_path, 'uploads', str(cid), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
     assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
@@ -94,3 +98,8 @@ def test_certificate_generation_missing_field(client, app):
         assert resp.status_code == 400
     path = os.path.join(app.root_path, 'uploads', str(cid), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
     assert not os.path.exists(path)
+    with app.app_context():
+        case = db.session.get(Case, cid)
+        assert not case.certificate_generated
+        assert case.certificate_generated_at is None
+ 

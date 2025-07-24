@@ -117,6 +117,7 @@ def create_app(test_config=None):
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     app.jinja_env.filters['localtime'] = localtime
+    app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
 
     # --- Changelog helpers -------------------------------------------------
     import re

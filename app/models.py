@@ -128,6 +128,9 @@ class Case(db.Model):
     alapbetegseg = db.Column(db.String(256))
     alapbetegseg_ido = db.Column(db.String(64))
     kiserobetegsegek = db.Column(db.Text)
+    
+    certificate_generated = db.Column(db.Boolean, default=False)
+    certificate_generated_at = db.Column(db.DateTime)
 
     uploaded_file_records = db.relationship(
         'UploadedFile',

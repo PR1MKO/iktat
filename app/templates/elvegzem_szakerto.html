@@ -158,6 +158,11 @@
       <div class="card mb-4">
         <div class="card-header fw-bold">Halottvizsgálati Bizonyítvány Generálása</div>
         <div class="card-body">
+          {% if case.certificate_generated %}
+          <div class="alert alert-success">
+            Halottvizsgálati Bizonyítvány generálva: {{ case.certificate_generated_at.astimezone(BUDAPEST_TZ).strftime('%Y.%m.%d %H:%M') }}
+          </div>
+          {% else %}
           {% set none_selected = not (case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos) %}
           <div class="row mb-3">
             <div class="col-md-6 mb-3">
@@ -242,14 +247,16 @@
           <div class="invalid-feedback">Kérjük, adja meg.</div>
         </div>
       </div>
-      <div class="row mb-3">
-        <div class="col-md-12">
-          <button id="generate-certificate-btn" class="btn btn-warning">Bizonyítvány Generálása</button>
-        </div>
-		</div>
-		</div>
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <button id="generate-certificate-btn" class="btn btn-warning">Bizonyítvány Generálása</button>
+            </div>
+          </div>
+          {% endif %}
+                </div>
       </div>
     </div>
+	</div>
 
 		<!-- Submit buttons -->
     <div class="col-12 d-flex gap-2 mb-4">

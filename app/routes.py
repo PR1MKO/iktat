@@ -511,6 +511,10 @@ def generate_certificate(case_id):
     except Exception as e:
         current_app.logger.error(f"Certificate generation failed: {e}")
         return jsonify({'error': 'write_failed'}), 500
+        
+    case.certificate_generated = True
+    case.certificate_generated_at = datetime.utcnow()
+    db.session.commit()
 
     return ('', 204)
     
