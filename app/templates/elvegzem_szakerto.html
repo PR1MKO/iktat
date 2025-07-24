@@ -136,9 +136,12 @@
             <div class="card-body p-3 d-flex">
               <label for="describer" class="form-label visually-hidden">Leíró</label>
               <select id="describer" name="describer" class="form-select" aria-label="Leíró" title="Leíró">
-                <option value="" {% if not case.describer %}selected{% endif %}>(válasszon)</option>
+                <option value="" {% if not case.describer and not default_leiro_id %}selected{% endif %}>(válasszon)</option>
                 {% for u in leiro_users %}
-                  <option value="{{ u.username }}" {% if case.describer == u.username %}selected{% endif %}>
+                  <option value="{{ u.username }}"
+                    {% if case.describer == u.username or (not case.describer and default_leiro_id == u.id) %}
+                      selected
+                    {% endif %}>
                     {{ u.screen_name or u.username }}
                   </option>
                 {% endfor %}
