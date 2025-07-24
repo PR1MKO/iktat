@@ -115,6 +115,7 @@
 
   <!-- Jegyzet & Változásnapló & Submit -->
   <form id="certificate-form" method="post"
+        action="{{ url_for('main.generate_certificate', case_id=case.id) }}"
         enctype="multipart/form-data"
         class="row mb-4 g-3 needs-validation"
         novalidate>
@@ -249,7 +250,7 @@
       </div>
           <div class="row mb-3">
             <div class="col-md-12">
-              <button id="generate-certificate-btn" class="btn btn-warning">Bizonyítvány Generálása</button>
+              <button type="submit" class="btn btn-warning">Bizonyítvány Generálása</button>
             </div>
           </div>
           {% endif %}
@@ -340,26 +341,6 @@
     r.addEventListener('change', updateTovabbi);
   });
   updateTovabbi();
-
-  document.getElementById('generate-certificate-btn').addEventListener('click', function(e) {
-    e.preventDefault();
-    const form = document.getElementById('certificate-form');
-    if (!form.reportValidity()) return;
-    if (!confirm('Generálás után a dokumentum nem változtatható')) return;
-
-    const formData = new FormData(form);
-    fetch("{{ url_for('main.generate_certificate', case_id=case.id) }}", {
-      method: 'POST',
-	  body: formData,
-      headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
-    }).then(r => {
-      if (r.ok) {
-        alert('Bizonyítvány generálva.');
-      } else {
-        alert('Hiba történt a generálás során.');
-      }
-    });
-  });
 
   (function() {
     'use strict';
