@@ -458,40 +458,45 @@ def generate_certificate(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         return abort(403)
+    # Validate mandatory fields
+    required_values = [
+        case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos,
+        case.kozvetlen_halalok,
+        case.kozvetlen_halalok_ido,
+        case.alapbetegseg_szovodmenyei,
+        case.alapbetegseg_szovodmenyei_ido,
+        case.alapbetegseg,
+        case.alapbetegseg_ido,
+        case.kiserobetegsegek,
+    ]
+    if any(v is None or (isinstance(v, str) and not v.strip()) for v in required_values):
+        flash('Minden mező kitöltése kötelező.', 'danger')
+        return jsonify({'error': 'missing_fields'}), 400
+
+    who = 'pathológus' if case.halalt_megallap_pathologus else (
+        'kezelőorvos' if case.halalt_megallap_kezeloorvos else 'más orvos'
+    )
 
     lines = [
-        f'Ügy: {case.case_number} – {case.deceased_name}',
+        f'Ügy: {case.case_number}',
         '',
-        'A halál okát megállapította:'
+        f'A halál okát megállapította: {who}',
+        '',
+        f'Történt-e boncolás: {"igen" if case.boncolas_tortent else "nem"}',
+        f'Ha igen, várhatók-e további vizsgálati eredmények: ' +
+        ('igen' if case.varhato_tovabbi_vizsgalat else 'nem'),
+        '',
+        f'Közvetlen halálok: {case.kozvetlen_halalok}',
+        f'Esemény kezdete és halál között eltelt idő: {case.kozvetlen_halalok_ido}',
+        '',
+        f'Alapbetegség szövődményei: {case.alapbetegseg_szovodmenyei}',
+        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_szovodmenyei_ido}',
+        '',
+        f'Alapbetegség: {case.alapbetegseg}',
+        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_ido}',
+        '',
+        f'Kísérő betegségek vagy állapotok: {case.kiserobetegsegek}',
     ]
-    if case.halalt_megallap_pathologus:
-        lines.append(' - pathológus')
-    if case.halalt_megallap_kezeloorvos:
-        lines.append(' - kezelőorvos')
-    if case.halalt_megallap_mas_orvos:
-        lines.append(' - más orvos')
-
-    lines.append('')
-    lines.append(f'Történt-e boncolás: {"igen" if case.boncolas_tortent else "nem"}')
-    if case.boncolas_tortent:
-        lines.append(
-            'További vizsgálati eredmények várhatók: ' +
-            ('igen' if case.varhato_tovabbi_vizsgalat else 'nem')
-        )
-    lines.extend([
-        '',
-        f'Közvetlen halálok: {case.kozvetlen_halalok or ""}',
-        f'Esemény kezdete és halál között eltelt idő: {case.kozvetlen_halalok_ido or ""}',
-        '',
-        f'Alapbetegség szövődményei: {case.alapbetegseg_szovodmenyei or ""}',
-        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_szovodmenyei_ido or ""}',
-        '',
-        f'Alapbetegség: {case.alapbetegseg or ""}',
-        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_ido or ""}',
-        '',
-        'Kísérő betegségek vagy állapotok:',
-        case.kiserobetegsegek or ''
-    ])
 
     ts = now_local().strftime('%Y.%m.%d %H:%M')
     lines.append('')
