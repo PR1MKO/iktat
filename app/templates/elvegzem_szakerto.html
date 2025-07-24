@@ -317,17 +317,21 @@
   const tovabbiBox = document.getElementById('tovabbi-vizsgalat-group');
   const tovabbiRadios = document.querySelectorAll('input[name="varhato_tovabbi_vizsgalat"]');
 
+  function updateTovabbi() {
+    const selected = document.querySelector('input[name="boncolas_tortent"]:checked');
+    if (selected && selected.value === 'igen') {
+      tovabbiBox.style.display = 'block';
+      tovabbiRadios.forEach(x => x.required = true);
+    } else {
+      tovabbiBox.style.display = 'none';
+      tovabbiRadios.forEach(x => x.required = false);
+    }
+  }
+
   boncolasRadios.forEach(r => {
-    r.addEventListener('change', () => {
-      if (r.value === 'igen') {
-        tovabbiBox.style.display = 'block';
-        tovabbiRadios.forEach(x => x.required = true);
-      } else {
-        tovabbiBox.style.display = 'none';
-        tovabbiRadios.forEach(x => x.required = false);
-      }
-    });
+    r.addEventListener('change', updateTovabbi);
   });
+  updateTovabbi();
 
   document.getElementById('generate-certificate-btn').addEventListener('click', function(e) {
     e.preventDefault();
