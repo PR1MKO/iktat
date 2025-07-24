@@ -231,4 +231,3 @@ def test_elvegzem_keeps_existing_describer(client, app):
         updated = db.session.get(Case, cid)
         assert updated.describer == 'other'    
         
- 

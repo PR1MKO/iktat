@@ -23,4 +23,4 @@ def test_localtime_filter(app):
         filt = app.jinja_env.filters['localtime']
         dt = datetime(2021, 1, 1, 12, 0)
         expected = dt.replace(tzinfo=pytz.utc).astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
-        assert filt(dt) == expected
+        assert filt(dt) == expected 

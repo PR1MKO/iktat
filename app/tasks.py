@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import pytz
 from app.models import db, Case, User
+from app.utils.time_utils import BUDAPEST_TZ
 from app.audit import log_action
 from app.email_utils import send_email
 
@@ -48,7 +49,14 @@ def send_deadline_warning_email():
 
     body = "Az alábbi ügyek 14 napon belül esedékesek:\n\n"
     for case in cases_due:
-        body += f"- {case.case_number} – {case.deceased_name} – Határidő: {case.deadline.strftime('%Y-%m-%d %H:%M')}\n"
+        if case.deadline:
+            dt = case.deadline
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=pytz.UTC)
+            formatted = dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
+        else:
+            formatted = 'N/A'
+        body += f"- {case.case_number} – {case.deceased_name} – Határidő: {formatted}\n"
 
     send_email(
         subject="⚠ Határidő figyelmeztetés – Ügykezelő rendszer",

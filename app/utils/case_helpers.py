@@ -1,5 +1,8 @@
 # utils/case_helpers.py
 from app.models import ChangeLog
+from .time_utils import BUDAPEST_TZ
+from datetime import datetime
+import pytz
 
 def build_case_context(case):
     grouped_orders = []
@@ -22,8 +25,17 @@ def build_case_context(case):
         .all()
     )
 
+    formatted_ts = ''
+    if case.certificate_generated_at:
+        ts = case.certificate_generated_at
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=pytz.UTC)
+        formatted_ts = ts.astimezone(BUDAPEST_TZ).strftime('%Y.%m.%d %H:%M')
+
     return {
         'grouped_orders': grouped_orders,
-        'changelog_entries': changelog_entries
+        'changelog_entries': changelog_entries,
+        'formatted_certificate_timestamp': formatted_ts,
+        'show_certificate_message': bool(case.certificate_generated)
     }
 

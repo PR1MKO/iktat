@@ -249,8 +249,7 @@ def list_cases():
         query_params=query_params,
         status_filter=status_filter,
         case_type_filter=case_type_filter,
-        search_query=search_query,
-        today=now.date()
+        search_query=search_query
     )
 
 @auth_bp.route('/cases/<int:case_id>')

@@ -12,3 +12,5 @@ def register_error_handlers(app):
         db.session.rollback()
         return render_template('500.html'), 500
         
+        
+ 

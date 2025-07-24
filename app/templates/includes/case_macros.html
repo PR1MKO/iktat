@@ -345,20 +345,20 @@
     </thead>
     <tbody>
       {% for case in cases %}
-      <tr {% if case.deadline and case.deadline.date() < today %}class="table-danger"{% endif %}>
+      <tr {% if case.is_overdue %}class="table-danger"{% endif %}>
 
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
         <td>{{ case.case_type }}</td>
         <td>
           {{ case.status }}
-          {% if case.deadline and case.deadline.date() < today %}
+          {% if case.is_overdue %}
             <span class="badge bg-danger ms-2">KÉSÉSBEN</span>
           {% endif %}
         </td>
         <td>{{ case.institution_name }}</td>
         <td>{{ case.registration_time|localtime if case.registration_time else '' }}</td>
-        <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '' }}</td>
+        <td>{{ case.formatted_deadline }}</td>
         <td>{{ users_map[case.expert_1].screen_name if case.expert_1 in users_map else case.expert_1 or '–' }}</td>
         <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
@@ -404,7 +404,7 @@
             <span>
               <strong>
                 {% if item.__class__.__name__ not in ['tuple', 'list'] %}
-                  {{ item.deadline.strftime(value_format) if item.deadline else '' }}
+                  {{ item.formatted_deadline if item.deadline else '' }}
                 {% else %}
                   {{ item[1] }}
                 {% endif %}

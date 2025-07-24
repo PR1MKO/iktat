@@ -47,3 +47,4 @@ def test_duplicate_note_entries_create_separate_logs(app, monkeypatch):
         logs = ChangeLog.query.filter_by(case_id=case.id, field_name="notes").order_by(ChangeLog.id).all()
         assert len(logs) == 2
         assert logs[0].new_value == logs[1].new_value == first
+

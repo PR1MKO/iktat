@@ -25,3 +25,4 @@ def log_action(action: str, details: str = None):
         if has_request_context():
             flash("Valami hiba történt. Próbáld újra.", "danger")
 
+ 

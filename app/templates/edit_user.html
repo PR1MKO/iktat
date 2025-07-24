@@ -122,7 +122,7 @@
               </td>
               <td>{{ case.deceased_name }}</td>
               <td>{{ case.status }}</td>
-              <td>{{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '–' }}</td>
+              <td>{{ case.formatted_deadline if case.deadline else '–' }}</td>
             </tr>
           {% endfor %}
         </tbody>

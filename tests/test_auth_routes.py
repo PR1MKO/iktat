@@ -97,7 +97,6 @@ def test_register_duplicate_username(client, app):
         with app.app_context():
             assert User.query.filter_by(username='dup').count() == 1
             
-
 def test_edit_user_dropdown_shown_for_szakerto(client, app):
     with app.app_context():
         create_user('root', 'rootpass', role='admin')
@@ -145,6 +144,5 @@ def test_edit_user_sets_default_leiro(client, app):
         assert resp.status_code == 200
         with app.app_context():
             updated = db.session.get(User, sz_id)
-            assert updated.default_leiro_id == leiro_id    
-        
-        
+            assert updated.default_leiro_id == leiro_id
+          

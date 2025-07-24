@@ -102,4 +102,4 @@ def test_certificate_generation_missing_field(client, app):
         case = db.session.get(Case, cid)
         assert not case.certificate_generated
         assert case.certificate_generated_at is None
- 
+
