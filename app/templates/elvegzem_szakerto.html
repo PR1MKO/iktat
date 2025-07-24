@@ -155,76 +155,84 @@
 
     <!-- Halotti bizonyítvány kitöltése -->
     <div class="col-12">
-      <div class="row mb-3">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">A halál okát megállapította:</label><br>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="det-path" name="halalt_megallap_pathologus" {% if case.halalt_megallap_pathologus %}checked{% endif %}>
-            <label class="form-check-label" for="det-path">pathológus</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="det-kez" name="halalt_megallap_kezeloorvos" {% if case.halalt_megallap_kezeloorvos %}checked{% endif %}>
-            <label class="form-check-label" for="det-kez">kezelőorvos</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="det-mas" name="halalt_megallap_mas_orvos" {% if case.halalt_megallap_mas_orvos %}checked{% endif %}>
-            <label class="form-check-label" for="det-mas">más orvos</label>
-          </div>
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Történt-e boncolás?</label><br>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="bonc-igen" name="boncolas_tortent" {% if case.boncolas_tortent %}checked{% endif %}>
-            <label class="form-check-label" for="bonc-igen">igen</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" id="bonc-nem">
-            <label class="form-check-label" for="bonc-nem">nem</label>
-          </div>
-          <div id="further-tests" class="mt-2" style="display:{% if case.boncolas_tortent %}block{% else %}none{% endif %};">
-            <label class="form-label">Ha igen, várhatók-e további vizsgálati eredmények?</label><br>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="further-igen" name="varhato_tovabbi_vizsgalat" {% if case.varhato_tovabbi_vizsgalat %}checked{% endif %}>
-              <label class="form-check-label" for="further-igen">igen</label>
+      <div class="card mb-4">
+        <div class="card-header fw-bold">Halottvizsgálati Bizonyítvány Generálása</div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">A halál okát megállapította:</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="det-path" name="halalt_megallap" value="pathologus" {% if case.halalt_megallap_pathologus %}checked{% endif %}>
+                <label class="form-check-label" for="det-path">pathológus</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="det-kez" name="halalt_megallap" value="kezeloorvos" {% if case.halalt_megallap_kezeloorvos %}checked{% endif %}>
+                <label class="form-check-label" for="det-kez">kezelőorvos</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="det-mas" name="halalt_megallap" value="mas_orvos" {% if case.halalt_megallap_mas_orvos %}checked{% endif %}>
+                <label class="form-check-label" for="det-mas">más orvos</label>
+              </div>
             </div>
-            <div class="form-check form-check-inline">
-              <input class="form-check-input" type="checkbox" id="further-nem">
-              <label class="form-check-label" for="further-nem">nem</label>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Történt-e boncolás?</label><br>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" {% if case.boncolas_tortent %}checked{% endif %}>
+                <label class="form-check-label" for="bonc-igen">igen</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" {% if not case.boncolas_tortent %}checked{% endif %}>
+                <label class="form-check-label" for="bonc-nem">nem</label>
+              </div>
+              <div id="further-tests" class="mt-2" style="display:{% if case.boncolas_tortent %}block{% else %}none{% endif %};">
+                <label class="form-label">Ha igen, várhatók-e további vizsgálati eredmények?</label><br>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="further-igen" name="varhato_tovabbi_vizsgalat" value="igen" {% if case.varhato_tovabbi_vizsgalat %}checked{% endif %}>
+                  <label class="form-check-label" for="further-igen">igen</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="further-nem" name="varhato_tovabbi_vizsgalat" value="nem" {% if not case.varhato_tovabbi_vizsgalat %}checked{% endif %}>
+                  <label class="form-check-label" for="further-nem">nem</label>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
       <div class="row mb-3">
         <div class="col-md-6 mb-3">
           <label class="form-label">Közvetlen halálok:</label>
-          <input type="text" name="kozvetlen_halalok" class="form-control" value="{{ case.kozvetlen_halalok or '' }}">
+          <input type="text" name="kozvetlen_halalok" class="form-control" value="{{ case.kozvetlen_halalok or '' }}" required>
+          <div class="invalid-feedback">Kérjük, adja meg.</div>
         </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-          <input type="text" name="kozvetlen_halalok_ido" class="form-control" value="{{ case.kozvetlen_halalok_ido or '' }}">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+            <input type="text" name="kozvetlen_halalok_ido" class="form-control" value="{{ case.kozvetlen_halalok_ido or '' }}" required>
+            <div class="invalid-feedback">Kérjük, adja meg.</div>
         </div>
+	  </div>
+        <div class="row mb-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Alapbetegség szövődményei (ha voltak):</label>
+            <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}" required>
+            <div class="invalid-feedback">Kérjük, adja meg.</div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+            <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}" required>
+            <div class="invalid-feedback">Kérjük, adja meg.</div>
+          </div>
       </div>
-      <div class="row mb-3">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Alapbetegség szövődményei (ha voltak):</label>
-          <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-          <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}">
-        </div>
-      </div>
-      <div class="row mb-3">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Alapbetegség:</label>
-          <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-          <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}">
-        </div>
-      </div>
+        <div class="row mb-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Alapbetegség:</label>
+            <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}" required>
+            <div class="invalid-feedback">Kérjük, adja meg.</div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+            <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}" required>
+            <div class="invalid-feedback">Kérjük, adja meg.</div>
+          </div>
       <div class="row mb-3">
         <div class="col-md-12">
           <label class="form-label">Kísérő betegségek vagy állapotok, melyek az alapbetegségtől függetlenek, de hozzájárulhattak a halálhoz</label>
@@ -235,10 +243,12 @@
         <div class="col-md-12">
           <button id="generate-certificate-btn" class="btn btn-warning">Bizonyítvány Generálása</button>
         </div>
+		</div>
+		</div>
       </div>
     </div>
 
-    <!-- Submit buttons -->
+		<!-- Submit buttons -->
     <div class="col-12 d-flex gap-2 mb-4">
       <button type="submit" class="btn btn-success">Elvégezve</button>
       <a href="{{ url_for('main.ugyeim') }}"
@@ -301,9 +311,11 @@
     .catch(() => alert('Hiba a megjegyzés mentésekor'));
   });
 
-  document.getElementById('bonc-igen').addEventListener('change', function() {
-    const block = document.getElementById('further-tests');
-    block.style.display = this.checked ? 'block' : 'none';
+  document.querySelectorAll('input[name="boncolas_tortent"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const block = document.getElementById('further-tests');
+      block.style.display = document.getElementById('bonc-igen').checked ? 'block' : 'none';
+    });
   });
 
   document.getElementById('generate-certificate-btn').addEventListener('click', function(e) {

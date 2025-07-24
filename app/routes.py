@@ -126,11 +126,16 @@ def elvegzem(case_id):
         file_uploaded = handle_file_upload(case, f) if f else None
 
         # 3) Halotti bizonyítvány mezők
-        case.halalt_megallap_pathologus = bool(request.form.get('halalt_megallap_pathologus'))
-        case.halalt_megallap_kezeloorvos = bool(request.form.get('halalt_megallap_kezeloorvos'))
-        case.halalt_megallap_mas_orvos = bool(request.form.get('halalt_megallap_mas_orvos'))
-        case.boncolas_tortent = bool(request.form.get('boncolas_tortent'))
-        case.varhato_tovabbi_vizsgalat = bool(request.form.get('varhato_tovabbi_vizsgalat'))
+        who = request.form.get('halalt_megallap')
+        case.halalt_megallap_pathologus = who == 'pathologus'
+        case.halalt_megallap_kezeloorvos = who == 'kezeloorvos'
+        case.halalt_megallap_mas_orvos = who == 'mas_orvos'
+
+        bonc = request.form.get('boncolas_tortent')
+        case.boncolas_tortent = bonc == 'igen'
+
+        further = request.form.get('varhato_tovabbi_vizsgalat')
+        case.varhato_tovabbi_vizsgalat = further == 'igen'
         case.kozvetlen_halalok = request.form.get('kozvetlen_halalok') or None
         case.kozvetlen_halalok_ido = request.form.get('kozvetlen_halalok_ido') or None
         case.alapbetegseg_szovodmenyei = request.form.get('alapbetegseg_szovodmenyei') or None
