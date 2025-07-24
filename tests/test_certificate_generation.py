@@ -32,16 +32,28 @@ def test_certificate_generation_success(client, app):
     upload_root = os.path.join(app.root_path, 'uploads')
     if os.path.exists(upload_root):
         shutil.rmtree(upload_root)
+    form_data = {
+        'halalt_megallap': 'pathologus',
+        'boncolas_tortent': 'igen',
+        'varhato_tovabbi_vizsgalat': 'nem',
+        'kozvetlen_halalok': 'ok',
+        'kozvetlen_halalok_ido': '1 nap',
+        'alapbetegseg_szovodmenyei': 'szov',
+        'alapbetegseg_szovodmenyei_ido': '2 nap',
+        'alapbetegseg': 'beteg',
+        'alapbetegseg_ido': '3 nap',
+        'kiserobetegsegek': 'egyeb'
+    }
     with client:
         login(client, 'doc', 'pw')
-        resp = client.post(f'/ugyeim/{cid}/generate_certificate')
+        resp = client.post(f'/ugyeim/{cid}/generate_certificate', data=form_data)
         assert resp.status_code == 204
     path = os.path.join(app.root_path, 'uploads', str(cid), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
     assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
     assert lines[0] == 'Ügy: CERT1'
-    assert lines[2] == 'A halál okát megállapította: pathológus'
+    assert lines[2] == 'A halál okát megállapította: pathologus'
     assert lines[4] == 'Történt-e boncolás: igen'
     assert lines[5] == 'Ha igen, várhatók-e további vizsgálati eredmények: nem'
     assert lines[7] == 'Közvetlen halálok: ok'
@@ -64,9 +76,21 @@ def test_certificate_generation_missing_field(client, app):
     upload_root = os.path.join(app.root_path, 'uploads')
     if os.path.exists(upload_root):
         shutil.rmtree(upload_root)
+    form_data = {
+        'halalt_megallap': 'pathologus',
+        'boncolas_tortent': 'igen',
+        'varhato_tovabbi_vizsgalat': 'nem',
+        'kozvetlen_halalok': 'ok',
+        'kozvetlen_halalok_ido': '1 nap',
+        'alapbetegseg_szovodmenyei': 'szov',
+        'alapbetegseg_szovodmenyei_ido': '2 nap',
+        'alapbetegseg': '',
+        'alapbetegseg_ido': '3 nap',
+        'kiserobetegsegek': 'egyeb'
+    }
     with client:
         login(client, 'doc', 'pw')
-        resp = client.post(f'/ugyeim/{cid}/generate_certificate')
+        resp = client.post(f'/ugyeim/{cid}/generate_certificate', data=form_data)
         assert resp.status_code == 400
     path = os.path.join(app.root_path, 'uploads', str(cid), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
     assert not os.path.exists(path)

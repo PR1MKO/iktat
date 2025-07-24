@@ -337,18 +337,19 @@
   document.getElementById('generate-certificate-btn').addEventListener('click', function(e) {
     e.preventDefault();
     const form = document.getElementById('certificate-form');
-    if (!form.reportValidity()) {
-      return;
-    }
+    if (!form.reportValidity()) return;
     if (!confirm('Generálás után a dokumentum nem változtatható')) return;
+
+    const formData = new FormData(form);
     fetch("{{ url_for('main.generate_certificate', case_id=case.id) }}", {
       method: 'POST',
+	  body: formData,
       headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
     }).then(r => {
       if (r.ok) {
         alert('Bizonyítvány generálva.');
       } else {
-        alert('Hiba történt');
+        alert('Hiba történt a generálás során.');
       }
     });
   });

@@ -458,51 +458,47 @@ def generate_certificate(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         return abort(403)
-    current_app.logger.debug(f"Form data received: {dict(request.form)}")
-    required_fields = {
-        'halalt_megallap': case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos,
-        'kozvetlen_halalok': case.kozvetlen_halalok,
-        'kozvetlen_halalok_ido': case.kozvetlen_halalok_ido,
-        'alapbetegseg_szovodmenyei': case.alapbetegseg_szovodmenyei,
-        'alapbetegseg_szovodmenyei_ido': case.alapbetegseg_szovodmenyei_ido,
-        'alapbetegseg': case.alapbetegseg,
-        'alapbetegseg_ido': case.alapbetegseg_ido,
-        'kiserobetegsegek': case.kiserobetegsegek,
-    }
+        
+    form = request.form
+    current_app.logger.debug(f"Form data received: {dict(form)}")
 
-    for field, value in required_fields.items():
-        if value is None or (isinstance(value, str) and not value.strip()):
-            flash('Minden mező kitöltése kötelező.', 'danger')
-            return jsonify({'error': f'Missing field {field}'}), 400
+    who = form.get('halalt_megallap')
+    bonc = form.get('boncolas_tortent')
+    tovabbi = form.get('varhato_tovabbi_vizsgalat', 'nem')
+    kozvetlen = form.get('kozvetlen_halalok')
+    kozvetlen_ido = form.get('kozvetlen_halalok_ido')
+    szov = form.get('alapbetegseg_szovodmenyei')
+    szov_ido = form.get('alapbetegseg_szovodmenyei_ido')
+    alap = form.get('alapbetegseg')
+    alap_ido = form.get('alapbetegseg_ido')
+    kiserok = form.get('kiserobetegsegek')
 
-    who = 'pathológus' if case.halalt_megallap_pathologus else (
-        'kezelőorvos' if case.halalt_megallap_kezeloorvos else 'más orvos'
-    )
+    required = [who, bonc, kozvetlen, kozvetlen_ido,
+                szov, szov_ido, alap, alap_ido, kiserok]
+    if any(v is None or not v.strip() for v in required):
+        return jsonify({'error': 'missing_field'}), 400
 
     lines = [
         f'Ügy: {case.case_number}',
         '',
         f'A halál okát megállapította: {who}',
         '',
-        f'Történt-e boncolás: {"igen" if case.boncolas_tortent else "nem"}',
-        f'Ha igen, várhatók-e további vizsgálati eredmények: ' +
-        ('igen' if case.varhato_tovabbi_vizsgalat else 'nem'),
+        f'Történt-e boncolás: {bonc}',
+        f'Ha igen, várhatók-e további vizsgálati eredmények: {tovabbi}',
         '',
-        f'Közvetlen halálok: {case.kozvetlen_halalok}',
-        f'Esemény kezdete és halál között eltelt idő: {case.kozvetlen_halalok_ido}',
+        f'Közvetlen halálok: {kozvetlen}',
+        f'Esemény kezdete és halál között eltelt idő: {kozvetlen_ido}',
         '',
-        f'Alapbetegség szövődményei: {case.alapbetegseg_szovodmenyei}',
-        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_szovodmenyei_ido}',
+        f'Alapbetegség szövődményei: {szov}',
+        f'Esemény kezdete és halál között eltelt idő: {szov_ido}',
         '',
-        f'Alapbetegség: {case.alapbetegseg}',
-        f'Esemény kezdete és halál között eltelt idő: {case.alapbetegseg_ido}',
+        f'Alapbetegség: {alap}',
+        f'Esemény kezdete és halál között eltelt idő: {alap_ido}',
         '',
-        f'Kísérő betegségek vagy állapotok: {case.kiserobetegsegek}',
+        f'Kísérő betegségek vagy állapotok: {kiserok}',
+        '',
+        f'Generálva: {now_local().strftime("%Y.%m.%d %H:%M")}'
     ]
-
-    ts = now_local().strftime('%Y.%m.%d %H:%M')
-    lines.append('')
-    lines.append(f'Generálva: {ts}')
 
     filename = f'halottvizsgalati_bizonyitvany-{case.case_number}.txt'
     folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
