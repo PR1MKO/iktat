@@ -114,7 +114,7 @@
   </div>
 
   <!-- Jegyzet & Változásnapló & Submit -->
-  <form method="post"
+  <form id="certificate-form" method="post"
         enctype="multipart/form-data"
         class="row mb-4 g-3 needs-validation"
         novalidate>
@@ -158,11 +158,12 @@
       <div class="card mb-4">
         <div class="card-header fw-bold">Halottvizsgálati Bizonyítvány Generálása</div>
         <div class="card-body">
+          {% set none_selected = not (case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos) %}
           <div class="row mb-3">
             <div class="col-md-6 mb-3">
               <label class="form-label">A halál okát megállapította:</label><br>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="det-path" name="halalt_megallap" value="pathologus" {% if case.halalt_megallap_pathologus %}checked{% endif %} required>
+                <input class="form-check-input" type="radio" id="det-path" name="halalt_megallap" value="pathologus" {% if case.halalt_megallap_pathologus or none_selected %}checked{% endif %} required>
                 <label class="form-check-label" for="det-path">pathológus</label>
               </div>
               <div class="form-check form-check-inline">
@@ -335,6 +336,10 @@
 
   document.getElementById('generate-certificate-btn').addEventListener('click', function(e) {
     e.preventDefault();
+    const form = document.getElementById('certificate-form');
+    if (!form.reportValidity()) {
+      return;
+    }
     if (!confirm('Generálás után a dokumentum nem változtatható')) return;
     fetch("{{ url_for('main.generate_certificate', case_id=case.id) }}", {
       method: 'POST',

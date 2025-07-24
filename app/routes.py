@@ -458,20 +458,22 @@ def generate_certificate(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         return abort(403)
-    # Validate mandatory fields
-    required_values = [
-        case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos,
-        case.kozvetlen_halalok,
-        case.kozvetlen_halalok_ido,
-        case.alapbetegseg_szovodmenyei,
-        case.alapbetegseg_szovodmenyei_ido,
-        case.alapbetegseg,
-        case.alapbetegseg_ido,
-        case.kiserobetegsegek,
-    ]
-    if any(v is None or (isinstance(v, str) and not v.strip()) for v in required_values):
-        flash('Minden mező kitöltése kötelező.', 'danger')
-        return jsonify({'error': 'missing_fields'}), 400
+    current_app.logger.debug(f"Form data received: {dict(request.form)}")
+    required_fields = {
+        'halalt_megallap': case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos,
+        'kozvetlen_halalok': case.kozvetlen_halalok,
+        'kozvetlen_halalok_ido': case.kozvetlen_halalok_ido,
+        'alapbetegseg_szovodmenyei': case.alapbetegseg_szovodmenyei,
+        'alapbetegseg_szovodmenyei_ido': case.alapbetegseg_szovodmenyei_ido,
+        'alapbetegseg': case.alapbetegseg,
+        'alapbetegseg_ido': case.alapbetegseg_ido,
+        'kiserobetegsegek': case.kiserobetegsegek,
+    }
+
+    for field, value in required_fields.items():
+        if value is None or (isinstance(value, str) and not value.strip()):
+            flash('Minden mező kitöltése kötelező.', 'danger')
+            return jsonify({'error': f'Missing field {field}'}), 400
 
     who = 'pathológus' if case.halalt_megallap_pathologus else (
         'kezelőorvos' if case.halalt_megallap_kezeloorvos else 'más orvos'
