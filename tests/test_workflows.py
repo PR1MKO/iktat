@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 import pytest
-from app.models import User, Case, UploadedFile, db
+from app.models import User, Case, UploadedFile, ChangeLog, db
 from tests.helpers import create_user, login
 
 def test_case_creation_success(client, app):
@@ -27,6 +27,26 @@ def test_case_creation_success(client, app):
         assert case.case_number
         assert case.status == 'beérkezett'
         assert case.deadline.date() == (case.registration_time + timedelta(days=30)).date()
+ 
+ 
+def test_changelog_created_on_case_creation(client, app):
+    with app.app_context():
+        create_user()
+    with client:
+        login(client, 'admin', 'secret')
+        data = {
+            'case_type': 'test',
+            'beerk_modja': 'Email',
+            'temp_id': 'TEMP2',
+        }
+        resp = client.post('/cases/new', data=data, follow_redirects=False)
+        assert resp.status_code == 302
+    with app.app_context():
+        case = Case.query.order_by(Case.id.desc()).first()
+        log = ChangeLog.query.filter_by(case_id=case.id, field_name='system').first()
+        assert log is not None
+        assert log.new_value == 'ügy érkeztetve'
+        assert log.edited_by == 'admin'
 
 
 def test_case_creation_missing_required(client, app):

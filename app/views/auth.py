@@ -377,6 +377,19 @@ def create_case():
                 case=case,
                 form=form
             )
+            
+        # Log case creation in ChangeLog
+        log = ChangeLog(
+            case=new_case,
+            field_name='system',
+            old_value='',
+            new_value='ügy érkeztetve',
+            edited_by=current_user.screen_name or current_user.username,
+            timestamp=datetime.now(pytz.UTC),
+        )
+        db.session.add(log)
+        db.session.commit()
+        
         flash('New case created.', 'success')
         return redirect(url_for('auth.case_detail', case_id=new_case.id))
 
@@ -389,7 +402,7 @@ def create_case():
         case=case,
         form=form  # ✅ FIXED HERE
     )
-
+    
 @auth_bp.route('/cases/<int:case_id>/edit', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin', 'iroda')
