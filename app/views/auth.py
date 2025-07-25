@@ -428,6 +428,55 @@ def edit_case(case_id):
         leiro_users=leiro_users
     )
 
+
+@auth_bp.route('/cases/<int:case_id>/edit_basic', methods=['GET', 'POST'])
+@login_required
+def edit_case_basic(case_id):
+    if current_user.role != 'iroda':
+        abort(403)
+    case = db.session.get(Case, case_id) or abort(404)
+
+    if request.method == 'POST':
+        case.deceased_name = request.form.get('deceased_name') or None
+        case.lanykori_nev = request.form.get('lanykori_nev') or None
+        case.taj_szam = request.form.get('taj_szam') or None
+        case.szul_hely = request.form.get('szul_hely') or None
+        birth_date_str = request.form.get('birth_date')
+        if birth_date_str:
+            try:
+                case.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                case.birth_date = None
+        else:
+            case.birth_date = None
+        case.poszeidon = request.form.get('poszeidon') or None
+        case.external_case_number = request.form.get('external_case_number') or None
+        case.temp_id = request.form.get('temp_id') or None
+        case.institution_name = request.form.get('institution_name') or None
+        case.beerk_modja = request.form.get('beerk_modja') or None
+
+        log = ChangeLog(
+            case=case,
+            field_name='system',
+            old_value='',
+            new_value='alapadat(ok) szerkesztve',
+            edited_by=current_user.screen_name or current_user.username,
+            timestamp=datetime.now(pytz.UTC),
+        )
+        db.session.add(log)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash('Valami hiba történt. Próbáld újra.', 'danger')
+            return render_template('edit_case_basic.html', case=case)
+        flash('Az alapadatok módosításai elmentve.', 'success')
+        return redirect(url_for('auth.list_cases'))
+
+    return render_template('edit_case_basic.html', case=case)
+
+
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')

@@ -369,6 +369,14 @@
              title="Ügy megtekintése">
             Megtekintés
           </a>
+          {% if current_user.role == 'iroda' %}
+          <a class="btn btn-outline-secondary btn-sm ms-1"
+             href="{{ url_for('auth.edit_case_basic', case_id=case.id) }}"
+             aria-label="Alapadatok szerkesztése"
+             title="Alapadatok szerkesztése">
+            Szerkeszt
+          </a>
+          {% endif %}
         </td>
       </tr>
       {% else %}
