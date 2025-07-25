@@ -60,7 +60,7 @@
   <!-- Külső ügyirat szám -->
   <div class="col-md-6">
     {{ form.external_id.label(class="form-label") }}
-    {{ form.external_id(class="form-control", placeholder="Külső ügyirat szám") }}
+    {{ form.external_id(class="form-control") }}
     {% for error in form.external_id.errors %}
       <div class="text-danger">{{ error }}</div>
     {% endfor %}
@@ -69,7 +69,7 @@
   <!-- Egyéb azonosító -->
   <div class="col-md-6">
     {{ form.temp_id.label(class="form-label") }}
-    {{ form.temp_id(class="form-control", placeholder="Egyéb azonosító") }}
+    {{ form.temp_id(class="form-control") }}
     {% for error in form.temp_id.errors %}
       <div class="text-danger">{{ error }}</div>
     {% endfor %}
@@ -82,7 +82,7 @@
       id="deceased_name"
       name="deceased_name"
       class="form-control"
-      aria-label="Elhunyt neve" title="Elhunyt neve" placeholder="Elhunyt neve">
+      aria-label="Elhunyt neve" title="Elhunyt neve">
   </div>
   
   <div class="col-md-6">
@@ -137,7 +137,6 @@
       id="birth_date"
       name="birth_date"
       class="form-control"
-      placeholder="yyyy-mm-dd"
       aria-label="Születési idő" title="Születési idő">
   </div>
 
@@ -158,7 +157,7 @@
       id="institution_name"
       name="institution_name"
       class="form-control"
-      aria-label="Intézmény neve" title="Intézmény neve" placeholder="Intézmény neve">
+      aria-label="Intézmény neve" title="Intézmény neve">
   </div>
 
   <!-- Submit buttons -->
