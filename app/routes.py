@@ -518,3 +518,18 @@ def generate_certificate(case_id):
 
     return redirect(url_for('main.elvegzem', case_id=case.id))
     
+@main_bp.route('/cases/<int:case_id>/complete_expert', methods=['POST'])
+@login_required
+def complete_expert(case_id):
+    case = Case.query.get_or_404(case_id)
+
+    # Set status to indicate expert work is done
+    case.status = 'szakértő kész'
+
+    # Log the action
+    append_note(case, "Szakértő elvégezte az ügyet.")
+    db.session.commit()
+
+    flash("Szakértői vizsgálat elvégezve.")
+    return redirect(url_for('main.ugyeim'))
+    

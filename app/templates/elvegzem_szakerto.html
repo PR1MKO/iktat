@@ -257,16 +257,17 @@
                 </div>
       </div>
     </div>
-	</div>
+		</div>
 
-		<!-- Submit buttons -->
-    <div class="col-12 d-flex gap-2 mb-4">
+  </form>
+
+  <form method="post" action="{{ url_for('main.complete_expert', case_id=case.id) }}" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="d-flex gap-2 mb-4">
       <button type="submit" class="btn btn-success">Elvégezve</button>
-      <a href="{{ url_for('main.ugyeim') }}"
-         class="btn btn-outline-secondary">Mégse</a>
+      <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
     </div>
   </form>
-</div>
 
 <script>
   document.getElementById('assign-btn').addEventListener('click', function(e) {
