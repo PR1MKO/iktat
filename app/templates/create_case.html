@@ -133,11 +133,15 @@
 
   <div class="col-md-6">
     <label for="birth_date" class="form-label">Születési idő</label>
-    <input type="date"
+    <input type="text"
       id="birth_date"
       name="birth_date"
       class="form-control"
-      aria-label="Születési idő" title="Születési idő">
+      placeholder="yyyy-mm-dd"
+      pattern="\d{4}-\d{2}-\d{2}"
+      inputmode="numeric"
+      aria-label="Születési idő"
+      title="Születési idő">
   </div>
 
   <!-- TAJ szám és Poszeidon -->
