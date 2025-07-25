@@ -524,10 +524,10 @@ def complete_expert(case_id):
     case = Case.query.get_or_404(case_id)
 
     # Set status to indicate expert work is done
-    case.status = 'szakértő kész'
+    case.status = 'boncolva-leírónál'
 
     # Log the action
-    append_note(case, "Szakértő elvégezte az ügyet.")
+    append_note(case, "Szakértő elvégezte a boncolást.")
     db.session.commit()
 
     flash("Szakértői vizsgálat elvégezve.")
