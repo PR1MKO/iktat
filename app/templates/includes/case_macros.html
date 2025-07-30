@@ -363,19 +363,10 @@
         <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
         <td>
-          <a class="btn btn-outline-primary btn-sm"
-             href="{{ url_for('auth.case_detail', case_id=case.id) }}"
-             aria-label="Ügy megtekintése"
-             title="Ügy megtekintése">
-            Megtekintés
-          </a>
-          {% if current_user.role != 'iroda' %}
-          <a class="btn btn-outline-secondary btn-sm ms-1"
-             href="{{ url_for('auth.edit_case_basic', case_id=case.id) }}"
-             aria-label="Alapadatok szerkesztése"
-             title="Alapadatok szerkesztése">
-            Szerkeszt
-          </a>
+          {% if current_user.role == 'iroda' %}
+          <a href="{{ url_for('main.edit_case', case_id=case.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
+          {% else %}
+          <a href="{{ url_for('main.view_case', case_id=case.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>
           {% endif %}
         </td>
       </tr>
