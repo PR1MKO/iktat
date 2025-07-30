@@ -268,6 +268,23 @@ def case_detail(case_id):
         **ctx
     )
 
+@auth_bp.route('/cases/<int:case_id>/view')
+@login_required
+def view_case(case_id):
+    """Read-only view for case details."""
+    case = db.session.get(Case, case_id) or abort(404)
+
+    ctx = build_case_context(case)
+    ctx['changelog_entries'] = [
+        e for e in ctx['changelog_entries'] if e.field_name != 'notes'
+    ]
+
+    return render_template(
+        'case_detail.html',
+        case=case,
+        **ctx
+    )
+
 @auth_bp.route('/cases/closed')
 @login_required
 def closed_cases():
