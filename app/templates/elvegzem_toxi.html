@@ -16,6 +16,21 @@
     </div>
   </div>
 
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      {% set upload_url = url_for('auth.upload_file', case_id=case.id) %}
+      {% set categories = [
+          ('tox_lelet', 'toxikológiai lelet'),
+          ('végzés', 'végzés'),
+          ('egyéb', 'egyéb')
+        ] %}
+      {{ cm.file_upload_block(upload_url, 'file', 'tox-file-upload', True, 'Fájl feltöltése', 'Feltöltés', {}, categories) }}
+    </div>
+    <div class="col-md-12 mb-3">
+      {{ cm.uploaded_files(case) }}
+    </div>
+  </div>
+
   <form method="post" class="row g-3 needs-validation" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     {{ cm.notes_ajax_block(case) }}

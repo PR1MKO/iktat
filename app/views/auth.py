@@ -509,7 +509,7 @@ def edit_case_basic(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
-@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def upload_file(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
@@ -557,12 +557,13 @@ def upload_file(case_id):
     flash(f'Uploaded: {", ".join(saved)}', 'success')
     if request.referrer and '/ugyeim/' in request.referrer:
         return redirect(url_for('main.elvegzem', case_id=case_id))
-    else:
-        return redirect(url_for('auth.case_detail', case_id=case_id))
+    if request.referrer and 'elvegzem_toxi' in request.referrer:
+        return redirect(url_for('main.elvegzem_toxi', case_id=case_id))
+    return redirect(url_for('auth.case_detail', case_id=case_id))
 
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')
 @login_required
-@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
     base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
     

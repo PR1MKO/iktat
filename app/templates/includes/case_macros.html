@@ -129,7 +129,7 @@
 {% endmacro %}
 
 {# File upload block with accessible labeling #}
-{% macro file_upload_block(upload_url, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés', extra_fields={}) %}
+{% macro file_upload_block(upload_url, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés', extra_fields={}, categories=None) %}
 <form id="{{ form_id }}"
       action="{{ upload_url }}"
       method="post"
@@ -149,11 +149,21 @@
          required
          aria-label="{{ label }}"
          title="{{ label }}">
+  {% set default_categories = [
+        ('végzés', 'Végzés'),
+        ('jegyzőkönyv', 'Jegyzőkönyv'),
+        ('egyéb', 'Egyéb')
+     ] %}
+  {% set cat_options = categories if categories is not none else default_categories %}
   <select name="category" class="form-select me-2" required>
     <option value="" disabled selected>-- Válasszon kategóriát --</option>
-    <option value="végzés">Végzés</option>
-    <option value="jegyzőkönyv">Jegyzőkönyv</option>
-    <option value="egyéb">Egyéb</option>
+    {% for c in cat_options %}
+      {% if c.__class__.__name__ in ['list', 'tuple'] %}
+        <option value="{{ c[0] }}">{{ c[1] }}</option>
+      {% else %}
+        <option value="{{ c }}">{{ c }}</option>
+      {% endif %}
+    {% endfor %}
   </select>
   <button type="submit" class="btn btn-outline-success">{{ btn_label }}</button>
 </form>
