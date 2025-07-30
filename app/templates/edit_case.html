@@ -13,12 +13,11 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='error' else category }}">{{ message|safe }}</div>
+      {% endfor %}
+    </div>
   {% endif %}
 {% endwith %}
 
@@ -27,13 +26,13 @@
 
   <!-- Deceased name -->
   <div class="col-md-6">
-    <label for="deceased_name" class="form-label visually-hidden">Elhunyt neve *</label>
+    <label for="deceased_name" class="form-label">Elhunyt neve *</label>
     <input type="text"
            id="deceased_name"
            name="deceased_name"
            class="form-control"
            value="{{ case.deceased_name }}"
-           required aria-label="Elhunyt neve" title="Elhunyt neve" placeholder="Elhunyt neve">
+           required aria-label="Elhunyt neve" title="Elhunyt neve">
     <div class="invalid-feedback">Kérjük, adja meg az elhunyt nevét.</div>
   </div>
 
@@ -86,54 +85,53 @@
 
   <!-- Institution / External number -->
   <div class="col-md-6">
-    <label for="institution_name" class="form-label visually-hidden">Intézmény neve</label>
+    <label for="institution_name" class="form-label">Intézmény neve</label>
     <input type="text"
            id="institution_name"
            name="institution_name"
            class="form-control"
            value="{{ case.institution_name }}"
-           aria-label="Intézmény neve" title="Intézmény neve" placeholder="Intézmény neve">
+           aria-label="Intézmény neve" title="Intézmény neve">
   </div>
   <div class="col-md-6">
-    <label for="external_case_number" class="form-label visually-hidden">Külső ügyirat szám</label>
+    <label for="external_case_number" class="form-label">Külső ügyirat szám</label>
     <input type="text"
            id="external_case_number"
            name="external_case_number"
            class="form-control"
            value="{{ case.external_case_number }}"
-           aria-label="Külső ügyirat szám" title="Külső ügyirat szám" placeholder="Külső ügyirat szám">
+           aria-label="Külső ügyirat szám" title="Külső ügyirat szám">
   </div>
 
   <!-- Dates -->
-  <div class="col-md-4">
-    <label for="birth_date" class="form-label visually-hidden">Születési idő</label>
+  <div class="col-md-6">
+    <label for="birth_date" class="form-label">Születési idő</label>
     <input type="date"
       id="birth_date"
       name="birth_date"
       class="form-control"
       value="{{ case.birth_date }}"
-      placeholder="Születési idő"
       aria-label="Születési idő" title="Születési idő">
   </div>
-  <div class="col-md-4">
-    <label for="registration_time" class="form-label visually-hidden">Regisztrálva *</label>
+  <div class="col-md-6">
+    <label for="registration_time" class="form-label">Regisztrálva *</label>
     <input type="datetime-local"
            id="registration_time"
            name="registration_time"
            class="form-control"
            value="{{ case.registration_time|datetimeformat }}"
-           required aria-label="Regisztráció ideje" title="Regisztráció ideje" placeholder="Regisztráció ideje">
+           required aria-label="Regisztráció ideje" title="Regisztráció ideje">
     <div class="invalid-feedback">Kérjük, adja meg a regisztráció időpontját.</div>
   </div>
-  <div class="col-md-4">
-    <label for="deadline" class="form-label visually-hidden">Határidő</label>
+  <div class="col-md-6">
+    <label for="deadline" class="form-label">Határidő</label>
     <input type="datetime-local"
            id="deadline"
            name="deadline"
            class="form-control"
            value="{{ case.deadline|datetimeformat }}"
            disabled
-           aria-label="Határidő" title="Határidő" placeholder="Határidő">
+           aria-label="Határidő" title="Határidő">
   </div>
 
   <!-- Experts & Describer -->
@@ -187,7 +185,7 @@
     <div class="card mb-3">
       <div class="card-header fw-bold">További adatok</div>
       <div class="card-body row g-3">
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label for="beerk_modja" class="form-label">Beérkezés módja</label>
           <select class="form-select" id="beerk_modja" name="beerk_modja">
             <option value="">-- Válasszon --</option>
@@ -197,19 +195,19 @@
             <option value="Személyes" {% if case.beerk_modja == "Személyes" %}selected{% endif %}>Személyes</option>
           </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label for="poszeidon" class="form-label">Poszeidon</label>
           <input type="text" id="poszeidon" name="poszeidon" class="form-control" value="{{ case.poszeidon or '' }}">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label for="lanykori_nev" class="form-label">Elhunyt lánykori neve</label>
           <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ case.lanykori_nev or '' }}">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label for="szul_hely" class="form-label">Születési hely</label>
           <input type="text" id="szul_hely" name="szul_hely" class="form-control" value="{{ case.szul_hely or '' }}">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-6">
           <label for="taj_szam" class="form-label">TAJ szám</label>
           <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ case.taj_szam or '' }}">
         </div>
