@@ -501,7 +501,6 @@ def edit_case_basic(case_id):
 
     return render_template('edit_case_basic.html', case=case)
 
-
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló')
@@ -511,6 +510,7 @@ def upload_file(case_id):
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
     upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    category = request.form.get('category')
     if not category:
         flash("Kérjük, válasszon fájl kategóriát.", "error")
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
