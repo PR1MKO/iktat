@@ -364,9 +364,9 @@
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
         <td>
           {% if current_user.role == 'iroda' %}
-          <a href="{{ url_for('main.edit_case', case_id=case.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
+            <a href="{{ url_for('auth.edit_case', case_id=case.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
           {% else %}
-          <a href="{{ url_for('main.view_case', case_id=case.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>
+            <a href="{{ url_for('main.view_case', case_id=case.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>
           {% endif %}
         </td>
       </tr>
