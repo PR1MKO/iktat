@@ -29,7 +29,7 @@ def append_note(case, note_text, author=None):
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     return entry
 
-def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER'):
+def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'):
     """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
     if not file or not file.filename:
         return None
@@ -46,7 +46,8 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER'):
         case_id=case.id,
         filename=fn,
         uploader=current_user.screen_name or current_user.username,
-        upload_time=datetime.now(pytz.UTC)
+        upload_time=datetime.now(pytz.UTC),
+        category=category
     )
     db.session.add(rec)
     return fn
@@ -123,7 +124,8 @@ def elvegzem(case_id):
 
         # 2) File upload
         f = request.files.get('result_file')
-        file_uploaded = handle_file_upload(case, f) if f else None
+        category = request.form.get('category') or 'egyéb'
+        file_uploaded = handle_file_upload(case, f, category=category) if f else None
 
         # 3) Halotti bizonyítvány mezők
         who = request.form.get('halalt_megallap')
@@ -328,8 +330,9 @@ def upload_elvegzes_files(case_id):
         return redirect(url_for('main.elvegzem', case_id=case.id))
 
     saved = []
+    category = request.form.get('category') or 'egyéb'
     for f in files:
-        fn = handle_file_upload(case, f)
+        fn = handle_file_upload(case, f, category=category)
         if fn:
             saved.append(fn)
 
@@ -369,7 +372,8 @@ def leiro_elvegzem(case_id):
     if request.method == 'POST':
         # 1) Handle file upload
         file = request.files.get('result_file')
-        file_uploaded = handle_file_upload(case, file)
+        category = request.form.get('category') or 'egyéb'
+        file_uploaded = handle_file_upload(case, file, category=category)
 
         # 2) Add any new note
         new_note = request.form.get('new_note','').strip()
@@ -434,7 +438,8 @@ def leiro_upload_file(case_id):
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
     file = request.files.get('result_file')
-    file_uploaded = handle_file_upload(case, file)
+    category = request.form.get('category') or 'egyéb'
+    file_uploaded = handle_file_upload(case, file, category=category)
     if not file_uploaded:
         flash('Nincs kiválasztott fájl!', 'warning')
         return redirect(url_for('main.leiro_elvegzem', case_id=case.id))

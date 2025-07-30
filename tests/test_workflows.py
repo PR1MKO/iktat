@@ -99,7 +99,7 @@ def test_file_upload_success(client, app, tmp_path):
         case_id = case.id
     with client:
         login(client, 'admin', 'secret')
-        data = {'file': (io.BytesIO(b'pdfdata'), 'report.pdf')}
+        data = {'file': (io.BytesIO(b'pdfdata'), 'report.pdf'), 'category': 'egyéb'}
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
     upload_path = os.path.join(app.root_path, 'uploads', str(case_id), 'report.pdf')
@@ -116,7 +116,7 @@ def test_upload_requires_auth(client, app):
         db.session.add(case)
         db.session.commit()
         case_id = case.id
-    data = {'file': (io.BytesIO(b'x'), 'file.pdf')}
+    data = {'file': (io.BytesIO(b'x'), 'file.pdf'), 'category': 'egyéb'}
     resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
     assert resp.status_code == 302
     assert '/login' in resp.headers['Location']
@@ -133,7 +133,7 @@ def test_upload_blocked_for_finalized_case(client, app):
         case_id = case.id
     with client:
         login(client, 'admin', 'secret')
-        data = {'file': (io.BytesIO(b'abc'), 'closed.pdf')}
+        data = {'file': (io.BytesIO(b'abc'), 'closed.pdf'), 'category': 'egyéb'}
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data', follow_redirects=False)
         assert resp.status_code == 302
         assert '/cases/' in resp.headers['Location']
@@ -155,7 +155,7 @@ def test_upload_large_file_blocked(client, app):
         login(client, 'admin', 'secret')
         resp = client.post(
             f'/cases/{case_id}/upload',
-            data={'file': (large_data, 'big.pdf')},
+            data={'file': (large_data, 'big.pdf'), 'category': 'egyéb'},
             content_type='multipart/form-data'
         )
         assert resp.status_code == 413
@@ -176,7 +176,7 @@ def test_file_download_success(client, app):
         with open(os.path.join(upload_dir, 'file.txt'), 'wb') as f:
             f.write(b'data')
         db.session.add(
-            UploadedFile(case_id=case_id, filename='file.txt', uploader='admin')
+            UploadedFile(case_id=case_id, filename='file.txt', uploader='admin', category='egyéb')
         )
         db.session.commit()
     with client:

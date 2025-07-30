@@ -37,7 +37,7 @@ def test_iroda_permissions(client, app):
     with client:
         login(client, 'office', 'pw')
         assert client.get('/cases/new').status_code == 200
-        data = {'file': (io.BytesIO(b'x'), 'test.txt')}
+        data = {'file': (io.BytesIO(b'x'), 'test.txt'), 'category': 'egyéb'}
         resp = client.post(f'/cases/{cid}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
         # forbidden actions

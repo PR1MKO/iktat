@@ -51,9 +51,12 @@
       <ul class="list-group list-group-flush mb-0">
         {% for rec in case.uploaded_file_records %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">
-              {{ rec.filename }}
-            </a>
+            <div>
+              <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">
+                {{ rec.filename }}
+              </a>
+              <span class="badge bg-secondary ms-2">{{ rec.category }}</span>
+            </div>
             <small class="text-muted">
               {{ rec.upload_time|localtime }} &mdash; {{ rec.uploader }}
             </small>
@@ -146,6 +149,12 @@
          required
          aria-label="{{ label }}"
          title="{{ label }}">
+  <select name="category" class="form-select me-2" required>
+    <option value="" disabled selected>-- Válasszon kategóriát --</option>
+    <option value="végzés">Végzés</option>
+    <option value="jegyzőkönyv">Jegyzőkönyv</option>
+    <option value="egyéb">Egyéb</option>
+  </select>
   <button type="submit" class="btn btn-outline-success">{{ btn_label }}</button>
 </form>
 {% endmacro %}

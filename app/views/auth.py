@@ -511,6 +511,9 @@ def upload_file(case_id):
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
     upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    if not category:
+        flash("Kérjük, válasszon fájl kategóriát.", "error")
+        return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
     os.makedirs(upload_folder, exist_ok=True)
     files = request.files.getlist('file')
     if not files:
@@ -530,7 +533,8 @@ def upload_file(case_id):
                 case_id   = case.id,
                 filename  = fn,
                 uploader  = current_user.username,
-                upload_time = datetime.now(pytz.UTC)
+                upload_time = datetime.now(pytz.UTC),
+                category = category
             )
             db.session.add(upload_rec)
             saved.append(fn)
@@ -628,8 +632,9 @@ def assign_pathologist(case_id):
 
     if request.method == 'POST' and request.form.get('action') == 'upload':
         file = request.files.get('file')
+        category = request.form.get('category') or 'egyéb'
         if file:
-            fn = handle_file_upload(case, file)
+            fn = handle_file_upload(case, file, category=category)
             if fn:
                 try:
                     db.session.commit()

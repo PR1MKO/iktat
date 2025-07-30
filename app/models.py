@@ -259,6 +259,7 @@ class UploadedFile(db.Model):
         nullable=False,
     )
     uploader    = db.Column(db.String(64), nullable=False)
+    category    = db.Column(db.String(50), nullable=False)
 
     case = db.relationship('Case', back_populates='uploaded_file_records')
 

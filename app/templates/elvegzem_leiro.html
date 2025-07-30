@@ -31,6 +31,12 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label for="result_file" class="form-label visually-hidden">Fájl feltöltése</label>
         <input type="file" id="result_file" name="result_file" class="form-control d-inline w-auto" required>
+        <select name="category" class="form-select d-inline w-auto ms-2" required>
+          <option value="" disabled selected>-- Válasszon kategóriát --</option>
+          <option value="végzés">Végzés</option>
+          <option value="jegyzőkönyv">Jegyzőkönyv</option>
+          <option value="egyéb">Egyéb</option>
+        </select>
         <button type="submit" class="btn btn-outline-success ms-2">Feltöltés</button>
       </form>
     </div>

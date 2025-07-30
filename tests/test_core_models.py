@@ -85,7 +85,7 @@ def test_uploaded_file_association(app):
         db.session.add(case)
         db.session.commit()
 
-        uf = UploadedFile(case_id=case.id, filename="report.txt", uploader="alice")
+        uf = UploadedFile(case_id=case.id, filename="report.txt", uploader="alice", category="egyéb")
         db.session.add(uf)
         db.session.commit()
 
