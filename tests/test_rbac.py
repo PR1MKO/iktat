@@ -61,3 +61,18 @@ def test_szakerto_permissions(client, app):
         assert client.get('/admin/users').status_code == 403
         assert client.get('/szignal_cases').status_code == 403
 
+def test_toxi_permissions_and_dashboard_redirect(client, app):
+    with app.app_context():
+        create_user('tox', 'pw', 'toxi')
+        case = Case(case_number='T1', tox_expert='tox')
+        db.session.add(case)
+        db.session.commit()
+    with client:
+        login(client, 'tox', 'pw')
+        resp = client.get('/dashboard')
+        assert resp.status_code == 302
+        assert '/ugyeim/toxi' in resp.headers['Location']
+        resp = client.get('/ugyeim/toxi')
+        assert resp.status_code == 200
+        assert b'Toxikologi' in resp.data or b'Toxikol' in resp.data
+

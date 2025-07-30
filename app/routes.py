@@ -359,6 +359,14 @@ def leiro_ugyeim():
     return render_template('leiro_ugyeim.html',
                            pending_cases=pending,
                            completed_cases=completed)
+                           
+# Toxi dashboard
+@main_bp.route('/ugyeim/toxi')
+@login_required
+@roles_required('toxi')
+def elvegzem_toxi():
+    cases = Case.query.filter_by(tox_expert=current_user.username).order_by(Case.deadline.asc()).all()
+    return render_template('toxi_ugyeim.html', cases=cases)
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required

@@ -42,6 +42,7 @@ class Case(db.Model):
     expert_1             = db.Column(db.String(128))
     expert_2             = db.Column(db.String(128))
     describer            = db.Column(db.String(128))
+    tox_expert          = db.Column(db.String(128))
     assigned_office      = db.Column(db.String(64))
     assigned_signatory   = db.Column(db.String(64))
     assigned_pathologist = db.Column(db.String(64))
@@ -202,6 +203,7 @@ _TRACKED_FIELDS = [
     'deceased_name', 'case_type', 'status', 'institution_name',
     'external_case_number', 'birth_date', 'registration_time',
     'deadline', 'expert_1', 'expert_2', 'describer',
+    'tox_expert',
     'assigned_office', 'assigned_signatory', 'assigned_pathologist',
     'notes', 'uploaded_files', 'tox_orders'
 ]

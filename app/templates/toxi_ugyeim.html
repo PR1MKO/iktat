@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="card-body d-flex align-items-center py-3">
+    <i class="bi bi-folder2-open fs-3 me-3 text-primary"></i>
+    <div>
+      <h3 class="h4 mb-0">Ügyeim (Toxikológus)</h3>
+    </div>
+  </div>
+
+  {% if cases %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Boncszám</th>
+          <th>Elhunyt neve</th>
+          <th>Állapot</th>
+          <th>Regisztrálva</th>
+          <th>Határidő</th>
+          <th>Műveletek</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for case in cases %}
+          <tr>
+            <td>{{ case.case_number }}</td>
+            <td>{{ case.deceased_name }}</td>
+            <td>{{ case.status }}</td>
+            <td>{{ case.registration_time|localtime }}</td>
+            <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
+            <td>
+              <a class="btn btn-outline-success" href="{{ url_for('auth.case_detail', case_id=case.id) }}">
+                Toxikológia kitöltése
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Nincsenek hozzárendelt ügyeid.</p>
+  {% endif %}
+{% endblock %}
