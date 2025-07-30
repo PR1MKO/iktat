@@ -363,6 +363,7 @@
         <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
         <td>
+          {# Only office staff can edit cases; everyone else only views them #}
           {% if current_user.role == 'iroda' %}
             <a href="{{ url_for('auth.edit_case', case_id=case.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
           {% else %}
