@@ -13,11 +13,12 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div class="mb-3">
-      {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category=='error' else category }}">{{ message|safe }}</div>
-      {% endfor %}
-    </div>
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
   {% endif %}
 {% endwith %}
 
@@ -240,6 +241,14 @@
       });
     });
   })();
+</script>
+<script>
+  setTimeout(() => {
+    const alert = document.querySelector('.alert');
+    if (alert && alert.classList.contains('show')) {
+      alert.classList.remove('show');
+    }
+  }, 4000);
 </script>
 {% endblock %}
  
