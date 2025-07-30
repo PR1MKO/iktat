@@ -43,6 +43,7 @@ class Case(db.Model):
     expert_2             = db.Column(db.String(128))
     describer            = db.Column(db.String(128))
     tox_expert          = db.Column(db.String(128))
+    tox_completed       = db.Column(db.Boolean, default=False)
     assigned_office      = db.Column(db.String(64))
     assigned_signatory   = db.Column(db.String(64))
     assigned_pathologist = db.Column(db.String(64))

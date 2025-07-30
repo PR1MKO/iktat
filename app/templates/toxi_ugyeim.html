@@ -9,7 +9,7 @@
   </div>
 
   <h2><span class="badge bg-danger">Kiosztott</span></h2>
-  {% if pending_cases %}
+  {% if assigned_cases %}
   <table class="table table-striped">
     <thead>
       <tr>
@@ -22,7 +22,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for case in pending_cases %}
+      {% for case in assigned_cases %}
       <tr>
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
@@ -41,7 +41,7 @@
   {% endif %}
 
   <h2><span class="badge bg-success">Elvégzett</span></h2>
-  {% if completed_cases %}
+  {% if done_cases %}
   <table class="table table-striped">
     <thead>
       <tr>
@@ -54,7 +54,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for case in completed_cases %}
+      {% for case in done_cases %}
       <tr>
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>

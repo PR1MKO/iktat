@@ -365,17 +365,32 @@ def leiro_ugyeim():
 @login_required
 @roles_required('toxi')
 def toxi_ugyeim():
-    pending_cases = Case.query.filter_by(status='beérkezett').order_by(Case.deadline.asc()).all()
-    completed_cases = (
-        Case.query
-        .filter_by(status='toxi_elvégezve', tox_expert=current_user.username)
-        .order_by(Case.deadline.asc())
-        .all()
-    )
+    def is_tox_ordered(case):
+        return any([
+            case.tox_gyogyszer_ver_ordered,
+            case.tox_gyogyszer_vizelet_ordered,
+            case.tox_gyogyszer_gyomor_ordered,
+            case.tox_gyogyszer_maj_ordered,
+            case.tox_kabitoszer_ver_ordered,
+            case.tox_kabitoszer_vizelet_ordered,
+            case.tox_cpk_ordered,
+            case.tox_szarazanyag_ordered,
+            case.tox_diatoma_ordered,
+            case.tox_co_ordered,
+            case.egyeb_tox_ordered,
+        ])
+
+    all_cases = Case.query.filter_by(tox_expert=current_user.screen_name).all()
+    assigned_cases = [
+        case for case in all_cases if is_tox_ordered(case) and not case.tox_completed
+    ]
+    done_cases = [
+        case for case in all_cases if is_tox_ordered(case) and case.tox_completed
+    ]
     return render_template(
         'toxi_ugyeim.html',
-        pending_cases=pending_cases,
-        completed_cases=completed_cases,
+        assigned_cases=assigned_cases,
+        done_cases=done_cases,
     )
 
 @main_bp.route('/elvegzem_toxi/<int:case_id>', methods=['GET', 'POST'])
@@ -384,7 +399,7 @@ def toxi_ugyeim():
 def elvegzem_toxi(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
-    if case.tox_expert and case.tox_expert != current_user.username:
+    if case.tox_expert and case.tox_expert != current_user.screen_name:
         flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
         return redirect(url_for('main.toxi_ugyeim'))
 
@@ -392,8 +407,8 @@ def elvegzem_toxi(case_id):
         note = request.form.get('new_note', '').strip()
         if note:
             append_note(case, note)
-        case.tox_expert = current_user.username
-        case.status = 'toxi_elvégezve'
+        case.tox_expert = current_user.screen_name or current_user.username
+        case.tox_completed = True
         try:
             db.session.commit()
         except Exception as e:
@@ -401,7 +416,7 @@ def elvegzem_toxi(case_id):
             current_app.logger.error(f"Database error: {e}")
             flash('Valami hiba történt. Próbáld újra.', 'danger')
             return redirect(url_for('main.elvegzem_toxi', case_id=case.id))
-        flash('Toxikológiai feladat elvégezve.', 'success')
+        flash('✔️ Toxikológiai vizsgálat elvégezve.', 'success')
         return redirect(url_for('main.toxi_ugyeim'))
 
     return render_template('elvegzem_toxi.html', case=case)
