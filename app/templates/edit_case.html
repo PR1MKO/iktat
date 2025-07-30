@@ -155,11 +155,15 @@
           selected=case.expert_1
       ) }}
     </div>
+    {% set expert_2_opts = [('', '(opcionális)')] %}
+    {% for u in szakerto_users %}
+      {% set _ = expert_2_opts.append((u.username, u.screen_name or u.username)) %}
+    {% endfor %}
     <div class="col-md-4">
       {{ cm.select_block(
           'expert_2',
           'expert_2',
-          [('', '(opcionális)')] + [(u.username, u.screen_name or u.username) for u in szakerto_users],
+          expert_2_opts,
           'Szakértő 2',
           '(opcionális)',
           selected=case.expert_2
