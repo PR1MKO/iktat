@@ -427,6 +427,13 @@ def edit_case(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
+    changelog_entries = (
+        ChangeLog.query
+                 .filter_by(case_id=case.id)
+                 .order_by(ChangeLog.timestamp.desc())
+                 .limit(5)
+                 .all()
+    )
     if request.method == 'POST':
         # ... existing field handling ...
         try:
@@ -435,14 +442,15 @@ def edit_case(case_id):
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash("Valami hiba történt. Próbáld újra.", "danger")
-            return render_template('edit_case.html', case=case, szakerto_users=szakerto_users, leiro_users=leiro_users)
+            return render_template('edit_case.html', case=case, szakerto_users=szakerto_users, leiro_users=leiro_users, changelog_entries=changelog_entries)
         flash('Az ügy módosításai elmentve.', 'success')
         return redirect(url_for('auth.case_detail', case_id=case.id))
     return render_template(
         'edit_case.html',
         case=case,
         szakerto_users=szakerto_users,
-        leiro_users=leiro_users
+        leiro_users=leiro_users,
+        changelog_entries=changelog_entries
     )
 
 
