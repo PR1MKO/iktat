@@ -24,18 +24,6 @@
 <form method="post" class="row g-3 needs-validation" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-  <!-- Deceased name -->
-  <div class="col-md-6">
-    <label for="deceased_name" class="form-label">Elhunyt neve *</label>
-    <input type="text"
-           id="deceased_name"
-           name="deceased_name"
-           class="form-control"
-           value="{{ case.deceased_name }}"
-           required aria-label="Elhunyt neve" title="Elhunyt neve">
-    <div class="invalid-feedback">Kérjük, adja meg az elhunyt nevét.</div>
-  </div>
-
   <!-- Case type -->
   <div class="col-md-6">
     {% set tipusok = ['hatósági', 'klinikai', 'igazságügyi', 'kórboncolási', 'elengedés'] %}
@@ -54,84 +42,40 @@
     <div class="invalid-feedback">Kérjük, válasszon típust.</div>
   </div>
 
-  <!-- Status -->
+  <!-- Beérkezés módja -->
   <div class="col-md-6">
-    {% set status_list = [
-      'beérkezett',
-      'boncolva-leírónál',
-      'boncolva-orvosnál',
-      'leiktatva',
-      'szignálva',
-      'lezárva',
-      'lejárt',
-      'rendőrségre küldve',
-      'számla megérkezett',
-      'postafakkba'
-    ] %}
-    {% set status_opts = [('', '-- Válasszon --')] %}
-    {% for s in status_list %}
-      {% set _ = status_opts.append((s, s)) %}
-    {% endfor %}
-    {{ cm.select_block(
-        'status',
-        'status',
-        status_opts,
-        'Állapot *',
-        '-- Válasszon --',
-        selected=case.status
-    ) }}
-    <div class="invalid-feedback">Kérjük, válasszon állapotot.</div>
+    <label for="beerk_modja" class="form-label">Beérkezés módja *</label>
+    <select class="form-select" id="beerk_modja" name="beerk_modja" required>
+      <option value="">-- Válasszon --</option>
+      <option value="Email" {% if case.beerk_modja == 'Email' %}selected{% endif %}>Email</option>
+      <option value="Fax" {% if case.beerk_modja == 'Fax' %}selected{% endif %}>Fax</option>
+      <option value="Posta" {% if case.beerk_modja == 'Posta' %}selected{% endif %}>Posta</option>
+      <option value="Személyes" {% if case.beerk_modja == 'Személyes' %}selected{% endif %}>Személyes</option>
+    </select>
   </div>
 
-  <!-- Institution / External number -->
-  <div class="col-md-6">
-    <label for="institution_name" class="form-label">Intézmény neve</label>
-    <input type="text"
-           id="institution_name"
-           name="institution_name"
-           class="form-control"
-           value="{{ case.institution_name }}"
-           aria-label="Intézmény neve" title="Intézmény neve">
-  </div>
+  <!-- Külső ügyirat szám -->
   <div class="col-md-6">
     <label for="external_case_number" class="form-label">Külső ügyirat szám</label>
-    <input type="text"
-           id="external_case_number"
-           name="external_case_number"
-           class="form-control"
-           value="{{ case.external_case_number }}"
-           aria-label="Külső ügyirat szám" title="Külső ügyirat szám">
+    <input type="text" id="external_case_number" name="external_case_number" class="form-control" value="{{ case.external_case_number or '' }}">
   </div>
 
-  <!-- Dates -->
+  <!-- Egyéb azonosító -->
   <div class="col-md-6">
-    <label for="birth_date" class="form-label">Születési idő</label>
-    <input type="date"
-      id="birth_date"
-      name="birth_date"
-      class="form-control"
-      value="{{ case.birth_date }}"
-      aria-label="Születési idő" title="Születési idő">
+    <label for="temp_id" class="form-label">Egyéb azonosító</label>
+    <input type="text" id="temp_id" name="temp_id" class="form-control" value="{{ case.temp_id or '' }}">
   </div>
+  
+  <!-- Elhunyt neve -->
   <div class="col-md-6">
-    <label for="registration_time" class="form-label">Regisztrálva *</label>
-    <input type="datetime-local"
-           id="registration_time"
-           name="registration_time"
-           class="form-control"
-           value="{{ case.registration_time|datetimeformat }}"
-           required aria-label="Regisztráció ideje" title="Regisztráció ideje">
-    <div class="invalid-feedback">Kérjük, adja meg a regisztráció időpontját.</div>
+    <label for="deceased_name" class="form-label">Elhunyt neve *</label>
+    <input type="text" id="deceased_name" name="deceased_name" class="form-control" value="{{ case.deceased_name }}" required>
+    <div class="invalid-feedback">Kérjük, adja meg az elhunyt nevét.</div>
   </div>
+  
   <div class="col-md-6">
-    <label for="deadline" class="form-label">Határidő</label>
-    <input type="datetime-local"
-           id="deadline"
-           name="deadline"
-           class="form-control"
-           value="{{ case.deadline|datetimeformat }}"
-           disabled
-           aria-label="Határidő" title="Határidő">
+    <label for="lanykori_nev" class="form-label">Elhunyt lánykori neve</label>
+    <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ case.lanykori_nev or '' }}">
   </div>
 
   <!-- Experts & Describer -->
@@ -180,39 +124,61 @@
     </div>
   {% endif %}
 
-  <!-- További adatok szerkesztése -->
-  <div class="col-12">
-    <div class="card mb-3">
-      <div class="card-header fw-bold">További adatok</div>
-      <div class="card-body row g-3">
-        <div class="col-md-6">
-          <label for="beerk_modja" class="form-label">Beérkezés módja</label>
-          <select class="form-select" id="beerk_modja" name="beerk_modja">
-            <option value="">-- Válasszon --</option>
-            <option value="Email" {% if case.beerk_modja == "Email" %}selected{% endif %}>Email</option>
-            <option value="Fax" {% if case.beerk_modja == "Fax" %}selected{% endif %}>Fax</option>
-            <option value="Posta" {% if case.beerk_modja == "Posta" %}selected{% endif %}>Posta</option>
-            <option value="Személyes" {% if case.beerk_modja == "Személyes" %}selected{% endif %}>Személyes</option>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label for="poszeidon" class="form-label">Poszeidon</label>
-          <input type="text" id="poszeidon" name="poszeidon" class="form-control" value="{{ case.poszeidon or '' }}">
-        </div>
-        <div class="col-md-6">
-          <label for="lanykori_nev" class="form-label">Elhunyt lánykori neve</label>
-          <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ case.lanykori_nev or '' }}">
-        </div>
-        <div class="col-md-6">
-          <label for="szul_hely" class="form-label">Születési hely</label>
-          <input type="text" id="szul_hely" name="szul_hely" class="form-control" value="{{ case.szul_hely or '' }}">
-        </div>
-        <div class="col-md-6">
-          <label for="taj_szam" class="form-label">TAJ szám</label>
-          <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ case.taj_szam or '' }}">
-        </div>
-      </div>
-    </div>
+  <!-- Születési hely -->
+  <div class="col-md-6">
+    <label for="szul_hely" class="form-label">Születési hely</label>
+    <input type="text" id="szul_hely" name="szul_hely" class="form-control" value="{{ case.szul_hely or '' }}">
+  </div>
+
+  <!-- Születési idő -->
+  <div class="col-md-6">
+    <label for="birth_date" class="form-label">Születési idő</label>
+    <input type="date" id="birth_date" name="birth_date" class="form-control" value="{{ case.birth_date }}">
+  </div>
+  
+  <!-- TAJ szám -->
+  <div class="col-md-6">
+    <label for="taj_szam" class="form-label">TAJ szám</label>
+    <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ case.taj_szam or '' }}">
+  </div>
+
+  <!-- Poszeidon -->
+  <div class="col-md-6">
+    <label for="poszeidon" class="form-label">Poszeidon</label>
+    <input type="text" id="poszeidon" name="poszeidon" class="form-control" value="{{ case.poszeidon or '' }}">
+  </div>
+
+  <!-- Intézmény neve -->
+  <div class="col-md-12">
+    <label for="institution_name" class="form-label">Intézmény neve</label>
+    <input type="text" id="institution_name" name="institution_name" class="form-control" value="{{ case.institution_name }}">
+  </div>
+
+  <!-- Regisztrálva -->
+  <div class="col-md-6">
+    <label for="registration_time" class="form-label">Regisztrálva</label>
+    <input type="datetime-local" id="registration_time" name="registration_time" class="form-control" value="{{ case.registration_time|datetimeformat }}" disabled>
+  </div>
+
+  <!-- Határidő -->
+  <div class="col-md-6">
+    <label for="deadline" class="form-label">Határidő</label>
+    <input type="datetime-local" id="deadline" name="deadline" class="form-control" value="{{ case.deadline|datetimeformat }}" disabled>
+  </div>
+
+  <!-- Állapot -->
+  <div class="col-md-6">
+    {% set status_list = [
+      'beérkezett', 'boncolva-leírónál', 'boncolva-orvosnál', 'leiktatva', 'szignálva',
+      'lezárva', 'lejárt', 'rendőrségre küldve', 'számla megérkezett', 'postafakkba'
+    ] %}
+    <label for="status" class="form-label">Állapot</label>
+    <select id="status" name="status" class="form-select" disabled>
+      <option value="">-- Válasszon --</option>
+      {% for s in status_list %}
+        <option value="{{ s }}" {% if case.status == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
   </div>
 
   <!-- Notes -->
