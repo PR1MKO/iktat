@@ -365,28 +365,30 @@ def leiro_ugyeim():
 @login_required
 @roles_required('toxi')
 def toxi_ugyeim():
-    def is_tox_ordered(case):
-        return any([
-            case.tox_gyogyszer_ver_ordered,
-            case.tox_gyogyszer_vizelet_ordered,
-            case.tox_gyogyszer_gyomor_ordered,
-            case.tox_gyogyszer_maj_ordered,
-            case.tox_kabitoszer_ver_ordered,
-            case.tox_kabitoszer_vizelet_ordered,
-            case.tox_cpk_ordered,
-            case.tox_szarazanyag_ordered,
-            case.tox_diatoma_ordered,
-            case.tox_co_ordered,
-            case.egyeb_tox_ordered,
-        ])
+    """Dashboard for toxicology specialists."""
+    orders_filter = or_(
+        Case.alkohol_ver_ordered == True,
+        Case.alkohol_vizelet_ordered == True,
+        Case.alkohol_liquor_ordered == True,
+        Case.egyeb_alkohol_ordered == True,
+        Case.tox_gyogyszer_ver_ordered == True,
+        Case.tox_gyogyszer_vizelet_ordered == True,
+        Case.tox_gyogyszer_gyomor_ordered == True,
+        Case.tox_gyogyszer_maj_ordered == True,
+        Case.tox_kabitoszer_ver_ordered == True,
+        Case.tox_kabitoszer_vizelet_ordered == True,
+        Case.tox_cpk_ordered == True,
+        Case.tox_szarazanyag_ordered == True,
+        Case.tox_diatoma_ordered == True,
+        Case.tox_co_ordered == True,
+        Case.egyeb_tox_ordered == True,
+    )
 
-    all_cases = Case.query.filter_by(tox_expert=current_user.screen_name).all()
-    assigned_cases = [
-        case for case in all_cases if is_tox_ordered(case) and not case.tox_completed
-    ]
-    done_cases = [
-        case for case in all_cases if is_tox_ordered(case) and case.tox_completed
-    ]
+    pending_filter = or_(Case.tox_completed == False, Case.tox_completed.is_(None))
+
+    assigned_cases = Case.query.filter(orders_filter, pending_filter).all()
+    done_cases = Case.query.filter(orders_filter, Case.tox_completed == True).all()
+    
     return render_template(
         'toxi_ugyeim.html',
         assigned_cases=assigned_cases,
