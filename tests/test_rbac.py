@@ -76,3 +76,20 @@ def test_toxi_permissions_and_dashboard_redirect(client, app):
         assert resp.status_code == 200
         assert b'Toxikologi' in resp.data or b'Toxikol' in resp.data
 
+def test_toxi_dashboard_lists_cases(client, app):
+    with app.app_context():
+        create_user('tox', 'pw', 'toxi')
+        c1 = Case(case_number='C1', alkohol_ver_ordered=True)
+        c2 = Case(case_number='C2', alkohol_ver_ordered=True, tox_completed=True)
+        c3 = Case(case_number='C3', alkohol_ver_ordered=True, tox_completed=None)
+        c4 = Case(case_number='C4')
+        db.session.add_all([c1, c2, c3, c4])
+        db.session.commit()
+    with client:
+        login(client, 'tox', 'pw')
+        resp = client.get('/ugyeim/toxi')
+        text = resp.data.decode('utf-8')
+        assert 'C1' in text
+        assert 'C2' in text
+        assert 'C3' in text
+        assert 'C4' not in text
