@@ -15,7 +15,11 @@ echo.
 echo ═══ Checking git status...
 git diff --quiet
 IF %ERRORLEVEL% NEQ 0 (
-    echo ⚠️  Local changes detected. Skipping git pull to avoid overwriting.
+    echo ❌ Uncommitted local changes detected.
+    echo 💡 Please commit your changes before starting Flask.
+    echo 🛑 Aborting to avoid accidental overwrite by git pull.
+    pause
+    exit /b
 ) ELSE (
     echo ═══ Pulling latest changes from GitHub...
     git pull origin main --rebase
