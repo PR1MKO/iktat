@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+<div class="container pt-2 pb-4">
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      {{ cm.alapadatok(case) }}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 mb-3">
+      {{ cm.orders_block(case.tox_orders) }}
+    </div>
+  </div>
+
+  <form method="post" class="row g-3 needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ cm.notes_ajax_block(case) }}
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-success">Elvégezve</button>
+      <a href="{{ url_for('main.toxi_ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

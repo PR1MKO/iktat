@@ -8,36 +8,67 @@
     </div>
   </div>
 
-  {% if cases %}
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Boncszám</th>
-          <th>Elhunyt neve</th>
-          <th>Állapot</th>
-          <th>Regisztrálva</th>
-          <th>Határidő</th>
-          <th>Műveletek</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for case in cases %}
-          <tr>
-            <td>{{ case.case_number }}</td>
-            <td>{{ case.deceased_name }}</td>
-            <td>{{ case.status }}</td>
-            <td>{{ case.registration_time|localtime }}</td>
-            <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
-            <td>
-              <a class="btn btn-outline-success" href="{{ url_for('auth.case_detail', case_id=case.id) }}">
-                Toxikológia kitöltése
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <h2><span class="badge bg-danger">Kiosztott</span></h2>
+  {% if pending_cases %}
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Boncszám</th>
+        <th>Elhunyt neve</th>
+        <th>Állapot</th>
+        <th>Regisztrálva</th>
+        <th>Határidő</th>
+        <th>Műveletek</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for case in pending_cases %}
+      <tr>
+        <td>{{ case.case_number }}</td>
+        <td>{{ case.deceased_name }}</td>
+        <td>{{ case.status }}</td>
+        <td>{{ case.registration_time|localtime }}</td>
+        <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
+        <td>
+          <a class="btn btn-outline-success" href="{{ url_for('main.elvegzem_toxi', case_id=case.id) }}">Elvégzem</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
   {% else %}
-    <p>Nincsenek hozzárendelt ügyeid.</p>
+    <p>Nincsenek kiosztott ügyeid.</p>
+  {% endif %}
+
+  <h2><span class="badge bg-success">Elvégzett</span></h2>
+  {% if completed_cases %}
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Boncszám</th>
+        <th>Elhunyt neve</th>
+        <th>Állapot</th>
+        <th>Regisztrálva</th>
+        <th>Határidő</th>
+        <th>Műveletek</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for case in completed_cases %}
+      <tr>
+        <td>{{ case.case_number }}</td>
+        <td>{{ case.deceased_name }}</td>
+        <td>{{ case.status }}</td>
+        <td>{{ case.registration_time|localtime }}</td>
+        <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
+        <td>
+          <a href="{{ url_for('main.elvegzem_toxi', case_id=case.id) }}" class="btn btn-outline-secondary btn-sm">Szerkeszt</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p>Nincsenek elvégzett ügyeid.</p>
   {% endif %}
 {% endblock %}

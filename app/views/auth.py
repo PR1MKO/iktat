@@ -179,7 +179,7 @@ def dashboard():
     if tpl:
         return render_template(tpl, **template_ctx)
     elif current_user.role == 'toxi':
-        return redirect(url_for('main.elvegzem_toxi'))
+        return redirect(url_for('main.toxi_ugyeim'))
     else:
         flash(
             "Ismeretlen szerepkör. Kérjük, forduljon az adminisztrátorhoz.",

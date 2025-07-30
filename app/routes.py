@@ -364,9 +364,47 @@ def leiro_ugyeim():
 @main_bp.route('/ugyeim/toxi')
 @login_required
 @roles_required('toxi')
-def elvegzem_toxi():
-    cases = Case.query.filter_by(tox_expert=current_user.username).order_by(Case.deadline.asc()).all()
-    return render_template('toxi_ugyeim.html', cases=cases)
+def toxi_ugyeim():
+    pending_cases = Case.query.filter_by(status='beérkezett').order_by(Case.deadline.asc()).all()
+    completed_cases = (
+        Case.query
+        .filter_by(status='toxi_elvégezve', tox_expert=current_user.username)
+        .order_by(Case.deadline.asc())
+        .all()
+    )
+    return render_template(
+        'toxi_ugyeim.html',
+        pending_cases=pending_cases,
+        completed_cases=completed_cases,
+    )
+
+@main_bp.route('/elvegzem_toxi/<int:case_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('toxi')
+def elvegzem_toxi(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+
+    if case.tox_expert and case.tox_expert != current_user.username:
+        flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
+        return redirect(url_for('main.toxi_ugyeim'))
+
+    if request.method == 'POST':
+        note = request.form.get('new_note', '').strip()
+        if note:
+            append_note(case, note)
+        case.tox_expert = current_user.username
+        case.status = 'toxi_elvégezve'
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash('Valami hiba történt. Próbáld újra.', 'danger')
+            return redirect(url_for('main.elvegzem_toxi', case_id=case.id))
+        flash('Toxikológiai feladat elvégezve.', 'success')
+        return redirect(url_for('main.toxi_ugyeim'))
+
+    return render_template('elvegzem_toxi.html', case=case)
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
 @login_required
