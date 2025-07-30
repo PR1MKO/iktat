@@ -38,10 +38,15 @@
 
   <!-- Case type -->
   <div class="col-md-6">
+    {% set tipusok = ['hatósági', 'klinikai', 'igazságügyi', 'kórboncolási', 'elengedés'] %}
+    {% set case_type_opts = [('', '-- Válasszon --')] %}
+    {% for t in tipusok %}
+      {% set _ = case_type_opts.append((t, t)) %}
+    {% endfor %}
     {{ cm.select_block(
         'case_type',
         'case_type',
-        [('', '-- Válasszon --')] + [(t, t) for t in ['hatósági','klinikai','igazságügyi','kórboncolási','elengedés']],
+        case_type_opts,
         'Típus *',
         '-- Válasszon --',
         selected=case.case_type
@@ -51,21 +56,26 @@
 
   <!-- Status -->
   <div class="col-md-6">
+    {% set status_list = [
+      'beérkezett',
+      'boncolva-leírónál',
+      'boncolva-orvosnál',
+      'leiktatva',
+      'szignálva',
+      'lezárva',
+      'lejárt',
+      'rendőrségre küldve',
+      'számla megérkezett',
+      'postafakkba'
+    ] %}
+    {% set status_opts = [('', '-- Válasszon --')] %}
+    {% for s in status_list %}
+      {% set _ = status_opts.append((s, s)) %}
+    {% endfor %}
     {{ cm.select_block(
         'status',
         'status',
-        [('', '-- Válasszon --')] + [(s, s) for s in [
-          'beérkezett',
-          'boncolva-leírónál',
-          'boncolva-orvosnál',
-          'leiktatva',
-          'szignálva',
-          'lezárva',
-          'lejárt',
-          'rendőrségre küldve',
-          'számla megérkezett',
-          'postafakkba'
-        ]],
+        status_opts,
         'Állapot *',
         '-- Válasszon --',
         selected=case.status
@@ -127,11 +137,19 @@
 
   <!-- Experts & Describer -->
   {% if current_user.role in ['admin','szignáló'] %}
+    {% set expert_opts = [('', '(opcionális)')] %}
+    {% for u in szakerto_users %}
+      {% set _ = expert_opts.append((u.username, u.screen_name or u.username)) %}
+    {% endfor %}
+    {% set describer_opts = [('', '(opcionális)')] %}
+    {% for u in leiro_users %}
+      {% set _ = describer_opts.append((u.username, u.screen_name or u.username)) %}
+    {% endfor %}
     <div class="col-md-4">
       {{ cm.select_block(
           'expert_1',
           'expert_1',
-          [('', '(opcionális)')] + [(u.username, u.screen_name or u.username) for u in szakerto_users],
+          expert_opts,
           'Szakértő 1',
           '(opcionális)',
           selected=case.expert_1
@@ -151,7 +169,7 @@
       {{ cm.select_block(
           'describer',
           'describer',
-          [('', '(opcionális)')] + [(u.username, u.screen_name or u.username) for u in leiro_users],
+          describer_opts,
           'Leíró',
           '(opcionális)',
           selected=case.describer
