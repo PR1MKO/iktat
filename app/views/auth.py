@@ -927,8 +927,7 @@ def generate_tox_doc(case_id):
 
         output_folder = os.path.join(
             current_app.config['UPLOAD_FOLDER'],
-            str(case.case_number),
-            'webfill-do-not-edit'
+            str(case.case_number)
         )
         os.makedirs(output_folder, exist_ok=True)
 
@@ -997,6 +996,15 @@ def generate_tox_doc(case_id):
         case.tox_doc_generated = True
         case.tox_doc_generated_at = datetime.now(BUDAPEST_TZ)
         case.tox_doc_generated_by = current_user.screen_name or current_user.username
+        
+        upload_rec = UploadedFile(
+            case_id=case.id,
+            filename='Toxikológiai-kirendelő-kitöltött.docx',
+            uploader=current_user.username,
+            upload_time=datetime.now(pytz.UTC),
+            category='Toxikológiai kirendelő'
+        )
+        db.session.add(upload_rec)
         db.session.commit()
 
         flash("✅ Toxikológiai kirendelő dokumentum generálva.", "success")

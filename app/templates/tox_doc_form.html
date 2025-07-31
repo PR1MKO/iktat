@@ -18,16 +18,16 @@
       ] %}
         <div class="col-md-6">
           <label class="form-label">{{ label }} minta db</label>
-          <input type="number" class="form-control" name="{{ key }}_minta_count">
+          <input type="number" class="form-control" name="{{ key }}_minta_count" data-price-per-unit>
         </div>
         <div class="col-md-6">
           <label class="form-label">{{ label }} minta ára (Ft)</label>
-          <input type="number" class="form-control" name="{{ key }}_minta_ara">
+          <input type="number" class="form-control" name="{{ key }}_minta_ara" data-price-per-unit>
         </div>
       {% endfor %}
       <div class="col-12">
         <label class="form-label fw-bold">Várható összköltség (Ft)</label>
-        <input type="number" class="form-control" name="osszesen_ara" id="osszesen_ara">
+        <input type="number" class="form-control" name="osszesen_ara" id="osszesen_ara" readonly>
       </div>
       <div class="col-12 text-end">
         <button class="btn btn-success mt-2" type="submit" onclick="return confirm('Biztosan el szeretn\u00e9 k\u00e9sz\u00edteni a dokumentumot? Az OK gomb megnyom\u00e1sa ut\u00e1n a dokumentum nem lesz a tov\u00e1bbiakban szerkeszthet\u0151')">
@@ -51,18 +51,18 @@ input[type=number] {
 <script>
 function recalc() {
   let total = 0;
-  document.querySelectorAll('input[name$="_minta_count"]').forEach(count => {
-    const key = count.name.replace('_minta_count','');
-    const price = document.querySelector(`input[name="${key}_minta_ara"]`);
-    const c = parseFloat(count.value) || 0;
-    const p = parseFloat(price.value) || 0;
-    total += c * p;
+  document.querySelectorAll('input[name$="_minta_count"]').forEach(cnt => {
+    const key = cnt.name.replace('_minta_count', '');
+    const priceEl = document.querySelector(`input[name="${key}_minta_ara"]`);
+    const qty = parseFloat(cnt.value) || 0;
+    const price = parseFloat(priceEl.value) || 0;
+    total += qty * price;
   });
-  const out = document.getElementById('osszesen_ara');
-  out.value = total.toLocaleString('hu-HU');
+  document.getElementById('osszesen_ara').value = Math.round(total);
 }
-document.querySelectorAll('input[name$="_minta_count"], input[name$="_minta_ara"]').forEach(inp => {
-  inp.addEventListener('input', recalc);
+document.querySelectorAll('input[data-price-per-unit]').forEach(el => {
+  el.addEventListener('input', recalc);
 });
+recalc();
 </script>
 {% endblock %}
