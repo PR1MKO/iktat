@@ -1,13 +1,14 @@
 import os
-import os
 import shutil
-from docx import Document
+import pytest
+
+try:
+    from docx import Document
+except ImportError:
+    pytest.skip("Codex runtime does not support 'python-docx'. Skipping tox doc tests.", allow_module_level=True)
+
 from app.models import Case, UploadedFile, db
 from tests.helpers import create_user, login
-
-import pytest
-pytest.skip("Skip this test until Codex environment supports python-docx", allow_module_level=True)
-
 
 
 def create_case():
