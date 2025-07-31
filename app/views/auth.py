@@ -914,8 +914,6 @@ def tox_doc_form(case_id):
 @roles_required('admin', 'iroda', 'toxi')
 def generate_tox_doc(case_id):
     case = db.session.get(Case, case_id) or abort(404)
-    if not case.tox_orders:
-        flash("⚠️ Nincs toxikológiai vizsgálat elrendelve.", "warning")
 
     from docxtpl import DocxTemplate
     from app.utils.time_utils import BUDAPEST_TZ
@@ -940,9 +938,34 @@ def generate_tox_doc(case_id):
         )
 
         tpl = DocxTemplate(template_path)
+        
+        def safe_int(val):
+            try:
+                return int(val)
+            except Exception:
+                return 0
+
+        def safe_float(val):
+            try:
+                return float(val)
+            except Exception:
+                return 0.0
+
+        total = (
+            safe_int(request.form.get("alkohol_minta_count")) * safe_float(request.form.get("alkohol_minta_ara")) +
+            safe_int(request.form.get("permetezoszer_minta_count")) * safe_float(request.form.get("permetezoszer_minta_ara")) +
+            safe_int(request.form.get("etilenglikol_minta_count")) * safe_float(request.form.get("etilenglikol_minta_ara")) +
+            safe_int(request.form.get("diatoma_minta_count")) * safe_float(request.form.get("diatoma_minta_ara")) +
+            safe_int(request.form.get("szarazanyag_minta_count")) * safe_float(request.form.get("szarazanyag_minta_ara")) +
+            safe_int(request.form.get("gyogyszer_minta_count")) * safe_float(request.form.get("gyogyszer_minta_ara")) +
+            safe_int(request.form.get("kabitoszer_minta_count")) * safe_float(request.form.get("kabitoszer_minta_ara")) +
+            safe_int(request.form.get("co_minta_count")) * safe_float(request.form.get("co_minta_ara")) +
+            safe_int(request.form.get("egyeb_minta_count")) * safe_float(request.form.get("egyeb_minta_ara"))
+        )
 
         context = {
             "case": case,
+            "intezmeny": case.institution_name or "",
             "today": datetime.now(BUDAPEST_TZ).strftime("%Y.%m.%d"),
             "current_user": current_user.screen_name,
             "alkohol_minta_count": request.form.get("alkohol_minta_count", ""),
@@ -963,7 +986,7 @@ def generate_tox_doc(case_id):
             "co_minta_ara": request.form.get("co_minta_ara", ""),
             "egyeb_minta_count": request.form.get("egyeb_minta_count", ""),
             "egyeb_minta_ara": request.form.get("egyeb_minta_ara", ""),
-            "osszesen_ara": request.form.get("osszesen_ara", "")
+            "osszesen_ara": int(total)
         }
 
         print("🔧 Generating DOCX at:", output_path)
