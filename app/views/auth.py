@@ -902,3 +902,63 @@ def add_note_universal(case_id):
     current_app.logger.info(f"Returning note HTML: {html}")
     return jsonify({'html': html})
 
+
+@auth_bp.route('/cases/<int:case_id>/generate_tox_doc', methods=['POST'])
+@login_required
+@roles_required('admin', 'iroda', 'toxi')
+def generate_tox_doc(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+    if not case.tox_orders:
+        flash("Nincs toxikológiai vizsgálat elrendelve.", "warning")
+        return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
+
+    template_path = os.path.join(
+        current_app.config['UPLOAD_FOLDER'],
+        str(case.case_number),
+        'webfill-do-not-edit',
+        'Toxikológiai-kirendelő.docx'
+    )
+    output_path = os.path.join(
+        current_app.config['UPLOAD_FOLDER'],
+        str(case.case_number),
+        'webfill-do-not-edit',
+        'Toxikológiai-kirendelő-kitöltött.docx'
+    )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    from docxtpl import DocxTemplate
+    from app.utils.time_utils import BUDAPEST_TZ
+
+    tpl = DocxTemplate(template_path)
+
+    context = {
+        "case": case,
+        "today": datetime.now(BUDAPEST_TZ).strftime("%Y.%m.%d"),
+        "current_user": current_user.screen_name,
+        "alkohol_minta_count": request.form.get("alkohol_minta_count", ""),
+        "alkohol_minta_ara": request.form.get("alkohol_minta_ara", ""),
+        "permetezoszer_minta_count": request.form.get("permetezoszer_minta_count", ""),
+        "permetezoszer_minta_ara": request.form.get("permetezoszer_minta_ara", ""),
+        "etilenglikol_minta_count": request.form.get("etilenglikol_minta_count", ""),
+        "etilenglikol_minta_ara": request.form.get("etilenglikol_minta_ara", ""),
+        "diatoma_minta_count": request.form.get("diatoma_minta_count", ""),
+        "diatoma_minta_ara": request.form.get("diatoma_minta_ara", ""),
+        "szarazanyag_minta_count": request.form.get("szarazanyag_minta_count", ""),
+        "szarazanyag_minta_ara": request.form.get("szarazanyag_minta_ara", ""),
+        "gyogyszer_minta_count": request.form.get("gyogyszer_minta_count", ""),
+        "gyogyszer_minta_ara": request.form.get("gyogyszer_minta_ara", ""),
+        "kabitoszer_minta_count": request.form.get("kabitoszer_minta_count", ""),
+        "kabitoszer_minta_ara": request.form.get("kabitoszer_minta_ara", ""),
+        "co_minta_count": request.form.get("co_minta_count", ""),
+        "co_minta_ara": request.form.get("co_minta_ara", ""),
+        "egyeb_minta_count": request.form.get("egyeb_minta_count", ""),
+        "egyeb_minta_ara": request.form.get("egyeb_minta_ara", ""),
+        "osszesen_ara": request.form.get("osszesen_ara", "")
+    }
+
+    tpl.render(context)
+    tpl.save(output_path)
+
+    flash("Toxikológiai kirendelő dokumentum generálva.", "success")
+    log_action("Toxikológiai kirendelő generálva", f"{case.case_number}")
+    return redirect(url_for('auth.case_detail', case_id=case_id))
