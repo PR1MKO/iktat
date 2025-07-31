@@ -78,18 +78,23 @@ def test_toxi_permissions_and_dashboard_redirect(client, app):
 
 def test_toxi_dashboard_lists_cases(client, app):
     with app.app_context():
+        tox_user = User(username="tox", screen_name="Toxi", role="toxi")
+        tox_user.set_password("pw")
+        db.session.add(tox_user)
+
         c1 = Case(case_number='C1')
         c2 = Case(case_number='C2', tox_completed=True)
         c3 = Case(case_number='C3', tox_completed=None)
         c4 = Case(case_number='C4')
         db.session.add_all([c1, c2, c3, c4])
         db.session.commit()
-        
+
         for case in (c1, c2, c3):
             db.session.add(
                 UploadedFile(case_id=case.id, filename='file.txt', uploader='tox', category='végzés')
             )
         db.session.commit()
+
     with client:
         login(client, 'tox', 'pw')
         resp = client.get('/ugyeim/toxi')
@@ -98,3 +103,4 @@ def test_toxi_dashboard_lists_cases(client, app):
         assert 'C2' in text
         assert 'C3' in text
         assert 'C4' not in text
+
