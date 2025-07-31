@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Toxikológiai Kirendelő Generálás{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="mb-3"><i class="bi bi-file-earmark-word text-primary me-2"></i> Toxikológiai kirendelő generálása</h3>
+  <form method="post" action="{{ url_for('auth.generate_tox_doc', case_id=case.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="row g-3">
+      {% for key, label in [
+        ('alkohol', 'Alkohol'), ('permetezoszer', 'Permetezőszer'),
+        ('etilenglikol', 'Etilén-glikol'), ('diatoma', 'Diatóma'),
+        ('szarazanyag', 'Szárazanyag'), ('gyogyszer', 'Gyógyszer'),
+        ('kabitoszer', 'Kábítószer'), ('co', 'Szén-monoxid'),
+        ('egyeb', 'Egyéb')
+      ] %}
+        <div class="col-md-6">
+          <label class="form-label">{{ label }} minta db</label>
+          <input type="number" class="form-control" name="{{ key }}_minta_count">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">{{ label }} minta ára (Ft)</label>
+          <input type="number" class="form-control" name="{{ key }}_minta_ara">
+        </div>
+      {% endfor %}
+      <div class="col-12">
+        <label class="form-label fw-bold">Várható összköltség (Ft)</label>
+        <input type="number" class="form-control" name="osszesen_ara">
+      </div>
+      <div class="col-12 text-end">
+        <button class="btn btn-success mt-2" type="submit">
+          <i class="bi bi-file-earmark-word me-1"></i> Toxikológiai kirendelő generálása
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

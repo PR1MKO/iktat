@@ -33,14 +33,9 @@
 
   <!-- Toxicology Document Generation -->
   <div class="mt-4">
-    <form method="post" action="{{ url_for('auth.generate_tox_doc', case_id=case.id) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="alkohol_minta_ara" value="2500">
-      <input type="hidden" name="osszesen_ara" value="0">
-      <button class="btn btn-outline-primary" type="submit">
-        <i class="bi bi-file-earmark-word me-2"></i> Toxikológiai kirendelő generálása
-      </button>
-    </form>
+    <a href="{{ url_for('auth.tox_doc_form', case_id=case.id) }}" class="btn btn-outline-primary mt-3">
+      <i class="bi bi-file-earmark-word"></i> Toxikológiai kirendelő generálása
+    </a>
   </div>
 
   <form method="post" class="row g-3 needs-validation" novalidate>

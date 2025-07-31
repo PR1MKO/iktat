@@ -902,6 +902,12 @@ def add_note_universal(case_id):
     current_app.logger.info(f"Returning note HTML: {html}")
     return jsonify({'html': html})
 
+@auth_bp.route('/cases/<int:case_id>/tox_doc_form', methods=['GET'])
+@login_required
+@roles_required('toxi', 'iroda', 'admin')
+def tox_doc_form(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+    return render_template('tox_doc_form.html', case=case)
 
 @auth_bp.route('/cases/<int:case_id>/generate_tox_doc', methods=['POST'])
 @login_required
