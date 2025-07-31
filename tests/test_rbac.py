@@ -1,5 +1,5 @@
 import io
-from app.models import User, Case, db
+from app.models import User, Case, UploadedFile, db
 from tests.helpers import create_user, login
 
 def test_protected_routes_require_login(client):
@@ -78,12 +78,17 @@ def test_toxi_permissions_and_dashboard_redirect(client, app):
 
 def test_toxi_dashboard_lists_cases(client, app):
     with app.app_context():
-        create_user('tox', 'pw', 'toxi')
-        c1 = Case(case_number='C1', alkohol_ver_ordered=True)
-        c2 = Case(case_number='C2', alkohol_ver_ordered=True, tox_completed=True)
-        c3 = Case(case_number='C3', alkohol_ver_ordered=True, tox_completed=None)
+        c1 = Case(case_number='C1')
+        c2 = Case(case_number='C2', tox_completed=True)
+        c3 = Case(case_number='C3', tox_completed=None)
         c4 = Case(case_number='C4')
         db.session.add_all([c1, c2, c3, c4])
+        db.session.commit()
+        
+        for case in (c1, c2, c3):
+            db.session.add(
+                UploadedFile(case_id=case.id, filename='file.txt', uploader='tox', category='végzés')
+            )
         db.session.commit()
     with client:
         login(client, 'tox', 'pw')

@@ -9,7 +9,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from app.utils.roles import roles_required
-from sqlalchemy import or_
+from sqlalchemy import or_, exists
 from werkzeug.utils import secure_filename
 from app.models import User, Case, ChangeLog, UploadedFile
 from app import db
@@ -366,28 +366,15 @@ def leiro_ugyeim():
 @roles_required('toxi')
 def toxi_ugyeim():
     """Dashboard for toxicology specialists."""
-    orders_filter = or_(
-        Case.alkohol_ver_ordered == True,
-        Case.alkohol_vizelet_ordered == True,
-        Case.alkohol_liquor_ordered == True,
-        Case.egyeb_alkohol_ordered == True,
-        Case.tox_gyogyszer_ver_ordered == True,
-        Case.tox_gyogyszer_vizelet_ordered == True,
-        Case.tox_gyogyszer_gyomor_ordered == True,
-        Case.tox_gyogyszer_maj_ordered == True,
-        Case.tox_kabitoszer_ver_ordered == True,
-        Case.tox_kabitoszer_vizelet_ordered == True,
-        Case.tox_cpk_ordered == True,
-        Case.tox_szarazanyag_ordered == True,
-        Case.tox_diatoma_ordered == True,
-        Case.tox_co_ordered == True,
-        Case.egyeb_tox_ordered == True,
-    )
+    vegzes_exists = db.session.query(UploadedFile.id).filter(
+        UploadedFile.case_id == Case.id,
+        UploadedFile.category == 'végzés'
+    ).exists()
 
     pending_filter = or_(Case.tox_completed == False, Case.tox_completed.is_(None))
 
-    assigned_cases = Case.query.filter(orders_filter, pending_filter).all()
-    done_cases = Case.query.filter(orders_filter, Case.tox_completed == True).all()
+    assigned_cases = Case.query.filter(pending_filter, vegzes_exists).all()
+    done_cases = Case.query.filter(Case.tox_completed == True, vegzes_exists).all()
     
     return render_template(
         'toxi_ugyeim.html',
