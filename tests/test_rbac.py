@@ -18,7 +18,6 @@ def test_admin_access_admin_routes(client, app):
         case = Case(case_number='A1')
         db.session.add(case)
         db.session.commit()
-        cid = case.id
     with client:
         login(client, 'admin1', 'pw')
         assert client.get('/admin/users').status_code == 200

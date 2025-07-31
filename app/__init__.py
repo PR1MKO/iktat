@@ -16,8 +16,8 @@ from flask_wtf import CSRFProtect
 # Load environment variables from .env if present before importing Config
 load_dotenv()
 
-from config import Config
-from app.utils.time_utils import BUDAPEST_TZ
+from config import Config  # noqa: E402
+from app.utils.time_utils import BUDAPEST_TZ  # noqa: E402
 
 # Instantiate extensions
 db = SQLAlchemy()
@@ -67,7 +67,7 @@ def create_app(test_config=None):
     # ✅ Local import to avoid circular reference
     from .models import User
     with app.app_context():
-        from app import models
+        from app import models  # noqa: F401
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -81,6 +81,7 @@ def create_app(test_config=None):
     app.register_blueprint(main_bp)
 
     from app.error_handlers import register_error_handlers
+    register_error_handlers(app)
 
     # One-time check for essential tables
     _checked_tables = False

@@ -1,4 +1,3 @@
-import pytest
 from flask import session
 
 from app.models import User, db

@@ -9,11 +9,10 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from app.utils.roles import roles_required
-from sqlalchemy import or_, exists
+from sqlalchemy import or_
 from werkzeug.utils import secure_filename
 from app.models import User, Case, ChangeLog, UploadedFile
 from app import db
-from app import csrf
 from app.utils.case_helpers import build_case_context
 
 main_bp = Blueprint('main', __name__)
@@ -271,9 +270,13 @@ def vizsgalat_elrendelese(case_id):
             setattr(case, f"{organ}_immun", new_immun)
             if (not prev_spec and spec) or (not prev_immun and immun):
                 badge = []
-                if new_spec: badge.append("Spec fest")
-                if new_immun: badge.append("Immun")
-                lines.append(f"{label} – {', '.join(badge)} rendelve: {now} – {author}")
+                if new_spec:
+                    badge.append("Spec fest")
+                if new_immun:
+                    badge.append("Immun")
+                lines.append(
+                    f"{label} – {', '.join(badge)} rendelve: {now} – {author}"
+                )
 
         # Egyéb szerv
         egyeb_szerv = request.form.get('egyeb_szerv')
@@ -288,9 +291,13 @@ def vizsgalat_elrendelese(case_id):
             case.egyeb_szerv_immun = immun
             if egyeb_szerv and (spec or immun):
                 badge = []
-                if spec: badge.append("Spec fest")
-                if immun: badge.append("Immun")
-                lines.append(f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)} rendelve: {now} – {author}")
+                if spec:
+                    badge.append("Spec fest")
+                if immun:
+                    badge.append("Immun")
+                lines.append(
+                    f"Egyéb szerv ({egyeb_szerv}): {', '.join(badge)} rendelve: {now} – {author}"
+                )
 
         if lines:
             new_block = "\n".join(lines)
@@ -371,10 +378,10 @@ def toxi_ugyeim():
         UploadedFile.category == 'végzés'
     ).exists()
 
-    pending_filter = or_(Case.tox_completed == False, Case.tox_completed.is_(None))
+    pending_filter = or_(Case.tox_completed.is_(False), Case.tox_completed.is_(None))
 
     assigned_cases = Case.query.filter(pending_filter, vegzes_exists).all()
-    done_cases = Case.query.filter(Case.tox_completed == True, vegzes_exists).all()
+    done_cases = Case.query.filter(Case.tox_completed.is_(True), vegzes_exists).all()
     
     return render_template(
         'toxi_ugyeim.html',

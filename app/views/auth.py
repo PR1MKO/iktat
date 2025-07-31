@@ -1,9 +1,8 @@
 import os
 import shutil
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 import pytz
 from app.utils.time_utils import now_local
-from collections import defaultdict
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
     flash, current_app, send_from_directory, jsonify, Response, abort
@@ -16,7 +15,6 @@ from werkzeug.utils import secure_filename, safe_join
 from sqlalchemy import or_, and_, func
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
 from app.forms import CaseIdentifierForm
-from app import csrf                    # CSRFProtect instance
 from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
 from app.audit import log_action
@@ -151,8 +149,8 @@ def dashboard():
     status_counts = dict(db.session.query(Case.status, func.count()).group_by(Case.status).all())
     status_counts_list = list(status_counts.items())
     missing_fields = Case.query.filter(
-        (Case.expert_1 == None) | (Case.expert_1 == '') |
-        (Case.describer == None) | (Case.describer == '')
+        or_(Case.expert_1.is_(None), Case.expert_1 == ''),
+        or_(Case.describer.is_(None), Case.describer == '')
     ).filter(Case.status != 'lezárva').all()
     upcoming_deadlines = Case.query.filter(
         Case.deadline >= now,
@@ -256,7 +254,7 @@ def list_cases():
              .all()
     )
     active_cases = (
-        query.filter(or_(Case.deadline >= now, Case.deadline == None))
+        query.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))
              .order_by(order_col)
              .all()
     )
@@ -625,12 +623,16 @@ def szignal_cases():
     ).order_by(Case.registration_time.desc()).all()
 
     # Cases where at least one expert is assigned (szakértők szerkesztése)
-    szerkesztheto_cases = Case.query.filter(
-        or_(
-            and_(Case.expert_1 != None, Case.expert_1 != ''),
-            and_(Case.expert_2 != None, Case.expert_2 != '')
+    szerkesztheto_cases = (
+        Case.query.filter(
+            or_(
+                and_(Case.expert_1.isnot(None), Case.expert_1 != ''),
+                and_(Case.expert_2.isnot(None), Case.expert_2 != '')
+            )
         )
-    ).order_by(Case.registration_time.desc()).all()
+        .order_by(Case.registration_time.desc())
+        .all()
+    )
 
     return render_template(
         'szignal_cases.html',
@@ -763,6 +765,20 @@ def edit_user(user_id):
 
     user = db.session.get(User, user_id) or abort(404)
     leiro_users = User.query.filter_by(role='leíró').order_by(User.username).all()
+    
+    assigned_cases = []
+    if user.role in ('szakértő', 'leíró'):
+        assigned_cases = (
+            Case.query.filter(
+                or_(
+                    Case.expert_1 == user.username,
+                    Case.expert_2 == user.username,
+                    Case.describer == user.username,
+                )
+            )
+            .order_by(Case.registration_time.desc())
+            .all()
+        )
 
     if request.method == 'POST':
         old_data = (user.username, user.role, user.screen_name)
@@ -791,16 +807,6 @@ def edit_user(user_id):
         log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
         flash("Felhasználó adatai frissítve.", 'success')
         return redirect(url_for('auth.admin_users'))
-
-    assigned_cases = []
-    if user.role in ('szakértő', 'leíró'):
-        assigned_cases = Case.query.filter(
-            or_(
-                Case.expert_1 == user.username,
-                Case.expert_2 == user.username,
-                Case.describer == user.username
-            )
-        ).order_by(Case.registration_time.desc()).all()
 
     return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 

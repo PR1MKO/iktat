@@ -7,7 +7,6 @@ from datetime import datetime
 import pytz
 from app.utils.time_utils import BUDAPEST_TZ
 from sqlalchemy import event, inspect
-from sqlalchemy.orm import object_session
 
 class User(db.Model, UserMixin):
     id            = db.Column(db.Integer, primary_key=True)

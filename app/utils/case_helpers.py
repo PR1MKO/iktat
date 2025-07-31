@@ -1,7 +1,6 @@
 # utils/case_helpers.py
 from app.models import ChangeLog
 from .time_utils import BUDAPEST_TZ
-from datetime import datetime
 import pytz
 
 def build_case_context(case):

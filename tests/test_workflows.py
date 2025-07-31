@@ -2,8 +2,7 @@ import io
 import os
 from datetime import timedelta
 
-import pytest
-from app.models import User, Case, UploadedFile, ChangeLog, db
+from app.models import Case, UploadedFile, ChangeLog, db
 from tests.helpers import create_user, login
 
 def test_case_creation_success(client, app):
