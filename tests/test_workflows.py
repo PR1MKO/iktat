@@ -102,7 +102,7 @@ def test_file_upload_success(client, app, tmp_path):
         data = {'file': (io.BytesIO(b'pdfdata'), 'report.pdf'), 'category': 'egyéb'}
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
-    upload_path = os.path.join(app.root_path, 'uploads', str(case_id), 'report.pdf')
+    upload_path = os.path.join(app.root_path, 'uploads', case.case_number, 'report.pdf')
     assert os.path.exists(upload_path)
     with app.app_context():
         rec = UploadedFile.query.filter_by(case_id=case_id, filename='report.pdf').first()
@@ -120,7 +120,7 @@ def test_upload_requires_auth(client, app):
     resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
     assert resp.status_code == 302
     assert '/login' in resp.headers['Location']
-    upload_path = os.path.join(app.root_path, 'uploads', str(case_id), 'file.pdf')
+    upload_path = os.path.join(app.root_path, 'uploads', case.case_number, 'file.pdf')
     assert not os.path.exists(upload_path)
 
 
@@ -137,7 +137,7 @@ def test_upload_blocked_for_finalized_case(client, app):
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data', follow_redirects=False)
         assert resp.status_code == 302
         assert '/cases/' in resp.headers['Location']
-    upload_path = os.path.join(app.root_path, 'uploads', str(case_id), 'closed.pdf')
+    upload_path = os.path.join(app.root_path, 'uploads', case.case_number, 'closed.pdf')
     assert not os.path.exists(upload_path)
     with app.app_context():
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
@@ -159,7 +159,7 @@ def test_upload_large_file_blocked(client, app):
             content_type='multipart/form-data'
         )
         assert resp.status_code == 413
-    upload_path = os.path.join(app.root_path, 'uploads', str(case_id), 'big.pdf')
+    upload_path = os.path.join(app.root_path, 'uploads', case.case_number, 'big.pdf')
     assert not os.path.exists(upload_path)
     with app.app_context():
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
@@ -171,7 +171,7 @@ def test_file_download_success(client, app):
         db.session.add(case)
         db.session.commit()
         case_id = case.id
-        upload_dir = os.path.join(app.root_path, 'uploads', str(case_id))
+        upload_dir = os.path.join(app.root_path, 'uploads', case.case_number)
         os.makedirs(upload_dir, exist_ok=True)
         with open(os.path.join(upload_dir, 'file.txt'), 'wb') as f:
             f.write(b'data')

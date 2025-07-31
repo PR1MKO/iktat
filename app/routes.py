@@ -34,7 +34,7 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'
     if not file or not file.filename:
         return None
     fn = secure_filename(file.filename)
-    upload_dir = os.path.join(current_app.config[folder_key], str(case.id))
+    upload_dir = os.path.join(current_app.config[folder_key], case.case_number)
     os.makedirs(upload_dir, exist_ok=True)
     try:
         file.save(os.path.join(upload_dir, fn))
@@ -569,7 +569,7 @@ def generate_certificate(case_id):
     ]
 
     filename = f'halottvizsgalati_bizonyitvany-{case.case_number}.txt'
-    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case.id))
+    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
     os.makedirs(folder, exist_ok=True)
     path = os.path.join(folder, filename)
 

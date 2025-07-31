@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime, timedelta, date
 import pytz
 from app.utils.time_utils import now_local
@@ -28,6 +29,26 @@ import io
 import codecs
 
 auth_bp = Blueprint('auth', __name__)
+
+def init_case_upload_dirs(case):
+    """Create per-case upload folders and copy webform templates."""
+    base = current_app.config['UPLOAD_FOLDER']
+    case_dir = os.path.join(base, case.case_number)
+    webfill_dir = os.path.join(case_dir, 'webfill-do-not-edit')
+    os.makedirs(webfill_dir, exist_ok=True)
+
+    template_dir = os.path.join(base, 'autofill-word-do-not-edit')
+    if os.path.isdir(template_dir):
+        for name in os.listdir(template_dir):
+            if not name.lower().endswith('.docx'):
+                continue
+            src = os.path.join(template_dir, name)
+            dst = os.path.join(webfill_dir, name)
+            if not os.path.exists(dst):
+                try:
+                    shutil.copy(src, dst)
+                except Exception as e:
+                    current_app.logger.error(f'Template copy failed: {e}')
 
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
 @login_required
@@ -387,6 +408,7 @@ def create_case():
         db.session.add(new_case)
         try:
             db.session.commit()
+            init_case_upload_dirs(new_case)
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
@@ -515,7 +537,7 @@ def upload_file(case_id):
     if case.status == 'lezárva':
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
-    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
     category = request.form.get('category')
     if not category:
         flash("Kérjük, válasszon fájl kategóriát.", "error")
@@ -565,7 +587,8 @@ def upload_file(case_id):
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
-    base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], str(case_id))
+    case = db.session.get(Case, case_id) or abort(404)
+    base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
     
     try:
         full_path = safe_join(base_dir, filename)
@@ -584,7 +607,7 @@ def download_file(case_id, filename):
         abort(404)
         
     current_app.logger.info(f"Sending file: {full_path}")
-    log_action("File downloaded", f"{filename} from case {case_id}")
+    log_action("File downloaded", f"{filename} from case {case.case_number}")
     return send_from_directory(base_dir, filename, as_attachment=True)
 
 
