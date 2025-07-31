@@ -134,6 +134,10 @@ class Case(db.Model):
     certificate_generated = db.Column(db.Boolean, default=False)
     certificate_generated_at = db.Column(db.DateTime)
 
+    tox_doc_generated = db.Column(db.Boolean, default=False)
+    tox_doc_generated_at = db.Column(db.DateTime)
+    tox_doc_generated_by = db.Column(db.String)
+
     uploaded_file_records = db.relationship(
         'UploadedFile',
         order_by='UploadedFile.upload_time.desc()',

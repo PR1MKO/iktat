@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Toxikológiai Kirendelő Generálás{% endblock %}
+{% block sidebar %}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -26,14 +27,42 @@
       {% endfor %}
       <div class="col-12">
         <label class="form-label fw-bold">Várható összköltség (Ft)</label>
-        <input type="number" class="form-control" name="osszesen_ara">
+        <input type="number" class="form-control" name="osszesen_ara" id="osszesen_ara">
       </div>
       <div class="col-12 text-end">
-        <button class="btn btn-success mt-2" type="submit">
+        <button class="btn btn-success mt-2" type="submit" onclick="return confirm('Biztosan el szeretn\u00e9 k\u00e9sz\u00edteni a dokumentumot? Az OK gomb megnyom\u00e1sa ut\u00e1n a dokumentum nem lesz a tov\u00e1bbiakban szerkeszthet\u0151')">
           <i class="bi bi-file-earmark-word me-1"></i> Toxikológiai kirendelő generálása
         </button>
       </div>
     </div>
   </form>
 </div>
+<style>
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+</style>
+
+<script>
+function recalc() {
+  let total = 0;
+  document.querySelectorAll('input[name$="_minta_count"]').forEach(count => {
+    const key = count.name.replace('_minta_count','');
+    const price = document.querySelector(`input[name="${key}_minta_ara"]`);
+    const c = parseFloat(count.value) || 0;
+    const p = parseFloat(price.value) || 0;
+    total += c * p;
+  });
+  const out = document.getElementById('osszesen_ara');
+  out.value = total.toLocaleString('hu-HU');
+}
+document.querySelectorAll('input[name$="_minta_count"], input[name$="_minta_ara"]').forEach(inp => {
+  inp.addEventListener('input', recalc);
+});
+</script>
 {% endblock %}

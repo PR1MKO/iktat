@@ -993,6 +993,11 @@ def generate_tox_doc(case_id):
 
         tpl.render(context)
         tpl.save(output_path)
+        
+        case.tox_doc_generated = True
+        case.tox_doc_generated_at = datetime.now(BUDAPEST_TZ)
+        case.tox_doc_generated_by = current_user.screen_name or current_user.username
+        db.session.commit()
 
         flash("✅ Toxikológiai kirendelő dokumentum generálva.", "success")
         log_action("Toxikológiai kirendelő generálva", f"{case.case_number}")
