@@ -13,28 +13,12 @@
   <div class="row">
     <div class="col-md-12 mb-3">
       {{ cm.orders_block(case.tox_orders) }}
-      <form method="post" action="{{ url_for('auth.generate_tox_doc', case_id=case.id) }}">
-        <input type="hidden" name="alkohol_minta_count" value="1">
+      <form method="post" action="{{ url_for('auth.generate_tox_doc', case_id=case.id) }}" class="mt-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="alkohol_minta_ara" value="2500">
-        <input type="hidden" name="permetezoszer_minta_count" value="">
-        <input type="hidden" name="permetezoszer_minta_ara" value="">
-        <input type="hidden" name="etilenglikol_minta_count" value="">
-        <input type="hidden" name="etilenglikol_minta_ara" value="">
-        <input type="hidden" name="diatoma_minta_count" value="">
-        <input type="hidden" name="diatoma_minta_ara" value="">
-        <input type="hidden" name="szarazanyag_minta_count" value="">
-        <input type="hidden" name="szarazanyag_minta_ara" value="">
-        <input type="hidden" name="gyogyszer_minta_count" value="">
-        <input type="hidden" name="gyogyszer_minta_ara" value="">
-        <input type="hidden" name="kabitoszer_minta_count" value="">
-        <input type="hidden" name="kabitoszer_minta_ara" value="">
-        <input type="hidden" name="co_minta_count" value="">
-        <input type="hidden" name="co_minta_ara" value="">
-        <input type="hidden" name="egyeb_minta_count" value="">
-        <input type="hidden" name="egyeb_minta_ara" value="">
-        <input type="hidden" name="osszesen_ara" value="">
-        <button class="btn btn-outline-primary mt-2" type="submit">
-          <i class="bi bi-file-earmark-word"></i> Toxikológiai kirendelő generálása
+        <input type="hidden" name="osszesen_ara" value="0">
+        <button class="btn btn-outline-primary" type="submit">
+          <i class="bi bi-file-earmark-word me-2"></i> Toxikológiai kirendelő generálása
         </button>
       </form>
     </div>
