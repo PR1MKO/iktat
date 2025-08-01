@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
-import pytz
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_local, BUDAPEST_TZ
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app,
@@ -45,7 +44,7 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'
         case_id=case.id,
         filename=fn,
         uploader=current_user.screen_name or current_user.username,
-        upload_time=datetime.now(pytz.UTC),
+        upload_time=datetime.now(BUDAPEST_TZ),
         category=category
     )
     db.session.add(rec)
@@ -210,8 +209,8 @@ def vizsgalat_elrendelese(case_id):
         return redirect(url_for('main.ugyeim'))
 
     if request.method == 'POST':
-        # Use UTC timestamp and the username for logging toxicology orders
-        now    = datetime.now(pytz.UTC).strftime('%Y-%m-%d %H:%M')
+        # Use local Budapest time and the username for logging toxicology orders
+        now    = datetime.now(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
         author = current_user.username
         lines = []
 
@@ -575,7 +574,7 @@ def generate_certificate(case_id):
         return jsonify({'error': 'write_failed'}), 500
         
     case.certificate_generated = True
-    case.certificate_generated_at = datetime.utcnow()
+    case.certificate_generated_at = datetime.now(BUDAPEST_TZ)
     db.session.commit()
 
     return redirect(url_for('main.elvegzem', case_id=case.id))

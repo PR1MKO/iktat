@@ -1,8 +1,7 @@
 import os
 import shutil
 from datetime import datetime, timedelta, date
-import pytz
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_local, BUDAPEST_TZ
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
     flash, current_app, send_from_directory, jsonify, Response, abort
@@ -129,10 +128,10 @@ def logout():
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
-    now = datetime.now(pytz.UTC)
-    today_start = datetime(now.year, now.month, now.day, tzinfo=pytz.UTC)
+    now = datetime.now(BUDAPEST_TZ)
+    today_start = datetime(now.year, now.month, now.day, tzinfo=BUDAPEST_TZ)
     week_start = today_start - timedelta(days=now.weekday())
-    month_start = datetime(now.year, now.month, 1, tzinfo=pytz.UTC)
+    month_start = datetime(now.year, now.month, 1, tzinfo=BUDAPEST_TZ)
 
     total_open = Case.query.filter(Case.status != 'lezárva').count()
     new_today = Case.query.filter(Case.registration_time >= today_start).count()
@@ -256,7 +255,7 @@ def list_cases():
     else:
         order_col = order_col.asc()
 
-    now = datetime.now(pytz.UTC)
+    now = datetime.now(BUDAPEST_TZ)
     expired_cases = (
         query.filter(Case.deadline < now)
              .order_by(order_col)
@@ -439,7 +438,7 @@ def create_case():
             old_value='',
             new_value='ügy érkeztetve',
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=datetime.now(pytz.UTC),
+            timestamp=datetime.now(BUDAPEST_TZ),
         )
         db.session.add(log)
         db.session.commit()
@@ -524,7 +523,7 @@ def edit_case_basic(case_id):
             old_value='',
             new_value='alapadat(ok) szerkesztve',
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=datetime.now(pytz.UTC),
+            timestamp=datetime.now(BUDAPEST_TZ),
         )
         db.session.add(log)
         try:
@@ -571,7 +570,7 @@ def upload_file(case_id):
                 case_id   = case.id,
                 filename  = fn,
                 uploader  = current_user.username,
-                upload_time = datetime.now(pytz.UTC),
+                upload_time = datetime.now(BUDAPEST_TZ),
                 category = category
             )
             db.session.add(upload_rec)
@@ -706,7 +705,7 @@ def assign_pathologist(case_id):
                 user_id=assigned_user.id,
                 case_id=case.id,
                 message=f"{case.case_number} has been signalled to you",
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(BUDAPEST_TZ)
             )
             db.session.add(msg)
         
@@ -1030,7 +1029,7 @@ def generate_tox_doc(case_id):
             case_id=case.id,
             filename='Toxikológiai-kirendelő-kitöltött.docx',
             uploader=current_user.username,
-            upload_time=datetime.now(pytz.UTC),
+            upload_time=datetime.now(BUDAPEST_TZ),
             category='Toxikológiai kirendelő'
         )
         db.session.add(upload_rec)

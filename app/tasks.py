@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
-import pytz
 from app.models import db, Case, User
 from app.utils.time_utils import BUDAPEST_TZ
 from app.audit import log_action
 from app.email_utils import send_email
 
 def send_deadline_warning_email():
-    today = datetime.now(pytz.UTC)
+    today = datetime.now(BUDAPEST_TZ)
     upcoming = today + timedelta(days=14)
 
     cases_due = Case.query.filter(
@@ -27,7 +26,7 @@ def send_deadline_warning_email():
         if case.deadline:
             dt = case.deadline
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=pytz.UTC)
+                dt = dt.replace(tzinfo=BUDAPEST_TZ)
             formatted = dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
         else:
             formatted = 'N/A'

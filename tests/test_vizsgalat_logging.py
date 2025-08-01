@@ -1,5 +1,5 @@
-import pytz
 from datetime import datetime
+from app.utils.time_utils import BUDAPEST_TZ
 
 from app.models import Case, db
 from tests.helpers import create_user, login
@@ -13,7 +13,7 @@ def test_empty_tox_field_is_logged(client, app, monkeypatch):
         db.session.commit()
         cid = case.id
 
-    fixed = datetime(2024, 1, 1, 12, 0, tzinfo=pytz.UTC)
+    fixed = datetime(2024, 1, 1, 12, 0, tzinfo=BUDAPEST_TZ)
 
     class FixedDateTime(datetime):
         @classmethod

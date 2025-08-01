@@ -1,5 +1,5 @@
-import pytz
 from datetime import datetime
+from app.utils.time_utils import BUDAPEST_TZ
 
 from app.models import Case, db
 from tests.helpers import create_user, login
@@ -13,7 +13,7 @@ def test_vizsgalat_orders_persist(client, app, monkeypatch):
         db.session.commit()
         cid = case.id
 
-    t1 = datetime(2024, 1, 1, 10, 0, tzinfo=pytz.UTC)
+    t1 = datetime(2024, 1, 1, 10, 0, tzinfo=BUDAPEST_TZ)
 
     class T1(datetime):
         @classmethod
@@ -27,7 +27,7 @@ def test_vizsgalat_orders_persist(client, app, monkeypatch):
         resp = client.post(f'/ugyeim/{cid}/vizsgalat_elrendelese', data=data)
         assert resp.status_code == 302
 
-    t2 = datetime(2024, 1, 1, 11, 0, tzinfo=pytz.UTC)
+    t2 = datetime(2024, 1, 1, 11, 0, tzinfo=BUDAPEST_TZ)
 
     class T2(datetime):
         @classmethod

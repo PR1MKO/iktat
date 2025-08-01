@@ -1,6 +1,7 @@
 from datetime import datetime
 import pytz
 from .models import db, AuditLog
+from app.utils.time_utils import BUDAPEST_TZ
 from flask_login import current_user
 from flask import current_app, flash, has_request_context
 
@@ -9,7 +10,7 @@ def log_action(action: str, details: str = None):
         return  # Skip logging if no user is logged in
 
     log_entry = AuditLog(
-        timestamp=datetime.now(pytz.UTC),
+        timestamp=datetime.now(BUDAPEST_TZ),
         user_id=current_user.id,
         username=current_user.username,
         role=current_user.role,

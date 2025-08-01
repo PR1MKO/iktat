@@ -132,10 +132,10 @@ class Case(db.Model):
     kiserobetegsegek = db.Column(db.Text)
     
     certificate_generated = db.Column(db.Boolean, default=False)
-    certificate_generated_at = db.Column(db.DateTime)
+    certificate_generated_at = db.Column(db.DateTime(timezone=True))
 
     tox_doc_generated = db.Column(db.Boolean, default=False)
-    tox_doc_generated_at = db.Column(db.DateTime)
+    tox_doc_generated_at = db.Column(db.DateTime(timezone=True))
     tox_doc_generated_by = db.Column(db.String)
 
     uploaded_file_records = db.relationship(
@@ -162,7 +162,7 @@ class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(pytz.UTC),
+        default=lambda: datetime.now(BUDAPEST_TZ),
         index=True,
         nullable=False,
     )
@@ -186,7 +186,7 @@ class ChangeLog(db.Model):
     edited_by  = db.Column(db.String(64), nullable=False)
     timestamp  = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(pytz.UTC)
+        default=lambda: datetime.now(BUDAPEST_TZ)
     )
 
     case = db.relationship('Case', backref=db.backref('change_logs', lazy='dynamic'))
@@ -228,7 +228,7 @@ def _audit_case_changes(mapper, connection, target):
                     "old_value": None,
                     "new_value": line,
                     "edited_by": getattr(current_user, "username", "system"),
-                    "timestamp": datetime.now(pytz.UTC),
+                    "timestamp": datetime.now(BUDAPEST_TZ),
                 })
             continue
 
@@ -239,7 +239,7 @@ def _audit_case_changes(mapper, connection, target):
                 "old_value": str(old) if old is not None else None,
                 "new_value": str(new) if new is not None else None,
                 "edited_by": getattr(current_user, "username", "system"),
-                "timestamp": datetime.now(pytz.UTC),
+                "timestamp": datetime.now(BUDAPEST_TZ),
             })
 
     if log_entries:
@@ -252,7 +252,7 @@ class UploadedFile(db.Model):
     filename    = db.Column(db.String(256), nullable=False)
     upload_time = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(pytz.UTC),
+        default=lambda: datetime.now(BUDAPEST_TZ),
         nullable=False,
     )
     uploader    = db.Column(db.String(64), nullable=False)
@@ -269,7 +269,10 @@ class TaskMessage(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(BUDAPEST_TZ)
+    )
     seen = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', backref='task_messages')

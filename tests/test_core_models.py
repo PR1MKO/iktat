@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, date
-import pytz
+from app.utils.time_utils import BUDAPEST_TZ
 
 from app.models import User, Case, UploadedFile, ChangeLog, db
 
@@ -41,7 +41,7 @@ def test_case_creation_full(app):
             institution_name="Inst",
             external_case_number="E1",
             birth_date=date(2000, 1, 1),
-            deadline=datetime.now(pytz.UTC) + timedelta(days=1),
+            deadline=datetime.now(BUDAPEST_TZ) + timedelta(days=1),
         )
         db.session.add(case)
         db.session.commit()

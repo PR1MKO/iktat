@@ -22,7 +22,7 @@
       <ul class="list-unstyled mb-0">
         {% for msg in task_messages %}
           <li class="mb-2">
-            {{ msg.message }} – {{ msg.timestamp.strftime('%Y-%m-%d %H:%M') }}
+            {{ msg.message }} – {{ msg.timestamp|localtime }}
             <a href="{{ url_for('auth.view_case', case_id=msg.case_id) }}" class="btn btn-sm btn-outline-primary ms-2">Megnyitás</a>
           </li>
         {% endfor %}
