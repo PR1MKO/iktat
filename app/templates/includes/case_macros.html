@@ -437,3 +437,11 @@
   </div>
 </div>
 {% endmacro %}
+
+{% macro elvegzem_button(case) %}
+  {% if current_user.role == 'szakértő' and case.expert_1 == current_user.screen_name %}
+    <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
+  {% elif current_user.role == 'leíró' and case.describer == current_user.screen_name %}
+    <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
+  {% endif %}
+{% endmacro %}
