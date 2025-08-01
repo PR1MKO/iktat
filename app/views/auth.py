@@ -471,7 +471,27 @@ def edit_case(case_id):
                  .all()
     )
     if request.method == 'POST':
-        # ... existing field handling ...
+        case.deceased_name = request.form.get('deceased_name') or None
+        case.lanykori_nev = request.form.get('lanykori_nev') or None
+        case.mother_name = request.form.get('mother_name') or None
+        case.taj_szam = request.form.get('taj_szam') or None
+        case.szul_hely = request.form.get('szul_hely') or None
+        birth_date_str = request.form.get('birth_date')
+        if birth_date_str:
+            try:
+                case.birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                case.birth_date = None
+        else:
+            case.birth_date = None
+        case.poszeidon = request.form.get('poszeidon') or None
+        case.external_case_number = request.form.get('external_case_number') or None
+        case.temp_id = request.form.get('temp_id') or None
+        case.institution_name = request.form.get('institution_name') or None
+        case.beerk_modja = request.form.get('beerk_modja') or None
+        case.expert_1 = request.form.get('expert_1') or None
+        case.expert_2 = request.form.get('expert_2') or None
+        case.describer = request.form.get('describer') or None
         try:
             db.session.commit()
         except Exception as e:

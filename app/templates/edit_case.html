@@ -84,6 +84,11 @@
     <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ case.lanykori_nev or '' }}">
   </div>
 
+  <div class="col-md-6">
+    <label for="mother_name" class="form-label">Anyja neve</label>
+    <input type="text" id="mother_name" name="mother_name" class="form-control" value="{{ case.mother_name or '' }}">
+  </div>
+
   <!-- Experts & Describer -->
   {% if current_user.role in ['admin','szignáló'] %}
     {% set expert_opts = [('', '(opcionális)')] %}
