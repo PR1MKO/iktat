@@ -140,7 +140,6 @@ def dashboard():
     new_this_week = Case.query.filter(Case.registration_time >= week_start).count()
     new_this_month = Case.query.filter(Case.registration_time >= month_start).count()
     closed_cases = Case.query.filter(Case.status.in_(['lezárt', 'lejárt'])).count()
-    overdue_count = Case.query.filter(Case.status == 'lejárt').count()
     status_counts = dict(db.session.query(Case.status, func.count()).group_by(Case.status).all())
     status_counts_list = list(status_counts.items())
     missing_fields = Case.query.filter(
@@ -162,11 +161,9 @@ def dashboard():
         new_this_week=new_this_week,
         new_this_month=new_this_month,
         closed_cases=closed_cases,
-        overdue_count=overdue_count,
         status_counts=status_counts,
         missing_fields=missing_fields,
         upcoming_deadlines=upcoming_deadlines,
-        overdue_cases=overdue_cases,
     )
 
     if current_user.role == 'admin':
