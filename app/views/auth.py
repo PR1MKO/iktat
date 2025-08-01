@@ -1,6 +1,6 @@
 import os
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 from app.utils.time_utils import now_local
 from flask import (
@@ -146,11 +146,18 @@ def dashboard():
         or_(Case.expert_1.is_(None), Case.expert_1 == ''),
         or_(Case.describer.is_(None), Case.describer == '')
     ).filter(Case.status != 'lezárva').all()
-    upcoming_deadlines = Case.query.filter(
-        Case.deadline >= now,
-        Case.deadline <= now + timedelta(days=14),
-        Case.status != 'lezárva'
-    ).all()
+    today = date.today()
+    threshold = today + timedelta(days=14)
+    upcoming_deadlines = (
+        Case.query
+            .filter(
+                Case.deadline.isnot(None),
+                Case.status != 'lezárva',
+                Case.deadline <= threshold
+            )
+            .order_by(Case.deadline.asc())
+            .all()
+    )
     overdue_cases = Case.query.filter_by(status='lejárt').all()
 
     template_ctx = dict(
