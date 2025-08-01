@@ -22,7 +22,6 @@ def test_case_formatted_deadline_and_overdue(app):
         db.session.add(case)
         db.session.commit()
 
-        assert case.is_overdue is True
         expected = past.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d")
         assert case.formatted_deadline == expected
 

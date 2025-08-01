@@ -19,16 +19,6 @@
 
 <hr>
 
-<div class="row mb-4 g-3">
-  <div class="col-md-6">
-    {{ cm.dashboard_card(
-      'Késésben (határidő lejárt)',
-      overdue_cases,
-      icon='bi bi-bell-fill',
-      icon_class='text-danger',
-      value_format='%Y-%m-%d'
-    ) }}
-  </div>
   <div class="col-md-6">
     {{ cm.dashboard_card(
       '🗓 Közelgő határidők (14 napon belül)',

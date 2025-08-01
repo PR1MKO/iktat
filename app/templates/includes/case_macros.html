@@ -366,16 +366,13 @@
     </thead>
     <tbody>
       {% for case in cases %}
-      <tr {% if case.is_overdue %}class="table-danger"{% endif %}>
+      <tr>
 
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
         <td>{{ case.case_type }}</td>
         <td>
           {{ case.status }}
-          {% if case.is_overdue %}
-            <span class="badge bg-danger ms-2">KÉSÉSBEN</span>
-          {% endif %}
         </td>
         <td>{{ case.institution_name }}</td>
         <td>{{ case.registration_time|localtime if case.registration_time else '' }}</td>

@@ -154,16 +154,6 @@ class Case(db.Model):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=pytz.utc)
         return dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d')
-
-    @property
-    def is_overdue(self) -> bool:
-        """Return True if the deadline has passed."""
-        if not self.deadline:
-            return False
-        dt = self.deadline
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=pytz.utc)
-        return dt.astimezone(BUDAPEST_TZ) < datetime.now(BUDAPEST_TZ)
         
     def __repr__(self):
         return f'<Case {self.case_number} - {self.deceased_name}>'

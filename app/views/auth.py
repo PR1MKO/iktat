@@ -18,7 +18,6 @@ from app.forms import CaseIdentifierForm
 from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
 from app.audit import log_action
-from app.tasks import auto_close_stale_cases
 from ..utils.case_helpers import build_case_context
 from ..utils.roles import roles_required
 from app.routes import handle_file_upload
@@ -130,10 +129,6 @@ def logout():
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
-    # Auto-close stale cases
-    num_closed = auto_close_stale_cases()
-    if num_closed:
-        flash(f"{num_closed} case(s) auto-closed as 'lejárt'.", "info")
 
     now = datetime.now(pytz.UTC)
     today_start = datetime(now.year, now.month, now.day, tzinfo=pytz.UTC)
