@@ -184,7 +184,8 @@ def dashboard():
             .order_by(func.count(ChangeLog.id).desc())
             .limit(5)
             .all()
-        })
+        })     
+        
         return render_template("dashboards/dashboard_admin.html", **template_ctx)
 
     dashboards = {
