@@ -2,7 +2,7 @@ from app.models import User, db
 
 
 def create_user(username="admin", password="secret", role="admin"):
-    user = User(username=username, role=role)
+    user = User(username=username, screen_name=username, role=role)
     user.set_password(password)
     db.session.add(user)
     db.session.commit()

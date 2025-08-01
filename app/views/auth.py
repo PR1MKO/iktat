@@ -269,7 +269,7 @@ def list_cases():
     cases = expired_cases + active_cases
 
     users = User.query.all()
-    users_map = {u.username: u for u in users}
+    users_map = {u.screen_name or u.username: u for u in users}
 
     query_params = request.args.to_dict()
 
@@ -342,10 +342,10 @@ def create_case():
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
     szakerto_choices = [('', '(opcionális)')] + [
-        (u.username, u.screen_name or u.username) for u in szakerto_users
+        (u.screen_name, u.screen_name or u.username) for u in szakerto_users
     ]
     leiro_choices = [('', '(opcionális)')] + [
-        (u.username, u.screen_name or u.username) for u in leiro_users
+        (u.screen_name, u.screen_name or u.username) for u in leiro_users
     ]
     case = DummyCase()  # Always available for the template/macros
 
@@ -661,7 +661,7 @@ def assign_pathologist(case_id):
 
     # First expert: only "-- Válasszon --" as empty
     szakerto_choices = [('', '-- Válasszon --')] + [
-        (u.username, u.screen_name or u.username) for u in szakerto_users
+        (u.screen_name, u.screen_name or u.username) for u in szakerto_users
     ]
 
     # Get current selection (POST: from form, GET: from case object)
@@ -669,8 +669,8 @@ def assign_pathologist(case_id):
 
     # Second expert: "-- Válasszon (opcionális)" as empty, exclude expert_1
     szakerto_choices_2 = [('', '-- Válasszon (opcionális)')] + [
-        (u.username, u.screen_name or u.username)
-        for u in szakerto_users if u.username != expert_1_selected
+        (u.screen_name, u.screen_name or u.username)
+        for u in szakerto_users if u.screen_name != expert_1_selected
     ]
 
     if request.method == 'POST' and request.form.get('action') == 'upload':
@@ -699,7 +699,7 @@ def assign_pathologist(case_id):
         case.expert_2 = expert_2
         case.status = 'szignálva'
         
-        assigned_user = User.query.filter_by(username=case.expert_1).first()
+        assigned_user = User.query.filter_by(screen_name=case.expert_1).first()
         if assigned_user:
             msg = TaskMessage(
                 user_id=assigned_user.id,
@@ -720,9 +720,10 @@ def assign_pathologist(case_id):
             "Expert(s) assigned",
             f"{expert_1}" + (f", {expert_2}" if expert_2 else "") + f" for case {case.case_number}"
         )
+        recipient = assigned_user.username if assigned_user else expert_1
         send_email(
             subject=f"Assigned to case {case.case_number}",
-            recipients=[expert_1],
+            recipients=[recipient],
             body=f"You have been assigned as szakértő for case {case.case_number}."
         )
         flash('Szakértők sikeresen hozzárendelve.', 'success')

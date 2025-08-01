@@ -227,7 +227,10 @@ def _audit_case_changes(mapper, connection, target):
                     "field_name": field,
                     "old_value": None,
                     "new_value": line,
-                    "edited_by": getattr(current_user, "username", "system"),
+                    "edited_by": (
+                        getattr(current_user, "screen_name", None)
+                        or getattr(current_user, "username", "system")
+                    ),
                     "timestamp": datetime.now(BUDAPEST_TZ),
                 })
             continue
@@ -238,7 +241,10 @@ def _audit_case_changes(mapper, connection, target):
                 "field_name": field,
                 "old_value": str(old) if old is not None else None,
                 "new_value": str(new) if new is not None else None,
-                "edited_by": getattr(current_user, "username", "system"),
+                "edited_by": (
+                    getattr(current_user, "screen_name", None)
+                    or getattr(current_user, "username", "system")
+                ),
                 "timestamp": datetime.now(BUDAPEST_TZ),
             })
 

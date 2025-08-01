@@ -88,11 +88,11 @@
   {% if current_user.role in ['admin','szignáló'] %}
     {% set expert_opts = [('', '(opcionális)')] %}
     {% for u in szakerto_users %}
-      {% set _ = expert_opts.append((u.username, u.screen_name or u.username)) %}
+      {% set _ = expert_opts.append((u.screen_name, u.screen_name or u.username)) %}
     {% endfor %}
     {% set describer_opts = [('', '(opcionális)')] %}
     {% for u in leiro_users %}
-      {% set _ = describer_opts.append((u.username, u.screen_name or u.username)) %}
+      {% set _ = describer_opts.append((u.screen_name, u.screen_name or u.username)) %}
     {% endfor %}
     <div class="col-md-4">
       {{ cm.select_block(
@@ -106,7 +106,7 @@
     </div>
     {% set expert_2_opts = [('', '(opcionális)')] %}
     {% for u in szakerto_users %}
-      {% set _ = expert_2_opts.append((u.username, u.screen_name or u.username)) %}
+      {% set _ = expert_2_opts.append((u.screen_name, u.screen_name or u.username)) %}
     {% endfor %}
     <div class="col-md-4">
       {{ cm.select_block(

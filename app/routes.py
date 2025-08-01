@@ -51,10 +51,12 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'
     return fn
 
 def is_expert_for_case(user, case):
-    return user.username in (case.expert_1, case.expert_2)
+    ident = user.screen_name or user.username
+    return ident in (case.expert_1, case.expert_2)
 
 def is_describer_for_case(user, case):
-    return user.username == case.describer
+    ident = user.screen_name or user.username
+    return ident == case.describer
 
 # --- Routes ---
 
@@ -68,9 +70,10 @@ def case_list():
 @login_required
 @roles_required('szakértő')
 def ugyeim():
+    ident = current_user.screen_name or current_user.username
     base_q = Case.query.filter(or_(
-        Case.expert_1 == current_user.username,
-        Case.expert_2 == current_user.username
+        Case.expert_1 == ident,
+        Case.expert_2 == ident
     ))
     pending   = base_q.filter(Case.status != 'boncolva-leírónál').all()
     completed = base_q.filter(Case.status == 'boncolva-leírónál').all()
@@ -162,7 +165,7 @@ def elvegzem(case_id):
         ):
             leiro = db.session.get(User, current_user.default_leiro_id)
             if leiro:
-                case.describer = leiro.username
+                case.describer = leiro.screen_name or leiro.username
                 
         try:
             db.session.commit()
@@ -365,7 +368,8 @@ def upload_elvegzes_files(case_id):
 @login_required
 @roles_required('leíró')
 def leiro_ugyeim():
-    base_q = Case.query.filter_by(describer=current_user.username)
+    ident = current_user.screen_name or current_user.username
+    base_q = Case.query.filter_by(describer=ident)
     pending   = base_q.filter(Case.status=='boncolva-leírónál').all()
     completed = base_q.filter(Case.status=='leiktatva').all()
     return render_template('leiro_ugyeim.html',
