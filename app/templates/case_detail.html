@@ -24,6 +24,7 @@
     </div>
   </div>
 
+  {% if current_user.role != 'szakértő' %}
   <div class="row mb-4">
     <div class="col-12">
       <div class="mb-3">
@@ -38,6 +39,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
   <!-- Vizsgálatok elrendelése & Feltöltött fájlok -->
   <div class="row mb-4">
@@ -91,10 +93,11 @@
     });
   </script>
 
-  <!-- Vissza az ügyekhez -->
-  <a class="btn btn-outline-primary" href="{{ url_for('auth.list_cases') }}">
-    Vissza az ügyekhez
-  </a>
+  <!-- Navigation buttons -->
+  <a href="{{ request.referrer or url_for('main.case_list') }}" class="btn btn-secondary">Vissza</a>
+  {% if current_user.role == 'szakértő' and case.expert_1 == current_user.screen_name %}
+    <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
+  {% endif %}
 </div>
 {% endblock %}
  

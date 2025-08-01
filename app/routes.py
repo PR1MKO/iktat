@@ -58,6 +58,12 @@ def is_describer_for_case(user, case):
 
 # --- Routes ---
 
+@main_bp.route('/cases')
+@login_required
+def case_list():
+    """Simple passthrough to the main cases listing."""
+    return redirect(url_for('auth.list_cases'))
+
 @main_bp.route('/ugyeim')
 @login_required
 @roles_required('szakértő')
