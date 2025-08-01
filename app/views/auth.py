@@ -129,23 +129,24 @@ def logout():
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
-
     now = datetime.now(pytz.UTC)
     today_start = datetime(now.year, now.month, now.day, tzinfo=pytz.UTC)
     week_start = today_start - timedelta(days=now.weekday())
     month_start = datetime(now.year, now.month, 1, tzinfo=pytz.UTC)
 
-    total_open    = Case.query.filter(Case.status != 'lezárva').count()
-    new_today     = Case.query.filter(Case.registration_time >= today_start).count()
+    total_open = Case.query.filter(Case.status != 'lezárva').count()
+    new_today = Case.query.filter(Case.registration_time >= today_start).count()
     new_this_week = Case.query.filter(Case.registration_time >= week_start).count()
     new_this_month = Case.query.filter(Case.registration_time >= month_start).count()
-    closed_cases = Case.query.filter(Case.status.in_(['lezárt', 'lejárt'])).count()
+    closed_cases = Case.query.filter(Case.status == 'lezárt').count()
     status_counts = dict(db.session.query(Case.status, func.count()).group_by(Case.status).all())
     status_counts_list = list(status_counts.items())
+
     missing_fields = Case.query.filter(
         or_(Case.expert_1.is_(None), Case.expert_1 == ''),
         or_(Case.describer.is_(None), Case.describer == '')
     ).filter(Case.status != 'lezárva').all()
+
     today = date.today()
     threshold = today + timedelta(days=14)
     upcoming_deadlines = (
@@ -158,7 +159,6 @@ def dashboard():
             .order_by(Case.deadline.asc())
             .all()
     )
-    overdue_cases = Case.query.filter_by(status='lejárt').all()
 
     template_ctx = dict(
         status_counts_list=status_counts_list,
