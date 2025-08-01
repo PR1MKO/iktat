@@ -95,7 +95,7 @@
 
   <!-- Navigation buttons -->
   <a href="{{ request.referrer or url_for('main.case_list') }}" class="btn btn-secondary">Vissza</a>
-  {{ cm.elvegzem_button(case) }}
+  {{ cm.elvegzem_button(case, current_user) }}
 </div>
 {% endblock %}
  
