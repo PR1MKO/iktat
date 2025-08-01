@@ -54,6 +54,7 @@ class Case(db.Model):
     beerk_modja = db.Column(db.String(32))   # Beérkezés módja
     poszeidon      = db.Column(db.String(64))    # Poszeidon
     lanykori_nev   = db.Column(db.String(128))   # Elhunyt lánykori neve
+    mother_name    = db.Column('anyja_neve', db.String(128))  # Anyja neve
     szul_hely      = db.Column(db.String(128))   # Szuletési hely
     taj_szam       = db.Column(db.String(16))    # TAJ szám
 

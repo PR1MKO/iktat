@@ -377,6 +377,7 @@ def create_case():
         beerk_modja  = request.form.get('beerk_modja', '').strip() or None
         poszeidon    = request.form.get('poszeidon', '').strip() or None
         lanykori_nev = request.form.get('lanykori_nev', '').strip() or None
+        mother_name  = request.form.get('mother_name', '').strip() or None
         szul_hely    = request.form.get('szul_hely', '').strip() or None
         taj_szam     = request.form.get('taj_szam', '').strip() or None
 
@@ -399,6 +400,7 @@ def create_case():
             beerk_modja=beerk_modja,
             poszeidon=poszeidon,
             lanykori_nev=lanykori_nev,
+            mother_name=mother_name,
             szul_hely=szul_hely,
             taj_szam=taj_szam,
         )
@@ -490,6 +492,7 @@ def edit_case_basic(case_id):
     if request.method == 'POST':
         case.deceased_name = request.form.get('deceased_name') or None
         case.lanykori_nev = request.form.get('lanykori_nev') or None
+        case.mother_name = request.form.get('mother_name') or None
         case.taj_szam = request.form.get('taj_szam') or None
         case.szul_hely = request.form.get('szul_hely') or None
         birth_date_str = request.form.get('birth_date')
