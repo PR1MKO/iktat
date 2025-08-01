@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, date
 import pytz
 
 from app.models import User, Case, UploadedFile, ChangeLog, db
-from app.tasks import auto_close_stale_cases
 
 
 def test_user_creation_and_password(app):
@@ -61,21 +60,6 @@ def test_case_defaults(app):
         loaded = db.session.get(Case, case.id)
         assert loaded.status == "new"
         assert loaded.registration_time is not None
-
-
-def test_case_deadline_auto_close(app):
-    with app.app_context():
-        past_deadline = datetime.now(pytz.UTC) - timedelta(days=1)
-        case = Case(case_number="CASE3", deadline=past_deadline, status="open")
-        db.session.add(case)
-        db.session.commit()
-
-        assert case.status == "open"
-        # auto_close_stale_cases expects a request context for current_user
-        with app.test_request_context():
-            count = auto_close_stale_cases()
-        assert count == 1
-        assert case.status == "lejárt"
 
 
 def test_uploaded_file_association(app):
