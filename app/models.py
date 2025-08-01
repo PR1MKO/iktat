@@ -263,3 +263,15 @@ class UploadedFile(db.Model):
     def __repr__(self):
         return f'<UploadedFile {self.filename} by {self.uploader} on {self.upload_time}>'
 
+class TaskMessage(db.Model):
+    """Persistent notification for assigned tasks."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    seen = db.Column(db.Boolean, default=False)
+
+    user = db.relationship('User', backref='task_messages')
+    case = db.relationship('Case')
+

@@ -13,7 +13,7 @@ from flask_login import (
 )
 from werkzeug.utils import secure_filename, safe_join
 from sqlalchemy import or_, and_, func
-from app.models import UploadedFile, User, Case, AuditLog, ChangeLog
+from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
 from app.forms import CaseIdentifierForm
 from app import db                      # SQLAlchemy instance
 from app.email_utils import send_email
@@ -172,6 +172,15 @@ def dashboard():
         missing_fields=missing_fields,
         upcoming_deadlines=upcoming_deadlines,
     )
+
+    if current_user.role == 'szakértő':
+        task_messages = (
+            TaskMessage.query
+            .filter_by(user_id=current_user.id, seen=False)
+            .order_by(TaskMessage.timestamp.desc())
+            .all()
+        )
+        template_ctx['task_messages'] = task_messages
 
     if current_user.role == 'admin':
         template_ctx.update({
@@ -690,6 +699,17 @@ def assign_pathologist(case_id):
         case.expert_1 = expert_1
         case.expert_2 = expert_2
         case.status = 'szignálva'
+        
+        assigned_user = User.query.filter_by(username=case.expert_1).first()
+        if assigned_user:
+            msg = TaskMessage(
+                user_id=assigned_user.id,
+                case_id=case.id,
+                message=f"{case.case_number} has been signalled to you",
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(msg)
+        
         try:
             db.session.commit()
         except Exception as e:
