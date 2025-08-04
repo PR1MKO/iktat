@@ -7,6 +7,11 @@ from flask import (
     jsonify, abort
 )
 from flask_login import login_required, current_user
+try:
+    from flask_wtf.csrf import csrf_exempt
+except ImportError:  # Flask-WTF<1.2 fallback
+    from app import csrf as _csrf
+    csrf_exempt = _csrf.exempt
 from app.utils.roles import roles_required
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
@@ -61,6 +66,7 @@ def is_describer_for_case(user, case):
 # --- Routes ---
 
 @main_bp.route('/track', methods=['POST'])
+@csrf_exempt
 @login_required
 def track_user_activity():
     if not current_app.config.get("TRACK_USER_ACTIVITY", False):
