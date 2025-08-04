@@ -283,4 +283,14 @@ class TaskMessage(db.Model):
 
     user = db.relationship('User', backref='task_messages')
     case = db.relationship('Case')
-
+    
+class UserSessionLog(db.Model):
+    __tablename__ = 'user_session_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    path = db.Column(db.String(255))
+    event_type = db.Column(db.String(64))
+    element = db.Column(db.String(128))
+    value = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime(timezone=True))
+    extra = db.Column(db.JSON)

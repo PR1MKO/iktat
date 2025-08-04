@@ -10,7 +10,7 @@ from flask_login import login_required, current_user
 from app.utils.roles import roles_required
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename
-from app.models import User, Case, ChangeLog, UploadedFile
+from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
 from app import db
 from app.utils.case_helpers import build_case_context
 
@@ -59,6 +59,29 @@ def is_describer_for_case(user, case):
     return ident == case.describer
 
 # --- Routes ---
+
+@main_bp.route('/track', methods=['POST'])
+@login_required
+def track_user_activity():
+    if not current_app.config.get("TRACK_USER_ACTIVITY", False):
+        return '', 204
+
+    data = request.get_json()
+    if not data:
+        return '', 400
+
+    log = UserSessionLog(
+        user_id=current_user.id,
+        path=request.path,
+        event_type=data.get("event_type"),
+        element=data.get("element"),
+        value=data.get("value"),
+        timestamp=datetime.now(BUDAPEST_TZ),
+        extra=data.get("extra"),
+    )
+    db.session.add(log)
+    db.session.commit()
+    return '', 204
 
 @main_bp.route('/cases')
 @login_required
