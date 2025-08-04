@@ -41,6 +41,17 @@
     <label for="taj_szam" class="form-label">TAJ szám</label>
     <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ case.taj_szam or '' }}">
   </div>
+  
+  {% if current_user.role == 'iroda' %}
+  <div class="col-md-6">
+    <label for="residence" class="form-label">Elhunyt lakhelye</label>
+    <input type="text" id="residence" name="residence" class="form-control" value="{{ case.residence or '' }}">
+  </div>
+  <div class="col-md-6">
+    <label for="citizenship" class="form-label">Állampolgársága</label>
+    <input type="text" id="citizenship" name="citizenship" class="form-control" value="{{ case.citizenship or '' }}">
+  </div>
+  {% endif %}
 
   <div class="col-md-6">
     <label for="szul_hely" class="form-label">Születési hely</label>

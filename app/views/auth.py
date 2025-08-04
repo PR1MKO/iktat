@@ -394,6 +394,8 @@ def create_case():
         mother_name  = request.form.get('mother_name', '').strip() or None
         szul_hely    = request.form.get('szul_hely', '').strip() or None
         taj_szam     = request.form.get('taj_szam', '').strip() or None
+        residence    = request.form.get('residence', '').strip() or None
+        citizenship  = request.form.get('citizenship', '').strip() or None
 
         new_case = Case(
             case_number=case_number,
@@ -417,6 +419,8 @@ def create_case():
             mother_name=mother_name,
             szul_hely=szul_hely,
             taj_szam=taj_szam,
+            residence=residence,
+            citizenship=citizenship,
         )
         new_case.deadline = registration_time + timedelta(days=30)
         db.session.add(new_case)
@@ -498,6 +502,9 @@ def edit_case(case_id):
         case.expert_1 = request.form.get('expert_1') or None
         case.expert_2 = request.form.get('expert_2') or None
         case.describer = request.form.get('describer') or None
+        if current_user.role == 'iroda':
+            case.residence = request.form.get('residence') or None
+            case.citizenship = request.form.get('citizenship') or None
         try:
             db.session.commit()
         except Exception as e:
@@ -542,6 +549,8 @@ def edit_case_basic(case_id):
         case.temp_id = request.form.get('temp_id') or None
         case.institution_name = request.form.get('institution_name') or None
         case.beerk_modja = request.form.get('beerk_modja') or None
+        case.residence = request.form.get('residence') or None
+        case.citizenship = request.form.get('citizenship') or None
 
         log = ChangeLog(
             case=case,

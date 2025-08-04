@@ -57,6 +57,8 @@ class Case(db.Model):
     mother_name    = db.Column('anyja_neve', db.String(128))  # Anyja neve
     szul_hely      = db.Column(db.String(128))   # Szuletési hely
     taj_szam       = db.Column(db.String(16))    # TAJ szám
+    residence      = db.Column(db.String(255), nullable=True)
+    citizenship    = db.Column(db.String(255), nullable=True)
 
     # --- TOX + SZERVVIZSGÁLATOK ---
 
