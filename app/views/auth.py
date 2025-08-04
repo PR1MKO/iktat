@@ -263,8 +263,8 @@ def list_cases():
 
     now = datetime.now(BUDAPEST_TZ)
     expired_cases = (
+        query.filter(Case.deadline < now)
              .order_by(*ordering)
-             .order_by(order_col)
              .all()
     )
     active_cases = (
