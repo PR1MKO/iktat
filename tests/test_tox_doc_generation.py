@@ -12,7 +12,7 @@ from tests.helpers import create_user, login
 
 
 def create_case():
-    case = Case(case_number='TD1')
+    case = Case(case_number='0002-2025')
     db.session.add(case)
     db.session.commit()
     return case

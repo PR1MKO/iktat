@@ -6,7 +6,7 @@ from tests.helpers import create_user, login
 
 def create_case():
     case = Case(
-        case_number='CERT1',
+        case_number='0001-2025',
         expert_1='doc',
         halalt_megallap_pathologus=True,
         boncolas_tortent=True,
@@ -57,7 +57,7 @@ def test_certificate_generation_success(client, app):
     assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
-    assert lines[0] == 'Ügy: CERT1'
+    assert lines[0] == 'Ügy: 0001-2025'
     assert lines[2] == 'A halál okát megállapította: pathologus'
     assert lines[4] == 'Történt-e boncolás: igen'
     assert lines[5] == 'Ha igen, várhatók-e további vizsgálati eredmények: nem'

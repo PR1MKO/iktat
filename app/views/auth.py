@@ -249,21 +249,27 @@ def list_cases():
         query = query.filter(and_(*filters))
 
     # Determine order_by column and direction
-    order_col = Case.case_number if sort_by == 'case_number' else Case.deadline
-    if sort_order == 'desc':
-        order_col = order_col.desc()
+    if sort_by == 'case_number':
+        year_col = func.substr(Case.case_number, 6, 4)
+        seq_col = func.substr(Case.case_number, 1, 4)
+        if sort_order == 'desc':
+            ordering = [year_col.desc(), seq_col.desc()]
+        else:
+            ordering = [year_col.asc(), seq_col.asc()]
     else:
-        order_col = order_col.asc()
+        col = Case.deadline
+        col = col.desc() if sort_order == 'desc' else col.asc()
+        ordering = [col]
 
     now = datetime.now(BUDAPEST_TZ)
     expired_cases = (
-        query.filter(Case.deadline < now)
+             .order_by(*ordering)
              .order_by(order_col)
              .all()
     )
     active_cases = (
         query.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))
-             .order_by(order_col)
+             .order_by(*ordering)
              .all()
     )
     cases = expired_cases + active_cases
@@ -378,7 +384,7 @@ def create_case():
         count = Case.query.filter(
             func.strftime("%Y", Case.registration_time) == str(year)
         ).count() + 1
-        case_number = f"{year}-{count:03d}"
+        case_number = f"{count:04d}-{year}"
         notes = request.form.get('notes', '').strip() or None
 
         # --- Handle the new "További adatok" fields ---
@@ -881,20 +887,17 @@ def manage_cases():
     sort_by = request.args.get('sort_by', 'case_number')
     sort_order = request.args.get('sort_order', 'desc')
 
-    # Map sorting keys to model columns
-    sort_columns = {
-        'case_number': Case.case_number,
-        'deadline': Case.deadline,
-    }
-
-    order_col = sort_columns.get(sort_by, Case.case_number)
-
-    if sort_order == 'asc':
-        order = order_col.asc()
+    if sort_by == 'case_number':
+        year_col = func.substr(Case.case_number, 6, 4)
+        seq_col = func.substr(Case.case_number, 1, 4)
+        if sort_order == 'asc':
+            cases = Case.query.order_by(year_col.asc(), seq_col.asc()).all()
+        else:
+            cases = Case.query.order_by(year_col.desc(), seq_col.desc()).all()
     else:
-        order = order_col.desc()
-
-    cases = Case.query.order_by(order).all()
+        col = Case.deadline
+        col = col.asc() if sort_order == 'asc' else col.desc()
+        cases = Case.query.order_by(col).all()
 
     return render_template('admin_manage_cases.html',
                            cases=cases,
