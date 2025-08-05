@@ -22,6 +22,7 @@ def test_iroda_can_order_and_szakerto_sees_preselected(client, app, monkeypatch)
         data = {'alkohol_ver_ordered': 'on', 'alkohol_ver': '1'}
         resp = client.post(f'/ugyeim/{cid}/vizsgalat_elrendelese', data=data)
         assert resp.status_code == 302
+        assert resp.headers['Location'] == f'/cases/{cid}/edit'
 
     with app.app_context():
         case = db.session.get(Case, cid)
@@ -40,6 +41,7 @@ def test_iroda_can_order_and_szakerto_sees_preselected(client, app, monkeypatch)
         data2 = {'tox_cpk_ordered': 'on', 'tox_cpk': '2'}
         resp2 = client.post(f'/ugyeim/{cid}/vizsgalat_elrendelese', data=data2)
         assert resp2.status_code == 302
+        assert resp2.headers['Location'] == f'/ugyeim/{cid}/elvegzem'
 
     with app.app_context():
         case = db.session.get(Case, cid)

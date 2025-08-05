@@ -251,6 +251,11 @@ def vizsgalat_elrendelese(case_id):
         # Use local Budapest time and the username for logging toxicology orders
         now = now_local().strftime('%Y-%m-%d %H:%M')
         author = current_user.username
+        redirect_target = (
+            url_for('auth.edit_case', case_id=case.id)
+            if current_user.role == 'iroda'
+            else url_for('main.elvegzem', case_id=case.id)
+        )
         lines = []
 
         # Tox text fields with checkbox state
@@ -350,12 +355,12 @@ def vizsgalat_elrendelese(case_id):
                 db.session.rollback()
                 current_app.logger.error(f"Database error: {e}")
                 flash("Valami hiba történt. Próbáld újra.", "danger")
-                return redirect(url_for('main.elvegzem', case_id=case.id))
+                return redirect(redirect_target)
             flash('Vizsgálatok elrendelve.', 'success')
         else:
             flash('Nem választottál ki vizsgálatot.', 'warning')
 
-        return redirect(url_for('main.elvegzem', case_id=case.id))
+        return redirect(redirect_target)
 
     return render_template('vizsgalat.html', case=case)
 
