@@ -48,7 +48,10 @@
     </div>
     <div class="col-md-6 mb-3">
       {% if current_user.role == 'iroda' %}
-        {# Reserved for iroda role actions, if any #}
+      <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id) }}"
+         class="btn btn-outline-primary w-100 mb-3">
+        Vizsgálatok elrendelése
+      </a>
       {% endif %}
       {{ cm.uploaded_files(case) }}
     </div>

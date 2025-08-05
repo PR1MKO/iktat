@@ -239,10 +239,11 @@ def elvegzem(case_id):
 # Vizsgálat elrendelése
 @main_bp.route('/ugyeim/<int:case_id>/vizsgalat_elrendelese', methods=['GET', 'POST'])
 @login_required
-@roles_required('szakértő')
+@roles_required('szakértő', 'iroda')
 def vizsgalat_elrendelese(case_id):
     case = db.session.get(Case, case_id) or abort(404)
-    if not is_expert_for_case(current_user, case):
+    # Only restrict experts to their assigned cases; iroda may order for any case
+    if current_user.role == 'szakértő' and not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod vizsgálatot elrendelni.', 'danger')
         return redirect(url_for('main.ugyeim'))
 
