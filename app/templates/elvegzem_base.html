@@ -33,17 +33,37 @@
           </table>
         </div>
         <div class="col-md-6">
-          <table class="table table-borderless mb-0">
-            <tr><th>Regisztrálva:</th><td>{{ case.registration_time|localtime if case.registration_time else '–' }}</td></tr>
-            <tr><th>Határidő:</th><td>{{ case.deadline|localtime if case.deadline else '–' }}</td></tr>
-            <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
-            <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
-            <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
-          </table>
+            <table class="table table-borderless mb-0">
+              <tr>
+                <th>Regisztrálva:</th>
+                <td>
+                  {% if case.registration_time %}
+                    {{ case.registration_time.strftime('%Y-%m-%d') }}
+                    <span class="text-muted" style="display: none;">{{ case.registration_time.strftime(' %H:%M') }}</span>
+                  {% else %}
+                    –
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <th>Határidő:</th>
+                <td>
+                  {% if case.deadline %}
+                    {{ case.deadline.strftime('%Y-%m-%d') }}
+                    <span class="text-muted" style="display: none;">{{ case.deadline.strftime(' %H:%M') }}</span>
+                  {% else %}
+                    –
+                  {% endif %}
+                </td>
+              </tr>
+              <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
+              <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
+              <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
   <!-- Expert actions placeholder -->
   {% block expert_actions %}{% endblock %}
