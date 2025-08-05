@@ -3,9 +3,8 @@
 from flask_login import UserMixin, current_user
 from app import db                # ← your single SQLAlchemy instance
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 import pytz
-from app.utils.time_utils import BUDAPEST_TZ
+from app.utils.time_utils import BUDAPEST_TZ, now_local
 from sqlalchemy import event, inspect
 
 class User(db.Model, UserMixin):
@@ -35,7 +34,7 @@ class Case(db.Model):
     birth_date           = db.Column(db.Date)
     registration_time    = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(BUDAPEST_TZ)
+        default=now_local
     )
     deadline             = db.Column(db.DateTime(timezone=True))
     expert_1             = db.Column(db.String(128))
@@ -154,7 +153,7 @@ class Case(db.Model):
             return ''
         dt = self.deadline
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=pytz.utc)
+            dt = dt.replace(tzinfo=BUDAPEST_TZ)
         return dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d')
         
     def __repr__(self):
@@ -164,7 +163,7 @@ class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
     timestamp = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(BUDAPEST_TZ),
+        default=now_local,
         index=True,
         nullable=False,
     )
@@ -188,7 +187,7 @@ class ChangeLog(db.Model):
     edited_by  = db.Column(db.String(64), nullable=False)
     timestamp  = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(BUDAPEST_TZ)
+        default=now_local
     )
 
     case = db.relationship('Case', backref=db.backref('change_logs', lazy='dynamic'))
@@ -233,7 +232,7 @@ def _audit_case_changes(mapper, connection, target):
                         getattr(current_user, "screen_name", None)
                         or getattr(current_user, "username", "system")
                     ),
-                    "timestamp": datetime.now(BUDAPEST_TZ),
+                    "timestamp": now_local(),
                 })
             continue
 
@@ -247,7 +246,7 @@ def _audit_case_changes(mapper, connection, target):
                     getattr(current_user, "screen_name", None)
                     or getattr(current_user, "username", "system")
                 ),
-                "timestamp": datetime.now(BUDAPEST_TZ),
+                "timestamp": now_local(),
             })
 
     if log_entries:
@@ -260,7 +259,7 @@ class UploadedFile(db.Model):
     filename    = db.Column(db.String(256), nullable=False)
     upload_time = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(BUDAPEST_TZ),
+        default=now_local,
         nullable=False,
     )
     uploader    = db.Column(db.String(64), nullable=False)
@@ -279,7 +278,7 @@ class TaskMessage(db.Model):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(
         db.DateTime(timezone=True),
-        default=lambda: datetime.now(BUDAPEST_TZ)
+        default=now_local
     )
     seen = db.Column(db.Boolean, default=False)
 

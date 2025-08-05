@@ -15,12 +15,7 @@ def test_vizsgalat_orders_persist(client, app, monkeypatch):
 
     t1 = datetime(2024, 1, 1, 10, 0, tzinfo=BUDAPEST_TZ)
 
-    class T1(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return t1
-
-    monkeypatch.setattr('app.routes.datetime', T1)
+    monkeypatch.setattr('app.routes.now_local', lambda: t1)
     with client:
         login(client, 'doc', 'pw')
         data = {'alkohol_ver_ordered': 'on', 'alkohol_ver': '1'}
@@ -29,12 +24,7 @@ def test_vizsgalat_orders_persist(client, app, monkeypatch):
 
     t2 = datetime(2024, 1, 1, 11, 0, tzinfo=BUDAPEST_TZ)
 
-    class T2(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return t2
-
-    monkeypatch.setattr('app.routes.datetime', T2)
+    monkeypatch.setattr('app.routes.now_local', lambda: t2)
     with client:
         login(client, 'doc', 'pw')
         data = {'tox_cpk_ordered': 'on', 'tox_cpk': '2'}

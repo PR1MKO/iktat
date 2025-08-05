@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from app.utils.time_utils import now_local, BUDAPEST_TZ
+from app.utils.time_utils import now_local
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app,
@@ -49,7 +49,7 @@ def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'
         case_id=case.id,
         filename=fn,
         uploader=current_user.screen_name or current_user.username,
-        upload_time=datetime.now(BUDAPEST_TZ),
+        upload_time=now_local(),
         category=category
     )
     db.session.add(rec)
@@ -82,7 +82,7 @@ def track_user_activity():
         event_type=data.get("event_type"),
         element=data.get("element"),
         value=data.get("value"),
-        timestamp=datetime.now(BUDAPEST_TZ),
+        timestamp=now_local(),
         extra=data.get("extra"),
     )
     db.session.add(log)
@@ -248,7 +248,7 @@ def vizsgalat_elrendelese(case_id):
 
     if request.method == 'POST':
         # Use local Budapest time and the username for logging toxicology orders
-        now    = datetime.now(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
+        now = now_local().strftime('%Y-%m-%d %H:%M')
         author = current_user.username
         lines = []
 
@@ -613,7 +613,7 @@ def generate_certificate(case_id):
         return jsonify({'error': 'write_failed'}), 500
         
     case.certificate_generated = True
-    case.certificate_generated_at = datetime.now(BUDAPEST_TZ)
+    case.certificate_generated_at = now_local()
     db.session.commit()
 
     return redirect(url_for('main.elvegzem', case_id=case.id))

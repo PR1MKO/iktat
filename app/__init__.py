@@ -114,7 +114,7 @@ def create_app(test_config=None):
         if not value:
             return ''
         if value.tzinfo is None:
-            value = value.replace(tzinfo=pytz.utc)
+            value = value.replace(tzinfo=BUDAPEST_TZ)
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     app.jinja_env.filters['localtime'] = localtime

@@ -128,7 +128,7 @@ def logout():
 @auth_bp.route('/dashboard')
 @login_required
 def dashboard():
-    now = datetime.now(BUDAPEST_TZ)
+    now = now_local()
     today_start = datetime(now.year, now.month, now.day, tzinfo=BUDAPEST_TZ)
     week_start = today_start - timedelta(days=now.weekday())
     month_start = datetime(now.year, now.month, 1, tzinfo=BUDAPEST_TZ)
@@ -261,7 +261,7 @@ def list_cases():
         col = col.desc() if sort_order == 'desc' else col.asc()
         ordering = [col]
 
-    now = datetime.now(BUDAPEST_TZ)
+    now = now_local()
     expired_cases = (
         query.filter(Case.deadline < now)
              .order_by(*ordering)
@@ -448,7 +448,7 @@ def create_case():
             old_value='',
             new_value='ügy érkeztetve',
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=datetime.now(BUDAPEST_TZ),
+            timestamp=now_local(),
         )
         db.session.add(log)
         db.session.commit()
@@ -558,7 +558,7 @@ def edit_case_basic(case_id):
             old_value='',
             new_value='alapadat(ok) szerkesztve',
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=datetime.now(BUDAPEST_TZ),
+            timestamp=now_local(),
         )
         db.session.add(log)
         try:
@@ -605,7 +605,7 @@ def upload_file(case_id):
                 case_id   = case.id,
                 filename  = fn,
                 uploader  = current_user.username,
-                upload_time = datetime.now(BUDAPEST_TZ),
+                upload_time = now_local(),
                 category = category
             )
             db.session.add(upload_rec)
@@ -740,7 +740,7 @@ def assign_pathologist(case_id):
                 user_id=assigned_user.id,
                 case_id=case.id,
                 message=f"{case.case_number} has been signalled to you",
-                timestamp=datetime.now(BUDAPEST_TZ)
+                timestamp=now_local()
             )
             db.session.add(msg)
         
@@ -1026,7 +1026,7 @@ def generate_tox_doc(case_id):
         context = {
             "case": case,
             "intezmeny": case.institution_name or "",
-            "today": datetime.now(BUDAPEST_TZ).strftime("%Y.%m.%d"),
+            "today": now_local().strftime("%Y.%m.%d"),
             "current_user": current_user.screen_name,
             "alkohol_minta_count": request.form.get("alkohol_minta_count", ""),
             "alkohol_minta_ara": request.form.get("alkohol_minta_ara", ""),
@@ -1055,14 +1055,14 @@ def generate_tox_doc(case_id):
         tpl.save(output_path)
         
         case.tox_doc_generated = True
-        case.tox_doc_generated_at = datetime.now(BUDAPEST_TZ)
+        case.tox_doc_generated_at = now_local()
         case.tox_doc_generated_by = current_user.screen_name or current_user.username
         
         upload_rec = UploadedFile(
             case_id=case.id,
             filename='Toxikológiai-kirendelő-kitöltött.docx',
             uploader=current_user.username,
-            upload_time=datetime.now(BUDAPEST_TZ),
+            upload_time=now_local(),
             category='Toxikológiai kirendelő'
         )
         db.session.add(upload_rec)

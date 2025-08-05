@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 from app.models import db, Case, User
-from app.utils.time_utils import BUDAPEST_TZ
+from app.utils.time_utils import BUDAPEST_TZ, now_local
 from app.audit import log_action
 from app.email_utils import send_email
 
 def send_deadline_warning_email():
-    today = datetime.now(BUDAPEST_TZ)
+    today = now_local()
     upcoming = today + timedelta(days=14)
 
     cases_due = Case.query.filter(
