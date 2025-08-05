@@ -34,11 +34,11 @@
         <td><strong>Állapot:</strong> {{ case.status }}</td>
         <td>
           <strong>Regisztrálva:</strong>
-          {{ case.registration_time.strftime('%Y-%m-%d') if case.registration_time else '–' }}
+          {{ case.registration_time.date() if case.registration_time else '–' }}
         </td>
         <td colspan="2">
           <strong>Határidő:</strong>
-          {{ case.deadline.strftime('%Y-%m-%d') if case.deadline else '–' }}
+          {{ case.deadline.date() if case.deadline else '–' }}
         </td>
       </tr>
       <tr>
