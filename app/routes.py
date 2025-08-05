@@ -573,6 +573,7 @@ def generate_certificate(case_id):
     alap_ido = form.get('alapbetegseg_ido')
     kiserok = form.get('kiserobetegsegek')
 
+    # Only the immediate details are mandatory; subsequent disease fields are optional
     required = [who, bonc, kozvetlen, kozvetlen_ido]
     if any(v is None or not v.strip() for v in required):
         return jsonify({'error': 'missing_field'}), 400

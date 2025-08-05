@@ -222,30 +222,30 @@
         <div class="row mb-3">
           <div class="col-md-6 mb-3">
             <label class="form-label">Alapbetegség szövődményei (ha voltak):</label>
-            <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}" required>
+            <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}">
             <div class="invalid-feedback">Kérjük, adja meg.</div>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-            <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}" required>
+            <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}">
             <div class="invalid-feedback">Kérjük, adja meg.</div>
           </div>
       </div>
         <div class="row mb-3">
           <div class="col-md-6 mb-3">
             <label class="form-label">Alapbetegség:</label>
-            <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}" required>
+            <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}">
             <div class="invalid-feedback">Kérjük, adja meg.</div>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-            <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}" required>
+            <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}">
             <div class="invalid-feedback">Kérjük, adja meg.</div>
           </div>
       <div class="row mb-3">
         <div class="col-md-12">
           <label class="form-label">Kísérő betegségek vagy állapotok, melyek az alapbetegségtől függetlenek, de hozzájárulhattak a halálhoz</label>
-          <textarea name="kiserobetegsegek" class="form-control" rows="3" required>{{ case.kiserobetegsegek or '' }}</textarea>
+          <textarea name="kiserobetegsegek" class="form-control" rows="3">{{ case.kiserobetegsegek or '' }}</textarea>
           <div class="invalid-feedback">Kérjük, adja meg.</div>
         </div>
       </div>
