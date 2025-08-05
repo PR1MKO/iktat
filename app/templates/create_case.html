@@ -163,6 +163,23 @@
       class="form-control"
       aria-label="Intézmény neve" title="Intézmény neve">
   </div>
+  
+  {% if current_user.role == 'iroda' %}
+  <div class="col-12">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id or 0) }}"
+           class="btn btn-outline-primary w-100">
+          <i class="bi bi-clipboard2-check me-2"></i> Vizsgálatok elrendelése
+        </a>
+      </div>
+      <div class="col-md-6 d-flex align-items-center">
+        <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id or 0) }}"
+           class="btn btn-link float-end ms-auto">Elrendelt vizsgálatok</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Submit buttons -->
   <div class="col-12 d-flex gap-2">
@@ -170,13 +187,6 @@
     <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary">Mégse</a>
   </div>
 </form>
-
-{% if current_user.role == 'iroda' %}
-  <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id or 0) }}"
-     class="btn btn-outline-primary w-100 mt-3">
-    <i class="bi bi-clipboard2-check me-2"></i> Vizsgálatok elrendelése
-  </a>
-{% endif %}
 
 <script>
   (() => {
