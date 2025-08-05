@@ -454,7 +454,7 @@ def create_case():
         db.session.commit()
         
         flash('New case created.', 'success')
-        return redirect(url_for('auth.case_detail', case_id=new_case.id))
+        return redirect(url_for('auth.case_documents', case_id=new_case.id))
 
     return render_template(
         'create_case.html',
@@ -522,7 +522,6 @@ def edit_case(case_id):
         changelog_entries=changelog_entries
     )
 
-
 @auth_bp.route('/cases/<int:case_id>/edit_basic', methods=['GET', 'POST'])
 @login_required
 def edit_case_basic(case_id):
@@ -572,6 +571,13 @@ def edit_case_basic(case_id):
         return redirect(url_for('auth.list_cases'))
 
     return render_template('edit_case_basic.html', case=case)
+    
+@auth_bp.route('/cases/<int:case_id>/documents')
+@login_required
+@roles_required('admin', 'iroda')
+def case_documents(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+    return render_template('case_documents.html', case=case)
 
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
@@ -625,6 +631,8 @@ def upload_file(case_id):
         return redirect(url_for('main.elvegzem', case_id=case_id))
     if request.referrer and 'elvegzem_toxi' in request.referrer:
         return redirect(url_for('main.elvegzem_toxi', case_id=case_id))
+    if request.referrer and '/documents' in request.referrer:
+        return redirect(url_for('auth.case_documents', case_id=case_id))
     return redirect(url_for('auth.case_detail', case_id=case_id))
 
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')

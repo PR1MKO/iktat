@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm %}
+
+{% block title %}Dokumentumok – {{ case.case_number }}{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card-body d-flex align-items-center py-3">
+    <i class="bi bi-upload fs-3 me-3 text-primary"></i>
+    <div>
+      <h3 class="h4 mb-0"><small>Dokumentumok feltöltése – {{ case.case_number }}</small></h3>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      {{ cm.file_upload_block(
+          url_for('auth.upload_file', case_id=case.id),
+          input_name='file',
+          form_id='file-upload-form',
+          multiple=True,
+          label='Fájl feltöltése',
+          btn_label='Feltöltés'
+      ) }}
+    </div>
+    <div class="col-md-6 mb-3">
+      {{ cm.uploaded_files(case) }}
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between mt-4">
+    <a href="{{ url_for('auth.create_case') }}" class="btn btn-secondary">Vissza</a>
+    <a href="{{ url_for('auth.edit_case', case_id=case.id) }}" class="btn btn-primary">Tovább</a>
+  </div>
+</div>
+{% endblock %}

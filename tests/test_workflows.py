@@ -19,7 +19,7 @@ def test_case_creation_success(client, app):
         }
         resp = client.post('/cases/new', data=data, follow_redirects=False)
         assert resp.status_code == 302
-        assert '/cases/' in resp.headers['Location']
+        assert '/documents' in resp.headers['Location']
     with app.app_context():
         assert Case.query.count() == initial + 1
         case = Case.query.first()
@@ -40,6 +40,7 @@ def test_changelog_created_on_case_creation(client, app):
         }
         resp = client.post('/cases/new', data=data, follow_redirects=False)
         assert resp.status_code == 302
+        assert '/documents' in resp.headers['Location']
     with app.app_context():
         case = Case.query.order_by(Case.id.desc()).first()
         log = ChangeLog.query.filter_by(case_id=case.id, field_name='system').first()
@@ -107,6 +108,24 @@ def test_file_upload_success(client, app, tmp_path):
         rec = UploadedFile.query.filter_by(case_id=case_id, filename='report.pdf').first()
         assert rec is not None
 
+def test_upload_redirects_back_to_documents(client, app):
+    with app.app_context():
+        create_user()
+        case = Case(case_number='DOCRED')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+    with client:
+        login(client, 'admin', 'secret')
+        data = {'file': (io.BytesIO(b'x'), 'file.pdf'), 'category': 'egyéb'}
+        resp = client.post(
+            f'/cases/{cid}/upload',
+            data=data,
+            content_type='multipart/form-data',
+            headers={'Referer': f'http://localhost/cases/{cid}/documents'}
+        )
+        assert resp.status_code == 302
+        assert resp.headers['Location'].endswith(f'/cases/{cid}/documents')
 
 def test_upload_requires_auth(client, app):
     with app.app_context():

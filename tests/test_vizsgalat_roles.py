@@ -67,9 +67,10 @@ def test_create_and_edit_pages_show_button_for_iroda(client, app):
     with client:
         login(client, 'clerk', 'pw')
         resp_new = client.get('/cases/new')
-        assert 'Vizsgálatok elrendelése' in resp_new.get_data(as_text=True)
+        assert 'Vizsgálatok elrendelése' not in resp_new.get_data(as_text=True)
 
         resp_edit = client.get(f'/cases/{cid}/edit')
         html_edit = resp_edit.get_data(as_text=True)
         assert f'/ugyeim/{cid}/vizsgalat_elrendelese' in html_edit
         assert 'Vizsgálatok elrendelése' in html_edit
+
