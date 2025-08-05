@@ -560,7 +560,7 @@ def generate_certificate(case_id):
         return abort(403)
         
     form = request.form
-    current_app.logger.debug(f"Form data received: {dict(form)}")
+    current_app.logger.debug(f"Form data received: {dict(request.form)}")
 
     who = form.get('halalt_megallap')
     bonc = form.get('boncolas_tortent')

@@ -183,13 +183,14 @@
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Történt-e boncolás?</label><br>
-              <input type="radio" name="boncolas_tortent" value="" checked hidden>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" required>
+                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" required
+                       {% if case.boncolas_tortent %}checked{% endif %}>
                 <label class="form-check-label" for="bonc-igen">igen</label>
               </div>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" required>
+                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" required
+                       {% if case.boncolas_tortent is not none and not case.boncolas_tortent %}checked{% endif %}>
                 <label class="form-check-label" for="bonc-nem">nem</label>
               </div>
               <div id="tovabbi-vizsgalat-group" class="mt-2" style="display:none">
