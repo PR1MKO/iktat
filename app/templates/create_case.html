@@ -181,6 +181,13 @@
   </div>
 </form>
 
+{% if current_user.role == 'iroda' %}
+  <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id or 0) }}"
+     class="btn btn-outline-primary w-100 mt-3">
+    <i class="bi bi-clipboard2-check me-2"></i> Vizsgálatok elrendelése
+  </a>
+{% endif %}
+
 <script>
   (() => {
     'use strict';

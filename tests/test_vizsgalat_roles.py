@@ -54,10 +54,9 @@ def test_iroda_can_order_and_szakerto_sees_preselected(client, app, monkeypatch)
         assert logs[1].edited_by == 'doc'
 
 
-def test_case_detail_shows_button_for_iroda(client, app):
+def test_create_and_edit_pages_show_button_for_iroda(client, app):
     with app.app_context():
         create_user('clerk', 'pw', 'iroda')
-        create_user('doc', 'pw', 'szakértő')
         case = Case(case_number='B1')
         db.session.add(case)
         db.session.commit()
@@ -65,12 +64,10 @@ def test_case_detail_shows_button_for_iroda(client, app):
 
     with client:
         login(client, 'clerk', 'pw')
-        resp = client.get(f'/cases/{cid}')
-        html = resp.get_data(as_text=True)
-        assert f'/ugyeim/{cid}/vizsgalat_elrendelese' in html
-        assert 'Vizsgálatok elrendelése' in html
+        resp_new = client.get('/cases/new')
+        assert 'Vizsgálatok elrendelése' in resp_new.get_data(as_text=True)
 
-    with client:
-        login(client, 'doc', 'pw')
-        resp = client.get(f'/cases/{cid}')
-        assert f'/ugyeim/{cid}/vizsgalat_elrendelese' not in resp.get_data(as_text=True)
+        resp_edit = client.get(f'/cases/{cid}/edit')
+        html_edit = resp_edit.get_data(as_text=True)
+        assert f'/ugyeim/{cid}/vizsgalat_elrendelese' in html_edit
+        assert 'Vizsgálatok elrendelése' in html_edit
