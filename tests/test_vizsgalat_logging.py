@@ -15,12 +15,7 @@ def test_empty_tox_field_is_logged(client, app, monkeypatch):
 
     fixed = datetime(2024, 1, 1, 12, 0, tzinfo=BUDAPEST_TZ)
 
-    class FixedDateTime(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return fixed
-
-    monkeypatch.setattr('app.routes.datetime', FixedDateTime)
+    monkeypatch.setattr('app.routes.now_local', lambda: fixed)
 
     with client:
         login(client, 'doc', 'pw')
