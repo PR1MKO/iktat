@@ -206,9 +206,8 @@
   </div>
 </div>
 
-  {% if current_user.role == 'iroda' %}
-  <div class="row mb-4">
-    <div class="col-md-6 mb-3">
+  <div class="row">
+    <div class="col-12">
       {{ cm.file_upload_block(
         url_for('auth.upload_file', case_id=case.id),
         input_name='file',
@@ -218,49 +217,13 @@
         btn_label='Feltöltés'
       ) }}
     </div>
-    <div class="col-md-6 mb-3 d-flex">
-      <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id) }}"
-         class="btn btn-outline-primary w-100 h-100 d-flex align-items-center justify-content-center">
-        <i class="bi bi-clipboard2-check me-2"></i> Vizsgálatok elrendelése
-      </a>
-    </div>
   </div>
 
-  <div class="row mb-4">
-    <div class="col-md-6 mb-3">
-      {{ cm.uploaded_files(case) }}
-    </div>
-    <div class="col-md-6 mb-3 d-flex align-items-start">
-      <a href="{{ url_for('main.vizsgalat_elrendelese', case_id=case.id) }}"
-         class="btn btn-link float-end ms-auto">Elrendelt vizsgálatok</a>
-    </div>
-  </div>
-  {% else %}
-
-  <div class="row mb-4">
+  <div class="row mt-4 mb-4">
     <div class="col-12">
-      <div class="mb-3">
-        {{ cm.file_upload_block(
-          url_for('auth.upload_file', case_id=case.id),
-          input_name='file',
-          form_id='file-upload-form',
-          multiple=True,
-          label='Fájl feltöltése',
-          btn_label='Feltöltés'
-        ) }}
-      </div>
-    </div>
-  </div>
-
-  <div class="row mb-4">
-    <div class="col-md-6 mb-3">
-      {{ cm.orders_block(case.tox_orders) }}
-    </div>
-    <div class="col-md-6 mb-3">
       {{ cm.uploaded_files(case) }}
     </div>
   </div>
-  {% endif %}
 
   <div class="row mb-4">
     <div class="col-md-6 d-flex flex-column" id="notes-form">
