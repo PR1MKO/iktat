@@ -127,7 +127,6 @@ def add_note(case_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
-        flash("Valami hiba történt. Próbáld újra.", "danger")
         return jsonify({'error': 'DB error'}), 500
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
@@ -524,9 +523,8 @@ def assign_describer(case_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
-        flash("Valami hiba történt. Próbáld újra.", "danger")
         return jsonify({'error': 'DB error'}), 500
-    flash('Leíró sikeresen hozzárendelve.', 'success')
+    flash('Leíró sikeresen hozzárendelve.', 'success')  # shown after page reload
     return ('', 204)
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/upload_file', methods=['POST'])

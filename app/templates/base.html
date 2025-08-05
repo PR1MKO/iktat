@@ -100,6 +100,7 @@
     {% endblock %}
 
     <main class="flex-grow-1 p-4">
+      {% include 'includes/flash_messages.html' %}
       {% block content %}{% endblock %}
     </main>
   </div>

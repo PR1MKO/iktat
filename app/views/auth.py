@@ -956,7 +956,6 @@ def add_note_universal(case_id):
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
-        flash("Valami hiba történt. Próbáld újra.", "danger")
         return jsonify({'error': 'DB error'}), 500
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'

@@ -6,17 +6,6 @@
 {% block content %}
 <div class="container py-4">
 
-  {# Flash messages #}
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category!='error' and category or 'danger' }}" role="alert">
-          {{ message|safe }}
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
   <!-- Alapadatok -->
   <div class="row mb-4">
     <div class="col-12">

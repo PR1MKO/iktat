@@ -10,16 +10,6 @@
   </div>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="mb-3">
-      {% for category, message in messages %}
-        <div class="alert alert-{{ 'danger' if category=='error' else category }}">{{ message|safe }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
 <form method="post" class="row g-3 needs-validation" novalidate>
   {# CSRF token #}
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
