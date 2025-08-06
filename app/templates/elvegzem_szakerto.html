@@ -12,24 +12,22 @@
     </div>
   </div>
   
-  {% if case.tox_ordered %}
-    {% if case.tox_viewed_by_expert %}
-      <div class="alert alert-success">
-        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at|localtime }}
-      </div>
-    {% elif vegzes_file %}
-      <div id="tox-alert" class="alert alert-danger w-100">
-        Toxikológiai vizsgálatok kérvényezve –
-        <a id="tox-view-link" href="{{ url_for('main.mark_tox_viewed', case_id=case.id, filename=vegzes_file.filename) }}" class="btn btn-link">
-          Tekintse meg a végzést
-        </a>
-      </div>
-      <div class="alert alert-warning w-100">
-        Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez
-      </div>
-    {% endif %}
+  {% if case.tox_ordered and not case.tox_viewed_by_expert and vegzes_file %}
+    <div class="alert alert-danger w-100" id="tox-alert">
+      Toxikológiai vizsgálatok kérvényezve –
+      <a id="tox-view-link" href="{{ url_for('main.mark_tox_viewed', case_id=case.id, filename=vegzes_file.filename) }}" class="btn btn-link">
+        Tekintse meg a végzést
+      </a>
+    </div>
+    <div class="alert alert-warning w-100">
+      Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez
+    </div>
+  {% elif case.tox_viewed_by_expert %}
+    <div class="alert alert-success w-100">
+      Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at.strftime('%Y-%m-%d %H:%M') }}
+    </div>
   {% endif %}
-
+  
   <!-- Row #1: Order button & File‐picker side by side -->
   <div class="row">
     <div class="col-md-6 mb-3">

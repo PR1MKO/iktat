@@ -12,7 +12,7 @@ from tests.helpers import create_user, login
 
 
 def create_case():
-    case = Case(case_number='0002-2025', anyja_neve='Test Mother')
+    case = Case(case_number='0002-2025', anyja_neve='Teszt Anyja')
     db.session.add(case)
     db.session.commit()
     return case
@@ -59,7 +59,7 @@ def test_tox_doc_generation_saves_and_registers(client, app):
     out_doc = Document(out_path)
     texts = [p.text for p in out_doc.paragraphs]
     assert case.case_number in texts
-    assert 'Test Mother' in texts
+    assert 'Teszt Anyja' in texts
 
     with app.app_context():
         rec = UploadedFile.query.filter_by(case_id=cid, filename='Toxikológiai-kirendelő-kitöltött.docx').first()

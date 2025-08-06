@@ -136,30 +136,25 @@ def add_note(case_id):
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
     
-@main_bp.route('/cases/<int:case_id>/mark_tox_viewed/<path:filename>')
+@main_bp.route('/cases/<int:case_id>/mark_tox_viewed')
 @login_required
 @roles_required('szakértő')
-def mark_tox_viewed(case_id, filename):
+def mark_tox_viewed(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         abort(403)
-    file_rec = (
-        UploadedFile.query
-        .filter_by(case_id=case.id, filename=filename, category='végzés')
-        .order_by(UploadedFile.upload_time)
-        .first()
-    )
-    if not file_rec:
-        abort(404)
+
     case.tox_viewed_by_expert = True
     case.tox_viewed_at = now_local()
+    case.tox_viewed_at = datetime.utcnow()
+    
     log = ChangeLog(
-        case=case,
-        field_name='system',
-        old_value='',
-        new_value='Toxi végzés megtekintve',
+        case_id=case.id,
+        field_name="system",
+        old_value=None,
+        new_value="Toxi végzés megtekintve",
         edited_by=current_user.screen_name or current_user.username,
-        timestamp=now_local(),
+        timestamp=datetime.utcnow(),
     )
     db.session.add(log)
     try:
@@ -168,7 +163,8 @@ def mark_tox_viewed(case_id, filename):
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
         return jsonify({'error': 'DB error'}), 500
-    return redirect(url_for('auth.download_file', case_id=case.id, filename=filename))
+    flash("Toxikológiai végzés megtekintve.", "success")
+    return redirect(url_for('main.elvegzem', case_id=case.id))
 
 # Unified elvégzem (szakértő & leíró)
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
