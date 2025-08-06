@@ -33,6 +33,7 @@ def test_tox_doc_generation_saves_and_registers(client, app):
     template_path = os.path.join(tpl_dir, 'Toxikológiai-kirendelő.docx')
     doc = Document()
     doc.add_paragraph('{{case.case_number}}')
+    doc.add_paragraph('{{case.anyja_neve}}')
     doc.save(template_path)
 
     form_data = {
@@ -46,7 +47,19 @@ def test_tox_doc_generation_saves_and_registers(client, app):
 
     out_path = os.path.join(upload_root, case.case_number, 'Toxikológiai-kirendelő-kitöltött.docx')
     assert os.path.exists(out_path)
-    assert not os.path.exists(os.path.join(upload_root, case.case_number, 'webfill-do-not-edit', 'Toxikológiai-kirendelő-kitöltött.docx'))
+    assert not os.path.exists(
+        os.path.join(
+            upload_root,
+            case.case_number,
+            'webfill-do-not-edit',
+            'Toxikológiai-kirendelő-kitöltött.docx',
+        )
+    )
+
+    out_doc = Document(out_path)
+    texts = [p.text for p in out_doc.paragraphs]
+    assert case.case_number in texts
+    assert 'Test Mother' in texts
 
     with app.app_context():
         rec = UploadedFile.query.filter_by(case_id=cid, filename='Toxikológiai-kirendelő-kitöltött.docx').first()

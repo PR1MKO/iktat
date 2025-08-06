@@ -645,6 +645,7 @@ def upload_file(case_id):
         return redirect(url_for('auth.case_documents', case_id=case_id))
     return redirect(url_for('auth.case_detail', case_id=case_id))
 
+
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
@@ -1041,7 +1042,14 @@ def generate_tox_doc(case_id):
         )
 
         context = {
-            "case": case,
+            "case": {
+                "deceased_name": case.deceased_name or "",
+                "birth_date": case.birth_date or "",
+                "szul_hely": case.szul_hely or "",
+                "anyja_neve": case.anyja_neve or "",
+                "case_number": case.case_number or "",
+                "external_case_number": case.external_case_number or "",
+            },
             "intezmeny": case.institution_name or "",
             "today": now_local().strftime("%Y.%m.%d"),
             "current_user": current_user.screen_name,

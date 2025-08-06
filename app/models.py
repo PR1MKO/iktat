@@ -6,6 +6,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
 from app.utils.time_utils import BUDAPEST_TZ, now_local
 from sqlalchemy import event, inspect
+from sqlalchemy.orm import synonym
 
 class User(db.Model, UserMixin):
     id            = db.Column(db.Integer, primary_key=True)
@@ -56,7 +57,8 @@ class Case(db.Model):
     beerk_modja = db.Column(db.String(32))   # Beérkezés módja
     poszeidon      = db.Column(db.String(64))    # Poszeidon
     lanykori_nev   = db.Column(db.String(128))   # Elhunyt lánykori neve
-    mother_name    = db.Column('anyja_neve', db.String(128))  # Anyja neve
+    anyja_neve     = db.Column(db.String(128))   # Anyja neve
+    mother_name    = synonym('anyja_neve')
     szul_hely      = db.Column(db.String(128))   # Szuletési hely
     taj_szam       = db.Column(db.String(16))    # TAJ szám
     residence      = db.Column(db.String(255), nullable=True)
