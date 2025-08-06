@@ -182,6 +182,18 @@ def elvegzem(case_id):
         if not is_describer_for_case(current_user, case):
             flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
             return redirect(url_for('main.leiro_ugyeim'))
+            
+    if (
+        request.method == 'GET'
+        and current_user.role == 'szakértő'
+        and not case.started_by_expert
+    ):
+        case.started_by_expert = True
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
 
     if request.method == 'POST':
         if (

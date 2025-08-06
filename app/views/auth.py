@@ -175,7 +175,12 @@ def dashboard():
     if current_user.role == 'szakértő':
         task_messages = (
             TaskMessage.query
-            .filter_by(user_id=current_user.id, seen=False)
+            .join(Case)
+            .filter(
+                TaskMessage.user_id == current_user.id,
+                TaskMessage.seen.is_(False),
+                Case.started_by_expert.is_(False),
+            )
             .order_by(TaskMessage.timestamp.desc())
             .all()
         )

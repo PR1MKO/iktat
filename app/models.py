@@ -52,6 +52,7 @@ class Case(db.Model):
     tox_ordered          = db.Column(db.Boolean, default=False)
     tox_viewed_by_expert = db.Column(db.Boolean, default=False)
     tox_viewed_at       = db.Column(db.DateTime(timezone=True))
+    started_by_expert   = db.Column(db.Boolean, default=False)
 
     # --- TOVÁBBI ADATOK ---
     beerk_modja = db.Column(db.String(32))   # Beérkezés módja
