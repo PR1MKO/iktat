@@ -11,6 +11,16 @@
       {{ cm.alapadatok(case) }}
     </div>
   </div>
+  
+  {% if current_user.role == 'szakértő' and case.tox_ordered %}
+  <div class="alert {{ 'alert-success' if case.tox_viewed_by_expert else 'alert-danger' }} w-100" id="tox-alert">
+    Toxikológiai vizsgálatok kérvényezve –
+    <a href="{{ url_for('auth.download_file', case_id=case.id, filename='vegzes.pdf') }}" class="btn btn-link" id="tox-view-link" target="_blank">Tekintse meg a végzést</a>
+  </div>
+  {% if not case.tox_viewed_by_expert %}
+  <div class="alert alert-warning">Meg kell tekintenie a végzést</div>
+  {% endif %}
+  {% endif %}
 
   <!-- Row #1: Order button & File‐picker side by side -->
   <div class="row">
@@ -271,6 +281,20 @@
   </form>
 
 <script>
+
+  const toxLocked = {{ 'true' if current_user.role=='szakértő' and case.tox_ordered and not case.tox_viewed_by_expert else 'false' }};
+  if (toxLocked) {
+    document.querySelectorAll('input, select, textarea, button').forEach(el => {
+      if (el.id !== 'tox-view-link') {
+        el.disabled = true;
+      }
+    });
+    document.querySelectorAll('button[type="submit"]').forEach(el => el.style.display = 'none');
+  }
+  document.getElementById('tox-view-link')?.addEventListener('click', function() {
+    fetch('{{ url_for('main.mark_tox_viewed', case_id=case.id) }}').then(() => location.reload());
+  });
+
   document.getElementById('assign-btn').addEventListener('click', function(e) {
     e.preventDefault();
     const descr = document.getElementById('describer').value;

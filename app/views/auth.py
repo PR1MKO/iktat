@@ -572,11 +572,21 @@ def edit_case_basic(case_id):
 
     return render_template('edit_case_basic.html', case=case)
     
-@auth_bp.route('/cases/<int:case_id>/documents')
+@auth_bp.route('/cases/<int:case_id>/documents', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin', 'iroda')
 def case_documents(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if request.method == 'POST':
+        case.tox_ordered = bool(request.form.get('tox_ordered'))
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {e}")
+            flash('Valami hiba történt. Próbáld újra.', 'danger')
+            return render_template('case_documents.html', case=case)
+        return redirect(url_for('auth.edit_case', case_id=case_id))
     return render_template('case_documents.html', case=case)
 
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])

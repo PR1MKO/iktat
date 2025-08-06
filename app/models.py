@@ -48,6 +48,8 @@ class Case(db.Model):
     notes                = db.Column(db.Text)
     uploaded_files       = db.Column(db.Text)
     tox_orders           = db.Column(db.Text)
+    tox_ordered          = db.Column(db.Boolean, default=False)
+    tox_viewed_by_expert = db.Column(db.Boolean, default=False)
 
     # --- TOVÁBBI ADATOK ---
     beerk_modja = db.Column(db.String(32))   # Beérkezés módja

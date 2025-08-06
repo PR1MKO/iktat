@@ -131,6 +131,22 @@ def add_note(case_id):
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
+    
+@main_bp.route('/cases/<int:case_id>/mark_tox_viewed')
+@login_required
+@roles_required('szakértő')
+def mark_tox_viewed(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+    if not is_expert_for_case(current_user, case):
+        abort(403)
+    case.tox_viewed_by_expert = True
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error: {e}")
+        return jsonify({'error': 'DB error'}), 500
+    return ('', 204)
 
 # Unified elvégzem (szakértő & leíró)
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
@@ -150,6 +166,13 @@ def elvegzem(case_id):
             return redirect(url_for('main.leiro_ugyeim'))
 
     if request.method == 'POST':
+        if (
+            current_user.role == 'szakértő'
+            and case.tox_ordered
+            and not case.tox_viewed_by_expert
+        ):
+            flash('Meg kell tekintenie a végzést', 'warning')
+            return redirect(url_for('main.elvegzem', case_id=case.id))
         # 1) Chat-style note
         new_note = request.form.get('new_note','').strip()
         note_added = False
