@@ -11,6 +11,7 @@ def test_case_removed_from_feladataim_after_start(client, app):
         db.session.commit()
         msg = TaskMessage(
             user_id=expert.id,
+            recipient=expert.username,
             case_id=case.id,
             message='Assigned',
             timestamp=now_local(),

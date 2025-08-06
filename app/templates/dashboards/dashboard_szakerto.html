@@ -15,10 +15,10 @@
 
 <hr>
 
-{% if task_messages %}
-  <div class="card mb-4">
-    <div class="card-header fw-bold">🧭 Feladataim:</div>
-    <div class="card-body">
+<div class="card mb-4">
+  <div class="card-header fw-bold">🧭 Feladataim:</div>
+  <div class="card-body">
+    {% if task_messages %}
       <ul class="list-unstyled mb-0">
         {% for msg in task_messages %}
           <li class="mb-2">
@@ -28,9 +28,11 @@
           </li>
         {% endfor %}
       </ul>
-    </div>
+    {% else %}
+      <p class="text-muted mb-0">Nincs megjelenítendő ügy.</p>
+    {% endif %}
   </div>
-{% endif %}
+</div>
 
 <div class="row mb-4 g-3">
   <div class="col-md-6">

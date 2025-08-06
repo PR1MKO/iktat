@@ -174,11 +174,12 @@ def dashboard():
 
     if current_user.role == 'szakértő':
         task_messages = (
-            TaskMessage.query
+            db.session.query(TaskMessage)
             .join(Case)
             .filter(
-                TaskMessage.user_id == current_user.id,
+                TaskMessage.recipient == current_user.username,
                 TaskMessage.seen.is_(False),
+                Case.expert_1 == (current_user.screen_name or current_user.username),
                 Case.started_by_expert.is_(False),
             )
             .order_by(TaskMessage.timestamp.desc())
@@ -762,6 +763,7 @@ def assign_pathologist(case_id):
         if assigned_user:
             msg = TaskMessage(
                 user_id=assigned_user.id,
+                recipient=assigned_user.username,
                 case_id=case.id,
                 message=f"{case.case_number} has been signalled to you",
                 timestamp=now_local()
