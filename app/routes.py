@@ -1,4 +1,5 @@
 import os
+import json
 from datetime import datetime
 from app.utils.time_utils import now_local
 from flask import (
@@ -75,15 +76,18 @@ def track_user_activity():
     data = request.get_json()
     if not data:
         return '', 400
+        
+    value = data.get("value")
+    extra = data.get("extra") or {}
 
     log = UserSessionLog(
         user_id=current_user.id,
         path=request.path,
         event_type=data.get("event_type"),
         element=data.get("element"),
-        value=data.get("value"),
+        value=json.dumps(value) if value is not None else None,
         timestamp=now_local(),
-        extra=data.get("extra"),
+        extra=json.dumps(extra),
     )
     db.session.add(log)
     db.session.commit()
@@ -132,17 +136,16 @@ def add_note(case_id):
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
     
-@main_bp.route('/cases/<int:case_id>/mark_tox_viewed')
+@main_bp.route('/cases/<int:case_id>/mark_tox_viewed/<path:filename>')
 @login_required
 @roles_required('szakértő')
-def mark_tox_viewed(case_id):
+def mark_tox_viewed(case_id, filename):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         abort(403)
-    # Ensure a Végzés file exists
     file_rec = (
         UploadedFile.query
-        .filter_by(case_id=case.id, category='végzés')
+        .filter_by(case_id=case.id, filename=filename, category='végzés')
         .order_by(UploadedFile.upload_time)
         .first()
     )
@@ -165,7 +168,7 @@ def mark_tox_viewed(case_id):
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
         return jsonify({'error': 'DB error'}), 500
-    return ('', 204)
+    return redirect(url_for('auth.download_file', case_id=case.id, filename=filename))
 
 # Unified elvégzem (szakértő & leíró)
 @main_bp.route('/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])
@@ -264,6 +267,11 @@ def elvegzem(case_id):
     ctx = build_case_context(case)
     ctx['case'] = case
     ctx['default_leiro_id'] = current_user.default_leiro_id
+    vegzes_file = next(
+        (f for f in case.uploaded_file_records if f.category == "végzés"),
+        None
+    )
+    ctx['vegzes_file'] = vegzes_file
     if current_user.role=='szakértő':
         leiro_users = (User.query
             .filter_by(role='leíró')

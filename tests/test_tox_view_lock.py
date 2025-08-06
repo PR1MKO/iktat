@@ -24,8 +24,8 @@ def test_tox_view_unlocks_editing(client, app, monkeypatch):
 
         t1 = datetime(2025, 1, 1, 12, 0, tzinfo=BUDAPEST_TZ)
         monkeypatch.setattr('app.routes.now_local', lambda: t1)
-        r2 = client.get(f'/cases/{cid}/mark_tox_viewed')
-        assert r2.status_code == 204
+        r2 = client.get(f'/cases/{cid}/mark_tox_viewed/vegzes.pdf')
+        assert r2.status_code == 302
 
         r3 = client.get(f'/ugyeim/{cid}/elvegzem')
         html2 = r3.get_data(as_text=True)

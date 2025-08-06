@@ -12,20 +12,21 @@
     </div>
   </div>
   
-  {% if current_user.role == 'szakértő' and case.tox_ordered %}
+  {% if case.tox_ordered %}
     {% if case.tox_viewed_by_expert %}
-    <div class="alert alert-success">
-      Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at|localtime }}
-    </div>
-    {% else %}
-    {% set vegzes = case.uploaded_file_records|selectattr('category', 'equalto', 'végzés')|list|first %}
-    <div class="alert alert-danger w-100" id="tox-alert">
-      Toxikológiai vizsgálatok kérvényezve –
-      {% if vegzes %}
-      <a href="{{ url_for('auth.download_file', case_id=case.id, filename=vegzes.filename) }}" class="btn btn-link" id="tox-view-link" target="_blank">Tekintse meg a végzést</a>
-      {% endif %}
-    </div>
-    <div class="alert alert-warning">Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez</div>
+      <div class="alert alert-success">
+        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at|localtime }}
+      </div>
+    {% elif vegzes_file %}
+      <div id="tox-alert" class="alert alert-danger w-100">
+        Toxikológiai vizsgálatok kérvényezve –
+        <a id="tox-view-link" href="{{ url_for('main.mark_tox_viewed', case_id=case.id, filename=vegzes_file.filename) }}" class="btn btn-link">
+          Tekintse meg a végzést
+        </a>
+      </div>
+      <div class="alert alert-warning w-100">
+        Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez
+      </div>
     {% endif %}
   {% endif %}
 
@@ -303,10 +304,6 @@
       }
     });
   }
-  document.getElementById('tox-view-link')?.addEventListener('click', function() {
-    fetch('{{ url_for('main.mark_tox_viewed', case_id=case.id) }}').then(() => location.reload());
-  });
-
   document.getElementById('assign-btn').addEventListener('click', function(e) {
     e.preventDefault();
     const descr = document.getElementById('describer').value;
