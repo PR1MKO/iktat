@@ -139,7 +139,26 @@ def mark_tox_viewed(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         abort(403)
+    # Ensure a Végzés file exists
+    file_rec = (
+        UploadedFile.query
+        .filter_by(case_id=case.id, category='végzés')
+        .order_by(UploadedFile.upload_time)
+        .first()
+    )
+    if not file_rec:
+        abort(404)
     case.tox_viewed_by_expert = True
+    case.tox_viewed_at = now_local()
+    log = ChangeLog(
+        case=case,
+        field_name='system',
+        old_value='',
+        new_value='Toxi végzés megtekintve',
+        edited_by=current_user.screen_name or current_user.username,
+        timestamp=now_local(),
+    )
+    db.session.add(log)
     try:
         db.session.commit()
     except Exception as e:
