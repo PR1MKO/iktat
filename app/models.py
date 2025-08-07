@@ -280,7 +280,7 @@ class TaskMessage(db.Model):
     """Persistent notification for assigned tasks."""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient = db.Column(db.String(64), nullable=False)
+    recipient = db.Column(db.String(128))
     case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(
