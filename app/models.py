@@ -4,6 +4,7 @@ from flask_login import UserMixin, current_user
 from app import db                # ← your single SQLAlchemy instance
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
+from datetime import datetime
 from app.utils.time_utils import BUDAPEST_TZ, now_local
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import synonym
@@ -164,6 +165,16 @@ class Case(db.Model):
         
     def __repr__(self):
         return f'<Case {self.case_number} - {self.deceased_name}>'
+        
+class ExaminationCase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    investigation_number = db.Column(db.String(20), unique=True, nullable=False)
+    type = db.Column(db.String(64))
+    institution = db.Column(db.String(128))
+    ordering_authority = db.Column(db.String(128))
+    deceased_name = db.Column(db.String(128))
+    date_of_birth = db.Column(db.Date)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
