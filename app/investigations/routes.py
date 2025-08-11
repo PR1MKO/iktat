@@ -86,6 +86,8 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 @login_required
 def list_investigations():
     q = request.args.get("q", "").strip()
+    page = request.args.get("page", 1, type=int)
+    per_page = 25
     query = Investigation.query
     if q:
         like = f"%{q}%"
@@ -106,13 +108,20 @@ def list_investigations():
                 Investigation.institution_name.ilike(like),
             )
         )
-    investigations = query.order_by(Investigation.id.desc()).all()
+    pagination = (
+        query.order_by(Investigation.id.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+    investigations = pagination.items
     for inv in investigations:
         inv.birth_date_str = fmt_date(inv.birth_date)
         inv.registration_time_str = fmt_date(inv.registration_time)
         inv.deadline_str = fmt_date(inv.deadline)
     return render_template(
-        "investigations/list.html", investigations=investigations, q=q
+        "investigations/list.html",
+        investigations=investigations,
+        q=q,
+        pagination=pagination,
     )
 
 
@@ -197,7 +206,7 @@ def edit_investigation(id):
     inv = Investigation.query.get_or_404(id)
     form = InvestigationForm()
     if not form.validate_on_submit():
-        flash("Hibás űrlap", "danger")
+        flash("Hibás űrlap", "error")
         return redirect(url_for("investigations.detail_investigation", id=id))
     logs = _log_changes(inv, form)
     db.session.add_all(logs)
