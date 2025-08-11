@@ -1,0 +1,225 @@
+import io
+import os
+from datetime import date, datetime
+
+import pytest
+
+from app import db
+from app.investigations import utils as inv_utils
+from app.investigations.models import Investigation, InvestigationNote
+from app.models import Case
+from tests.helpers import (
+    create_investigation,
+    create_user,
+    login,
+)
+
+
+def _base_form_data():
+    return {
+        'subject_name': 'Teszt Alany',
+        'mother_name': 'Teszt Anya',
+        'birth_place': 'Budapest',
+        'birth_date': '2000-01-02',
+        'taj_number': '123456789',
+        'residence': 'Cím',
+        'citizenship': 'magyar',
+        'institution_name': 'Intézet',
+        'investigation_type': 'type1',
+    }
+
+
+def test_investigation_db_isolation(app):
+    with app.app_context():
+        assert Investigation.__bind_key__ == 'examination'
+        default_engine = db.engines[None]
+        exam_engine = db.engines['examination']
+        assert default_engine.url.database != exam_engine.url.database
+        create_investigation()
+        assert Case.query.count() == 0
+
+
+def test_case_number_sequential_and_year_reset(app, monkeypatch):
+    with app.app_context():
+        def fake_now(year):
+            from app.utils.time_utils import BUDAPEST_TZ
+            return datetime(year, 1, 1, tzinfo=BUDAPEST_TZ)
+
+        monkeypatch.setattr(inv_utils, 'now_local', lambda: fake_now(2023))
+        cn1 = inv_utils.generate_case_number(db.session)
+        create_investigation(case_number=cn1)
+        cn2 = inv_utils.generate_case_number(db.session)
+        assert cn2 == 'V:0002/2023'
+        create_investigation(case_number=cn2)
+        monkeypatch.setattr(inv_utils, 'now_local', lambda: fake_now(2024))
+        cn3 = inv_utils.generate_case_number(db.session)
+        assert cn3 == 'V:0001/2024'
+
+
+from app.investigations.forms import InvestigationForm
+
+
+def test_creation_requires_identifier(app):
+    data = _base_form_data()
+    data.update({'external_case_number': '', 'other_identifier': ''})
+    form = InvestigationForm(data=data)
+    assert not form.validate()
+    assert form.external_case_number.errors
+    assert form.other_identifier.errors
+
+
+def test_creation_requires_mandatory_fields(app):
+    data = _base_form_data()
+    data.update({'external_case_number': 'EXT1'})
+    data['subject_name'] = ''
+    form = InvestigationForm(data=data)
+    assert not form.validate()
+    assert form.subject_name.errors
+
+
+@pytest.fixture
+def _search_data(app):
+    with app.app_context():
+        inv1 = create_investigation(
+            case_number='V:0001/2023',
+            external_case_number='EXT123',
+            other_identifier='OID456',
+            subject_name='John Doe',
+            maiden_name='Smith',
+            investigation_type='type1',
+            mother_name='Jane',
+            birth_place='Budapest',
+            birth_date=date(1990, 1, 1),
+            taj_number='TAJ111',
+            residence='Budapest Address',
+            citizenship='Hungarian',
+            institution_name='Clinic',
+        )
+        create_investigation(
+            case_number='V:0002/2023',
+            external_case_number='DIFF',
+            other_identifier='DIFF2',
+            subject_name='Alice Roe',
+            maiden_name='Roe',
+            investigation_type='type2',
+            mother_name='Mary',
+            birth_place='Debrecen',
+            birth_date=date(1991, 1, 1),
+            taj_number='TAJ222',
+            residence='Other',
+            citizenship='Other',
+            institution_name='Hospital',
+        )
+        return inv1
+
+
+@pytest.mark.parametrize('query', [
+    '0001', 'EXT', 'OID', 'John', 'Smi', 'type1', 'Jane',
+    'Buda', '1990', 'TAJ111', 'Address', 'Hungar', 'Clinic'
+])
+def test_search_filters_across_fields(client, app, _search_data, query):
+    with app.app_context():
+        create_user()
+    login(client, 'admin', 'secret')
+    resp = client.get(f'/investigations/?q={query}')
+    assert b'V:0001/2023' in resp.data
+    assert b'V:0002/2023' not in resp.data
+
+
+def test_upload_endpoint_stores_file(client, app):
+    with app.app_context():
+        user = create_user()
+        inv = create_investigation()
+        username = user.username
+        inv_id = inv.id
+        case_number = inv.case_number
+    login(client, username, 'secret')
+    data = {
+        'category': 'option1',
+        'file': (io.BytesIO(b'hello'), 'file.txt'),
+    }
+    resp = client.post(
+        f'/investigations/{inv_id}/upload',
+        data=data,
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 200
+    upload_path = os.path.join(
+        app.config['INVESTIGATION_UPLOAD_FOLDER'], case_number, 'file.txt'
+    )
+    assert os.path.exists(upload_path)
+    os.remove(upload_path)
+    os.rmdir(os.path.dirname(upload_path))
+
+
+def test_note_creation(client, app):
+    with app.app_context():
+        user = create_user()
+        inv = create_investigation()
+        username = user.username
+        user_id = user.id
+        inv_id = inv.id
+    login(client, username, 'secret')
+    resp = client.post(
+        f'/investigations/{inv_id}/notes', json={'text': 'hello note'}
+    )
+    assert resp.status_code == 200
+    assert b'hello note' in resp.data
+    assert username.encode() in resp.data
+    with app.app_context():
+        note = InvestigationNote.query.filter_by(investigation_id=inv_id).one()
+        assert note.author_id == user_id
+        assert note.timestamp is not None
+
+
+def test_permissions(client, app):
+    from flask_login import login_user
+    from werkzeug.exceptions import Forbidden
+    from app.investigations.routes import new_investigation
+
+    with app.app_context():
+        create_user()  # admin
+        expert = create_user(username='expert', role='szakértő')
+        other = create_user(username='other', role='szakértő')
+        inv = create_investigation(expert1_id=expert.id)
+        inv_id = inv.id
+        case_number = inv.case_number
+        data = _base_form_data()
+        data.update({'external_case_number': 'EXT1'})
+        with app.test_request_context('/investigations/new', method='POST', data=data):
+            login_user(expert)
+            with pytest.raises(Forbidden):
+                new_investigation()
+    # non admin cannot edit
+    login(client, 'expert', 'secret')
+    resp = client.post(f'/investigations/{inv_id}/edit', data=data)
+    assert resp.status_code == 403
+    # assigned expert can add note and upload
+    resp = client.post(
+        f'/investigations/{inv_id}/notes', json={'text': 'hi'}
+    )
+    assert resp.status_code == 200
+    resp = client.post(
+        f'/investigations/{inv_id}/upload',
+        data={'category': 'option1', 'file': (io.BytesIO(b'x'), 'x.txt')},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 200
+    upload_path = os.path.join(
+        app.config['INVESTIGATION_UPLOAD_FOLDER'], case_number, 'x.txt'
+    )
+    assert os.path.exists(upload_path)
+    os.remove(upload_path)
+    os.rmdir(os.path.dirname(upload_path))
+    # unassigned user blocked
+    login(client, 'other', 'secret')
+    resp = client.post(
+        f'/investigations/{inv_id}/notes', json={'text': 'hi'}
+    )
+    assert resp.status_code == 403
+    resp = client.post(
+        f'/investigations/{inv_id}/upload',
+        data={'category': 'option1', 'file': (io.BytesIO(b'x'), 'y.txt')},
+        content_type='multipart/form-data',
+    )
+    assert resp.status_code == 403
