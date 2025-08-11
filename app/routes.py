@@ -1,24 +1,34 @@
 import os
 import json
 from datetime import datetime
-from app.utils.time_utils import now_local
+
 from flask import (
     Blueprint, render_template, request,
     redirect, url_for, flash, current_app,
     jsonify, abort
 )
 from flask_login import login_required, current_user
+from sqlalchemy import or_
+from werkzeug.utils import secure_filename, safe_join
+
+from app import db
+from app.utils.time_utils import now_local
+from app.utils.roles import roles_required
+from app.utils.case_helpers import build_case_context
+
+# CSRF exempt (new Flask-WTF or fallback)
 try:
     from flask_wtf.csrf import csrf_exempt
-except ImportError:  # Flask-WTF<1.2 fallback
+except ImportError:  # Flask-WTF < 1.2
     from app import csrf as _csrf
     csrf_exempt = _csrf.exempt
-from app.utils.roles import roles_required
-from sqlalchemy import or_
-from werkzeug.utils import secure_filename
-from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog, ExaminationCase
-from app import db
-from app.utils.case_helpers import build_case_context
+
+# Models used in this module
+from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
+# NOTE: Do NOT import ExaminationCase here unless it truly exists and is used.
+# Investigation models belong to the investigations blueprint module:
+# from app.investigations.models import Investigation, InvestigationNote, ...
+
 
 main_bp = Blueprint('main', __name__)
 
@@ -98,26 +108,6 @@ def track_user_activity():
 def case_list():
     """Simple passthrough to the main cases listing."""
     return redirect(url_for('auth.list_cases'))
-
-@main_bp.route('/investigations/new', methods=['GET', 'POST'])
-@login_required
-def create_examination():
-    if request.method == 'POST':
-        dob_str = request.form.get('date_of_birth')
-        dob = datetime.strptime(dob_str, '%Y-%m-%d').date() if dob_str else None
-        exam = ExaminationCase(
-            investigation_number=request.form.get('investigation_number'),
-            type=request.form.get('type'),
-            institution=request.form.get('institution'),
-            ordering_authority=request.form.get('ordering_authority'),
-            deceased_name=request.form.get('deceased_name'),
-            date_of_birth=dob,
-        )
-        db.session.add(exam)
-        db.session.commit()
-        flash('Új vizsgálat létrehozva.', 'success')
-        return redirect(url_for('auth.dashboard'))
-    return render_template('create_examination.html')
 
 @main_bp.route('/ugyeim')
 @login_required
@@ -711,3 +701,6 @@ def complete_expert(case_id):
     flash("Szakértői vizsgálat elvégezve.")
     return redirect(url_for('main.ugyeim'))
     
+@main_bp.route('/create-examination', methods=['GET', 'POST'])
+def create_examination():
+    return redirect(url_for('investigations.new_investigation'))
