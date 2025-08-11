@@ -7,7 +7,7 @@
 <div class="card-body d-flex align-items-center py-3">
   <i class="bi bi-person-check fs-3 me-3 text-primary"></i>
   <div>
-    <h3 class="h4 mb-0"><small>Kezdőlap:</small> Iroda</h4>
+    <h3 class="h4 mb-0"><small>Kezdőlap:</small> Iroda</h3>
   </div>
 </div>
 
@@ -15,7 +15,7 @@
   <a class="btn btn-success text-white d-inline-flex align-items-center" href="{{ url_for('auth.create_case') }}">
     <i class="bi bi-plus-circle me-2"></i> Új boncolás
   </a>
-  <a class="btn btn-primary text-white d-inline-flex align-items-center ms-2" href="{{ url_for('main.create_examination') }}">
+  <a class="btn btn-primary text-white d-inline-flex align-items-center ms-2" href="{{ url_for('investigations.new_investigation') }}">
     <i class="bi bi-plus-circle me-2"></i> Új vizsgálat
   </a>
 </p>
@@ -32,18 +32,18 @@
 </div>
 
 <div class="row mb-4 g-3">
-	<div class="col-md-6">
-	  {{ cm.dashboard_card(
-		'📊 Gyors statisztikák',
-		items=[
-		  ('Új ügyek ma', new_today),
-		  ('Új ügyek ezen a héten', new_this_week),
-		  ('Új ügyek ebben a hónapban', new_this_month),
-		  ('Nyitott ügyek', total_open),
-		  ('Lezárt ügyek', closed_cases)
-		]
-	  ) }}
-	</div>
+  <div class="col-md-6">
+    {{ cm.dashboard_card(
+      '📊 Gyors statisztikák',
+      items=[
+        ('Új ügyek ma', new_today),
+        ('Új ügyek ezen a héten', new_this_week),
+        ('Új ügyek ebben a hónapban', new_this_month),
+        ('Nyitott ügyek', total_open),
+        ('Lezárt ügyek', closed_cases)
+      ]
+    ) }}
+  </div>
   <div class="col-md-6">
     {{ cm.dashboard_card(
       '🟡 Állapot szerinti bontás',
@@ -53,4 +53,3 @@
 </div>
 
 {% endblock %}
- 
