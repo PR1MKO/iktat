@@ -1,41 +1,96 @@
 {% extends 'base.html' %}
-{% block title %}Investigation {{ investigation.case_number }}{% endblock %}
+{% block title %}Vizsgálat {{ investigation.case_number }}{% endblock %}
 {% block content %}
-<h1>{{ investigation.case_number }} - {{ investigation.subject_name }}</h1>
-<form method="post" action="{{ url_for('investigations.edit_investigation', id=investigation.id) }}">
+<h1>{{ investigation.case_number }} – {{ investigation.subject_name }}</h1>
+<form method="post" action="{{ url_for('investigations.edit_investigation', id=investigation.id) }}" class="mb-4">
   {{ form.hidden_tag() }}
-  <p>{{ form.subject_name.label }} {{ form.subject_name(size=32) }}</p>
-  <p>{{ form.mother_name.label }} {{ form.mother_name(size=32) }}</p>
-  <p>{{ form.birth_place.label }} {{ form.birth_place(size=32) }}</p>
-  <p>{{ form.birth_date.label }} {{ form.birth_date() }}</p>
-  <p>{{ form.taj_number.label }} {{ form.taj_number(size=32) }}</p>
-  <p>{{ form.residence.label }} {{ form.residence(size=32) }}</p>
-  <p>{{ form.citizenship.label }} {{ form.citizenship(size=32) }}</p>
-  <p>{{ form.institution_name.label }} {{ form.institution_name(size=32) }}</p>
-  <p>{{ form.investigation_type.label }} {{ form.investigation_type() }}</p>
-  <p>{{ form.external_case_number.label }} {{ form.external_case_number(size=32) }}</p>
-  <p>{{ form.other_identifier.label }} {{ form.other_identifier(size=32) }}</p>
-  <button type="submit">Save</button>
+  <div class="mb-2">{{ form.subject_name.label }} {{ form.subject_name(class='form-control') }}</div>
+  <div class="mb-2">{{ form.mother_name.label }} {{ form.mother_name(class='form-control') }}</div>
+  <div class="mb-2">{{ form.birth_place.label }} {{ form.birth_place(class='form-control') }}</div>
+  <div class="mb-2">{{ form.birth_date.label }} {{ form.birth_date(class='form-control') }}</div>
+  <div class="mb-2">{{ form.taj_number.label }} {{ form.taj_number(class='form-control') }}</div>
+  <div class="mb-2">{{ form.residence.label }} {{ form.residence(class='form-control') }}</div>
+  <div class="mb-2">{{ form.citizenship.label }} {{ form.citizenship(class='form-control') }}</div>
+  <div class="mb-2">{{ form.institution_name.label }} {{ form.institution_name(class='form-control') }}</div>
+  <div class="mb-2">{{ form.investigation_type.label }} {{ form.investigation_type(class='form-select') }}</div>
+  <div class="mb-2">{{ form.external_case_number.label }} {{ form.external_case_number(class='form-control') }}</div>
+  <div class="mb-3">{{ form.other_identifier.label }} {{ form.other_identifier(class='form-control') }}</div>
+  <p><strong>Regisztrálva:</strong> {{ investigation.registration_time_str }}</p>
+  <p><strong>Határidő:</strong> {{ investigation.deadline_str }}</p>
+  <button type="submit" class="btn btn-primary">Mentés</button>
 </form>
 
-<h2>Notes</h2>
+<h2>Fájlok</h2>
+<form id="upload-form" class="mb-3" enctype="multipart/form-data" action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {{ upload_form.category(class='form-select d-inline w-auto') }}
+  {{ upload_form.file(class='form-control d-inline w-auto') }}
+  <button type="button" id="upload-btn" class="btn btn-secondary">Feltöltés</button>
+</form>
+<ul id="attachments-list">
+  {% for a in attachments %}
+  <li data-id="{{ a.id }}">{{ a.filename }} – {{ a.category }} – {{ a.uploaded_at_str }}</li>
+  {% endfor %}
+</ul>
+
+<h2>Jegyzetek</h2>
+<div class="mb-3">
+  <textarea id="note-text" class="form-control" rows="3"></textarea>
+  <button type="button" id="add-note-btn" class="btn btn-secondary mt-2">Hozzáad</button>
+</div>
 <div id="notes">
   {% for note in notes %}
     {% include 'investigations/_note.html' %}
   {% endfor %}
 </div>
 
-<h2>Attachments</h2>
-<ul id="attachments">
-  {% for a in attachments %}
-  <li>{{ a.filename }} ({{ a.category }})</li>
-  {% endfor %}
-</ul>
+<h2>Változásnapló</h2>
+<table class="table table-sm">
+  <thead>
+    <tr>
+      <th>Időpont</th>
+      <th>Felhasználó</th>
+      <th>Mező</th>
+      <th>Változás</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in changelog %}
+    <tr>
+      <td>{{ log.timestamp_str }}</td>
+      <td>{{ log.editor.screen_name or log.editor.username }}</td>
+      <td>{{ log.field_name }}</td>
+      <td>{{ log.old_value }} → {{ log.new_value }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-<h2>Changelog</h2>
-<ul>
-  {% for log in changelog %}
-  <li>{{ log.field_name }}: {{ log.old_value }} → {{ log.new_value }} ({{ log.timestamp_str }})</li>
-  {% endfor %}
-</ul>
+<script src="{{ url_for('static', filename='js/investigation_upload.js') }}"></script>
+<script>
+  document.getElementById('add-note-btn')?.addEventListener('click', function() {
+    const txt = document.getElementById('note-text');
+    if (!txt.value.trim()) {
+      txt.classList.add('is-invalid');
+      return;
+    }
+    fetch('{{ url_for('investigations.add_investigation_note', id=investigation.id) }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({text: txt.value.trim()})
+    })
+    .then(r => {
+      if (!r.ok) throw new Error();
+      return r.text();
+    })
+    .then(html => {
+      document.getElementById('notes').insertAdjacentHTML('afterbegin', html);
+      txt.value = '';
+    })
+    .catch(() => alert('Hiba a megjegyzés mentésekor'));
+  });
+</script>
 {% endblock %}

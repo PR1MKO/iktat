@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Vizsgálatok{% endblock %}
+{% block content %}
+<h1 class="mb-3">Vizsgálatok</h1>
+<form method="get" class="mb-3">
+  <input type="text" name="q" value="{{ q }}" placeholder="Keresés a vizsgálatok között…" class="form-control" />
+</form>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Vizsgálat szám</th>
+      <th>Vizsgált neve</th>
+      <th>Típus</th>
+      <th>Intézmény neve</th>
+      <th>Regisztrálva</th>
+      <th>Határidő</th>
+      <th>Szakértő 1</th>
+      <th>Szakértő 2</th>
+      <th>Leíró</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in investigations %}
+    <tr>
+      <td><a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}">{{ inv.case_number }}</a></td>
+      <td>{{ inv.subject_name }}</td>
+      <td>{{ inv.investigation_type }}</td>
+      <td>{{ inv.institution_name }}</td>
+      <td>{{ inv.registration_time_str }}</td>
+      <td>{{ inv.deadline_str }}</td>
+      <td>{{ inv.expert1.screen_name or inv.expert1.username if inv.expert1 else '' }}</td>
+      <td>{{ inv.expert2.screen_name or inv.expert2.username if inv.expert2 else '' }}</td>
+      <td>{{ inv.describer.screen_name or inv.describer.username if inv.describer else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

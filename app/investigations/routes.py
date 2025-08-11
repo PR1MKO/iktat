@@ -112,7 +112,7 @@ def list_investigations():
         inv.registration_time_str = fmt_date(inv.registration_time)
         inv.deadline_str = fmt_date(inv.deadline)
     return render_template(
-        "investigations/index.html", investigations=investigations, q=q
+        "investigations/list.html", investigations=investigations, q=q
     )
 
 
