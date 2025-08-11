@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Investigation {{ investigation.case_number }}{% endblock %}
+{% block content %}
+<h1>{{ investigation.case_number }} - {{ investigation.subject_name }}</h1>
+<form method="post" action="{{ url_for('investigations.edit_investigation', id=investigation.id) }}">
+  {{ form.hidden_tag() }}
+  <p>{{ form.subject_name.label }} {{ form.subject_name(size=32) }}</p>
+  <p>{{ form.mother_name.label }} {{ form.mother_name(size=32) }}</p>
+  <p>{{ form.birth_place.label }} {{ form.birth_place(size=32) }}</p>
+  <p>{{ form.birth_date.label }} {{ form.birth_date() }}</p>
+  <p>{{ form.taj_number.label }} {{ form.taj_number(size=32) }}</p>
+  <p>{{ form.residence.label }} {{ form.residence(size=32) }}</p>
+  <p>{{ form.citizenship.label }} {{ form.citizenship(size=32) }}</p>
+  <p>{{ form.institution_name.label }} {{ form.institution_name(size=32) }}</p>
+  <p>{{ form.investigation_type.label }} {{ form.investigation_type() }}</p>
+  <p>{{ form.external_case_number.label }} {{ form.external_case_number(size=32) }}</p>
+  <p>{{ form.other_identifier.label }} {{ form.other_identifier(size=32) }}</p>
+  <button type="submit">Save</button>
+</form>
+
+<h2>Notes</h2>
+<div id="notes">
+  {% for note in notes %}
+    {% include 'investigations/_note.html' %}
+  {% endfor %}
+</div>
+
+<h2>Attachments</h2>
+<ul id="attachments">
+  {% for a in attachments %}
+  <li>{{ a.filename }} ({{ a.category }})</li>
+  {% endfor %}
+</ul>
+
+<h2>Changelog</h2>
+<ul>
+  {% for log in changelog %}
+  <li>{{ log.field_name }}: {{ log.old_value }} → {{ log.new_value }} ({{ log.timestamp_str }})</li>
+  {% endfor %}
+</ul>
+{% endblock %}

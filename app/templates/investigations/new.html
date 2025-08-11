@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}New Investigation{% endblock %}
+{% block content %}
+<h1>New Investigation</h1>
+<form method="post">
+  {{ form.hidden_tag() }}
+  <p>{{ form.subject_name.label }} {{ form.subject_name(size=32) }}</p>
+  <p>{{ form.mother_name.label }} {{ form.mother_name(size=32) }}</p>
+  <p>{{ form.birth_place.label }} {{ form.birth_place(size=32) }}</p>
+  <p>{{ form.birth_date.label }} {{ form.birth_date() }}</p>
+  <p>{{ form.taj_number.label }} {{ form.taj_number(size=32) }}</p>
+  <p>{{ form.residence.label }} {{ form.residence(size=32) }}</p>
+  <p>{{ form.citizenship.label }} {{ form.citizenship(size=32) }}</p>
+  <p>{{ form.institution_name.label }} {{ form.institution_name(size=32) }}</p>
+  <p>{{ form.investigation_type.label }} {{ form.investigation_type() }}</p>
+  <p>{{ form.external_case_number.label }} {{ form.external_case_number(size=32) }}</p>
+  <p>{{ form.other_identifier.label }} {{ form.other_identifier(size=32) }}</p>
+  <button type="submit">Create</button>
+</form>
+{% endblock %}

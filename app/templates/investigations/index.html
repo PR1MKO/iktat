@@ -1,6 +1,29 @@
 {% extends 'base.html' %}
 {% block title %}Investigations{% endblock %}
 {% block content %}
-<h1>Investigations stub</h1>
-<p>This page will list investigations.</p>
+<h1>Investigations</h1>
+<form method="get" class="mb-3">
+  <input type="text" name="q" value="{{ q or '' }}" placeholder="Keresés">
+  <button type="submit">Search</button>
+</form>
+<table class="table">
+  <thead>
+    <tr>
+      <th>Ügyszám</th>
+      <th>Név</th>
+      <th>Születési dátum</th>
+      <th>Regisztráció</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in investigations %}
+    <tr>
+      <td><a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}">{{ inv.case_number }}</a></td>
+      <td>{{ inv.subject_name }}</td>
+      <td>{{ inv.birth_date_str }}</td>
+      <td>{{ inv.registration_time_str }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
