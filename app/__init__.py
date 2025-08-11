@@ -6,14 +6,13 @@ import logging
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 from flask import Flask
-import pytz
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 
-# Load environment variables from .env if present before importing Config
+# Load environment variables early
 load_dotenv()
 
 from config import Config  # noqa: E402
@@ -39,40 +38,55 @@ def create_app(test_config=None):
         else:
             app.config.from_object(test_config)
 
-    db_name = 'test.db' if app.config.get('TESTING') else 'forensic_cases.db'
-    db_path = os.path.join(app.instance_path, db_name)
-    app.config.setdefault('SQLALCHEMY_DATABASE_URI', f'sqlite:///{db_path}')
+    # --- Databases ---------------------------------------------------------
+    # Main DB (under instance/)
+    main_db_name = 'test.db' if app.config.get('TESTING') else 'forensic_cases.db'
+    main_db_path = os.path.join(app.instance_path, main_db_name)
+    app.config.setdefault('SQLALCHEMY_DATABASE_URI', f'sqlite:///{main_db_path}')
     app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
-    # Upload config (✅ This is the fix that matters)
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+    # Examination bind DB (separate file under instance/, unless EXAMINATION_DATABASE_URL is set)
+    exam_db_name = 'test_examination.db' if app.config.get('TESTING') else 'examination.db'
+    exam_db_path = os.path.join(app.instance_path, exam_db_name)
+    exam_url = os.getenv('EXAMINATION_DATABASE_URL', f'sqlite:///{exam_db_path}')
+    binds = dict(app.config.get('SQLALCHEMY_BINDS') or {})
+    binds['examination'] = exam_url
+    app.config['SQLALCHEMY_BINDS'] = binds
+
+    # --- Upload roots ------------------------------------------------------
+    # Main uploads
+    app.config.setdefault('UPLOAD_FOLDER', os.path.join(app.root_path, 'uploads'))
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+    # Investigation uploads (separate root)
+    app.config.setdefault('INVESTIGATION_UPLOAD_FOLDER', os.path.join(app.root_path, 'uploads_investigations'))
     os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
 
-    # Email config
+    app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)  # 16 MB
+
+    # --- Email config ------------------------------------------------------
     app.config.update(
-        MAIL_SERVER='smtp.gmail.com',
-        MAIL_PORT=587,
-        MAIL_USE_TLS=True,
+        MAIL_SERVER=app.config.get('MAIL_SERVER', 'smtp.gmail.com'),
+        MAIL_PORT=int(app.config.get('MAIL_PORT', 587)),
+        MAIL_USE_TLS=True if str(app.config.get('MAIL_USE_TLS', '1')) in ('1', 'true', 'True') else False,
         MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
         MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
-        MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER')
+        MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
     )
 
     # Init extensions
     db.init_app(app)
     migrate.init_app(app, db)
-    migrate_examination.init_app(
-        app, db, directory='migrations_examination', compare_type=True, render_as_batch=True
-    )
+    # Separate migration directory for the examination bind
+    migrate_examination.init_app(app, db, directory='migrations_examination', compare_type=True, render_as_batch=True)
+
     mail.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
-    # ✅ Local import to avoid circular reference
-    from .models import User
+    # Ensure core models are registered
+    from .models import User  # noqa: F401
     with app.app_context():
         from app import models  # noqa: F401
 
@@ -89,19 +103,17 @@ def create_app(test_config=None):
     app.register_blueprint(main_bp)
     app.register_blueprint(investigations_bp, url_prefix='/investigations')
 
+    # Error handlers (with template fallbacks)
     from app.error_handlers import register_error_handlers
     register_error_handlers(app)
 
-    # One-time check for essential tables
+    # Optional: one-time check for essential tables in production only
     _checked_tables = False
 
     @app.before_request
     def check_essential_tables_once():
         nonlocal _checked_tables
-        if (
-            _checked_tables or app.config.get('TESTING')
-            or app.config.get('ENV') != 'production'
-        ):
+        if _checked_tables or app.config.get('TESTING') or app.config.get('ENV') != 'production':
             return
         from sqlalchemy import inspect
         required_tables = ['user', 'case', 'change_log', 'uploaded_file']
@@ -111,12 +123,15 @@ def create_app(test_config=None):
             raise RuntimeError(f"Missing tables: {missing}")
         _checked_tables = True
 
+    # Root check
     @app.route("/")
     def hello():
         return "Hello, world! Forensic Case Tracker is running."
 
-    # Jinja filter for <input type="datetime-local">
-    app.jinja_env.filters['datetimeformat'] = lambda value: value.strftime('%Y-%m-%dT%H:%M') if value else ''
+    # --- Jinja filters/helpers --------------------------------------------
+    app.jinja_env.filters['datetimeformat'] = (
+        lambda value: value.strftime('%Y-%m-%dT%H:%M') if value else ''
+    )
     app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
 
     def localtime(value: datetime | None):
@@ -129,9 +144,8 @@ def create_app(test_config=None):
     app.jinja_env.filters['localtime'] = localtime
     app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
 
-    # --- Changelog helpers -------------------------------------------------
+    # --- Changelog parsing helpers ----------------------------------------
     import re
-
     TOX_ORDER_RE = re.compile(
         r"^(?P<name>.+?) rendelve: (?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>.+)$"
     )
@@ -142,11 +156,7 @@ def create_app(test_config=None):
         m = TOX_ORDER_RE.match(value.strip())
         if not m:
             return None
-        return {
-            "name": m.group("name"),
-            "ts": m.group("ts"),
-            "user": m.group("user"),
-        }
+        return {"name": m.group("name"), "ts": m.group("ts"), "user": m.group("user")}
 
     app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
 
@@ -160,15 +170,11 @@ def create_app(test_config=None):
         m = NOTE_RE.match(value.strip())
         if not m:
             return None
-        return {
-            "ts": m.group("ts"),
-            "user": m.group("user"),
-            "text": m.group("text"),
-        }
+        return {"ts": m.group("ts"), "user": m.group("user"), "text": m.group("text")}
 
     app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog
 
-    # Logging setup
+    # --- Logging -----------------------------------------------------------
     if not app.debug and not app.testing:
         log_dir = os.path.join(app.instance_path, 'logs')
         os.makedirs(log_dir, exist_ok=True)
@@ -179,7 +185,6 @@ def create_app(test_config=None):
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
         file_handler.setFormatter(formatter)
         app.logger.addHandler(file_handler)
-
         app.logger.setLevel(logging.INFO)
         app.logger.info('Logging initialized.')
 
