@@ -1,20 +1,92 @@
-{% extends 'base.html' %}
+{# app/templates/investigations/new.html #}
+{% extends "base.html" %}
 {% block title %}Új vizsgálat{% endblock %}
+
 {% block content %}
-<h1>Új vizsgálat</h1>
-<form method="post" class="mb-3">
-  {{ form.hidden_tag() }}
-  <div class="mb-2">{{ form.subject_name.label }} {{ form.subject_name(class='form-control') }}</div>
-  <div class="mb-2">{{ form.mother_name.label }} {{ form.mother_name(class='form-control') }}</div>
-  <div class="mb-2">{{ form.birth_place.label }} {{ form.birth_place(class='form-control') }}</div>
-  <div class="mb-2">{{ form.birth_date.label }} {{ form.birth_date(class='form-control') }}</div>
-  <div class="mb-2">{{ form.taj_number.label }} {{ form.taj_number(class='form-control') }}</div>
-  <div class="mb-2">{{ form.residence.label }} {{ form.residence(class='form-control') }}</div>
-  <div class="mb-2">{{ form.citizenship.label }} {{ form.citizenship(class='form-control') }}</div>
-  <div class="mb-2">{{ form.institution_name.label }} {{ form.institution_name(class='form-control') }}</div>
-  <div class="mb-2">{{ form.investigation_type.label }} {{ form.investigation_type(class='form-select') }}</div>
-  <div class="mb-2">{{ form.external_case_number.label }} {{ form.external_case_number(class='form-control') }}</div>
-  <div class="mb-3">{{ form.other_identifier.label }} {{ form.other_identifier(class='form-control') }}</div>
-  <button type="submit" class="btn btn-primary">Létrehozás</button>
-</form>
+<div class="container mt-3">
+  <h3>Új vizsgálat</h3>
+  <form method="post">
+    {{ form.csrf_token }}
+
+    <div class="row">
+      <div class="col-md-6">
+        <label class="form-label">{{ form.external_case_number.label }}</label>
+        {{ form.external_case_number(class="form-control") }}
+        {% for e in form.external_case_number.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.other_identifier.label }}</label>
+        {{ form.other_identifier(class="form-control") }}
+        {% for e in form.other_identifier.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <label class="form-label">{{ form.subject_name.label }}</label>
+        {{ form.subject_name(class="form-control", required=True) }}
+        {% for e in form.subject_name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.maiden_name.label }}</label>
+        {{ form.maiden_name(class="form-control") }}
+        {% for e in form.maiden_name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-4">
+        <label class="form-label">{{ form.investigation_type.label }}</label>
+        {{ form.investigation_type(class="form-select", required=True) }}
+        {% for e in form.investigation_type.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.mother_name.label }}</label>
+        {{ form.mother_name(class="form-control", required=True) }}
+        {% for e in form.mother_name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.birth_place.label }}</label>
+        {{ form.birth_place(class="form-control", required=True) }}
+        {% for e in form.birth_place.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-4">
+        <label class="form-label">{{ form.birth_date.label }}</label>
+        {{ form.birth_date(class="form-control", type="date", required=True) }}
+        {% for e in form.birth_date.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.taj_number.label }}</label>
+        {{ form.taj_number(class="form-control", required=True) }}
+        {% for e in form.taj_number.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.residence.label }}</label>
+        {{ form.residence(class="form-control", required=True) }}
+        {% for e in form.residence.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-6">
+        <label class="form-label">{{ form.citizenship.label }}</label>
+        {{ form.citizenship(class="form-control", required=True) }}
+        {% for e in form.citizenship.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">{{ form.institution_name.label }}</label>
+        {{ form.institution_name(class="form-control", required=True) }}
+        {% for e in form.institution_name.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="mt-4">
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('investigations.list_investigations') }}" class="btn btn-secondary">Mégse</a>
+    </div>
+  </form>
+</div>
 {% endblock %}
