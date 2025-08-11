@@ -24,6 +24,8 @@ db = SQLAlchemy()
 mail = Mail()
 csrf = CSRFProtect()
 login_manager = LoginManager()
+migrate = Migrate()
+migrate_examination = Migrate()
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -45,6 +47,8 @@ def create_app(test_config=None):
     # Upload config (✅ This is the fix that matters)
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
 
     # Email config
     app.config.update(
@@ -58,7 +62,10 @@ def create_app(test_config=None):
 
     # Init extensions
     db.init_app(app)
-    Migrate(app, db)
+    migrate.init_app(app, db)
+    migrate_examination.init_app(
+        app, db, directory='migrations_examination', compare_type=True, render_as_batch=True
+    )
     mail.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -76,9 +83,11 @@ def create_app(test_config=None):
     # Register blueprints
     from .views.auth import auth_bp
     from .routes import main_bp
+    from .investigations import investigations_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(investigations_bp, url_prefix='/investigations')
 
     from app.error_handlers import register_error_handlers
     register_error_handlers(app)
