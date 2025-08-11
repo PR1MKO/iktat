@@ -1,0 +1,51 @@
+Endpoint                                  Methods    Rule                                       
+----------------------------------------  ---------  -------------------------------------------
+auth.add_note_universal                   POST       /cases/<int:case_id>/add_note              
+auth.add_user                             GET, POST  /admin/users/add                           
+auth.admin_users                          GET        /admin/users                               
+auth.assign_pathologist                   GET, POST  /szignal_cases/<int:case_id>/assign        
+auth.case_detail                          GET        /cases/<int:case_id>                       
+auth.case_documents                       GET, POST  /cases/<int:case_id>/documents             
+auth.closed_cases                         GET        /cases/closed                              
+auth.create_case                          GET, POST  /cases/new                                 
+auth.dashboard                            GET        /dashboard                                 
+auth.delete_case                          POST       /admin/cases/<int:case_id>/delete          
+auth.delete_user                          POST       /admin/users/<int:user_id>/delete          
+auth.download_file                        GET        /cases/<int:case_id>/files/<path:filename> 
+auth.edit_case                            GET, POST  /cases/<int:case_id>/edit                  
+auth.edit_case_basic                      GET, POST  /cases/<int:case_id>/edit_basic            
+auth.edit_user                            GET, POST  /admin/users/<int:user_id>/edit            
+auth.export_changelog_csv                 GET        /cases/<int:case_id>/changelog.csv         
+auth.generate_tox_doc                     POST       /cases/<int:case_id>/generate_tox_doc      
+auth.list_cases                           GET        /cases                                     
+auth.login                                GET, POST  /login                                     
+auth.logout                               GET        /logout                                    
+auth.manage_cases                         GET        /admin/cases                               
+auth.szignal_cases                        GET        /szignal_cases                             
+auth.tox_doc_form                         GET        /cases/<int:case_id>/tox_doc_form          
+auth.upload_file                          POST       /cases/<int:case_id>/upload                
+auth.view_case                            GET        /cases/<int:case_id>/view                  
+hello                                     GET        /                                          
+investigations.add_investigation_note     POST       /investigations/<int:id>/notes             
+investigations.detail_investigation       GET        /investigations/<int:id>                   
+investigations.edit_investigation         POST       /investigations/<int:id>/edit              
+investigations.list_investigations        GET        /investigations/                           
+investigations.new_investigation          GET, POST  /investigations/new                        
+investigations.upload_investigation_file  POST       /investigations/<int:id>/upload            
+main.add_note                             POST       /ugyeim/<int:case_id>/add_note             
+main.assign_describer                     POST       /ugyeim/<int:case_id>/assign_describer     
+main.case_list                            GET        /cases                                     
+main.complete_expert                      POST       /cases/<int:case_id>/complete_expert       
+main.elvegzem                             GET, POST  /ugyeim/<int:case_id>/elvegzem             
+main.elvegzem_toxi                        GET, POST  /elvegzem_toxi/<int:case_id>               
+main.generate_certificate                 POST       /ugyeim/<int:case_id>/generate_certificate 
+main.leiro_elvegzem                       GET, POST  /leiro/ugyeim/<int:case_id>/elvegzem       
+main.leiro_ugyeim                         GET        /leiro/ugyeim                              
+main.leiro_upload_file                    POST       /leiro/ugyeim/<int:case_id>/upload_file    
+main.mark_tox_viewed                      GET        /cases/<int:case_id>/mark_tox_viewed       
+main.toxi_ugyeim                          GET        /ugyeim/toxi                               
+main.track_user_activity                  POST       /track                                     
+main.ugyeim                               GET        /ugyeim                                    
+main.upload_elvegzes_files                POST       /ugyeim/<int:case_id>/upload_elvegzes_files
+main.vizsgalat_elrendelese                GET, POST  /ugyeim/<int:case_id>/vizsgalat_elrendelese
+static                                    GET        /static/<path:filename>                    
