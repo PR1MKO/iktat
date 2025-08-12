@@ -8,10 +8,8 @@ from .models import Investigation
 _DRIVE_ONLY_RE = re.compile(r"^[A-Za-z]:$")
 
 def resolve_upload_root(app):
-    base = (app.config.get("INVESTIGATION_UPLOAD_FOLDER") or "").strip()
-    if not base or _DRIVE_ONLY_RE.match(base):
-        base = os.path.join(app.instance_path, "uploads_investigations")
-    base = os.path.normpath(base)
+    import os
+    base = os.path.join(app.instance_path, "uploads_investigations")
     os.makedirs(base, exist_ok=True)
     return base
 
@@ -48,13 +46,3 @@ def generate_case_number(session) -> str:
             return candidate
         seq += 1
 
-def resolve_upload_root(app):
-    base = (app.config.get("INVESTIGATION_UPLOAD_FOLDER") or "").strip()
-
-    # If it's empty OR starts with V: or any bare drive letter → fallback to the correct path
-    if not base or _DRIVE_ONLY_RE.match(base) or base.upper().startswith("V:"):
-        base = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\uploads_investigations"
-
-    base = os.path.normpath(base)
-    os.makedirs(base, exist_ok=True)
-    return base
