@@ -9,8 +9,8 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for
-    send_from_directory,
+    url_for,
+    send_from_directory,  # ✅ fix: comma + include here
 )
 from flask_login import current_user, login_required
 from sqlalchemy import or_, func
@@ -44,10 +44,11 @@ def _can_note_or_upload(inv, user) -> bool:
         return True
     return user.id in {inv.expert1_id, inv.expert2_id, inv.describer_id}
 
+
 def _log_changes(inv: Investigation, form: InvestigationForm):
     fields = [
         "subject_name",
-        "maiden_name",              # ← add this
+        "maiden_name",
         "mother_name",
         "birth_place",
         "birth_date",
@@ -81,7 +82,6 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
-
 
 @investigations_bp.route("/")
 @login_required
@@ -148,20 +148,21 @@ def new_investigation():
         )
         inv.case_number = generate_case_number(db.session)  # V-####-YYYY
         inv.registration_time = now_local()
-        inv.deadline = inv.registration_time + timedelta(days=30
-        
+        inv.deadline = inv.registration_time + timedelta(days=30)  # ✅ fix: closing parenthesis
+
         db.session.add(inv)
         db.session.commit()
 
         # Create per-investigation folder (separate from Cases)
         ensure_investigation_folder(current_app, inv.case_number)
-        
+
         flash("Vizsgálat létrehozva.", "success")
         # Go straight to the Investigations Documents page
         return redirect(url_for("investigations.documents", id=inv.id))
-        
+
     return render_template("investigations/new.html", form=form)
-    
+
+
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
 def documents(id):
@@ -185,6 +186,7 @@ def documents(id):
         upload_form=upload_form,
         upload_url=url_for("investigations.upload_investigation_file", id=inv.id),
     )
+
 
 @investigations_bp.route("/<int:id>")
 @login_required
@@ -313,6 +315,7 @@ def upload_investigation_file(id):
         }
     )
 
+
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required
 def download_investigation_file(id, filename):
@@ -326,4 +329,3 @@ def download_investigation_file(id, filename):
         abort(404)
 
     return send_from_directory(folder, os.path.basename(full_path), as_attachment=True)
-    
