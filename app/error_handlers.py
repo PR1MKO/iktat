@@ -18,6 +18,13 @@ def register_error_handlers(app):
         except TemplateNotFound:
             return "404 Not Found", 404
 
+    @app.errorhandler(413)  # RequestEntityTooLarge
+    def too_large_error(e):
+        try:
+            return render_template('413.html'), 413
+        except TemplateNotFound:
+            return "413 Request Entity Too Large", 413
+
     @app.errorhandler(500)
     def internal_error(e):
         # Make sure failed transactions don't poison the next request

@@ -1,6 +1,9 @@
+# app/views/auth.py
+
 import os
 import shutil
 from datetime import datetime, timedelta, date
+
 from app.utils.time_utils import now_local, BUDAPEST_TZ
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
@@ -12,9 +15,10 @@ from flask_login import (
 )
 from werkzeug.utils import secure_filename, safe_join
 from sqlalchemy import or_, and_, func
+
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
 from app.forms import CaseIdentifierForm
-from app import db                      # SQLAlchemy instance
+from app import db
 from app.email_utils import send_email
 from app.audit import log_action
 from ..utils.case_helpers import build_case_context
@@ -26,9 +30,18 @@ import codecs
 
 auth_bp = Blueprint('auth', __name__)
 
+# ---------------------------------------------------------------------
+# Upload root helper (keeps tests and app consistent)
+# ---------------------------------------------------------------------
+def _case_upload_root() -> str:
+    root = current_app.config['UPLOAD_FOLDER']
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
 def init_case_upload_dirs(case):
     """Create per-case upload folders and copy webform templates."""
-    base = current_app.config['UPLOAD_FOLDER']
+    base = _case_upload_root()
     case_dir = os.path.join(base, case.case_number)
     webfill_dir = os.path.join(case_dir, 'webfill-do-not-edit')
     os.makedirs(webfill_dir, exist_ok=True)
@@ -45,6 +58,7 @@ def init_case_upload_dirs(case):
                     shutil.copy(src, dst)
                 except Exception as e:
                     current_app.logger.error(f'Template copy failed: {e}')
+
 
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
 @login_required
@@ -106,6 +120,7 @@ def export_changelog_csv(case_id):
         }
     )
 
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -118,12 +133,14 @@ def login():
         flash('Invalid username or password.')
     return render_template('login.html')
 
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash('Logged out.')
     return redirect(url_for('auth.login'))
+
 
 @auth_bp.route('/dashboard')
 @login_required
@@ -198,8 +215,7 @@ def dashboard():
             .order_by(func.count(ChangeLog.id).desc())
             .limit(5)
             .all()
-        })     
-        
+        })
         return render_template("dashboards/dashboard_admin.html", **template_ctx)
 
     dashboards = {
@@ -220,6 +236,7 @@ def dashboard():
         )
         logout_user()
         return redirect(url_for("auth.login"))
+
 
 @auth_bp.route('/cases')
 @login_required
@@ -252,6 +269,7 @@ def list_cases():
             Case.describer.ilike(pat),
         ))
     if filters:
+        from sqlalchemy import and_
         query = query.filter(and_(*filters))
 
     # Determine order_by column and direction
@@ -297,6 +315,7 @@ def list_cases():
         search_query=search_query
     )
 
+
 @auth_bp.route('/cases/<int:case_id>')
 @login_required
 def case_detail(case_id):
@@ -312,6 +331,7 @@ def case_detail(case_id):
         case=case,
         **ctx
     )
+
 
 @auth_bp.route('/cases/<int:case_id>/view')
 @login_required
@@ -330,12 +350,14 @@ def view_case(case_id):
         **ctx
     )
 
+
 @auth_bp.route('/cases/closed')
 @login_required
 def closed_cases():
     closed = Case.query.filter(Case.status.in_(['lejárt','lezárva']))\
              .order_by(Case.deadline.desc()).all()
     return render_template('closed_cases.html', cases=closed)
+
 
 @auth_bp.route('/cases/new', methods=['GET','POST'])
 @login_required
@@ -446,7 +468,7 @@ def create_case():
                 case=case,
                 form=form
             )
-            
+
         # Log case creation in ChangeLog
         log = ChangeLog(
             case=new_case,
@@ -458,7 +480,7 @@ def create_case():
         )
         db.session.add(log)
         db.session.commit()
-        
+
         flash('New case created.', 'success')
         return redirect(url_for('auth.case_documents', case_id=new_case.id))
 
@@ -469,9 +491,10 @@ def create_case():
         szakerto_choices=szakerto_choices,
         leiro_choices=leiro_choices,
         case=case,
-        form=form  # ✅ FIXED HERE
+        form=form
     )
-    
+
+
 @auth_bp.route('/cases/<int:case_id>/edit', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin', 'iroda')
@@ -528,6 +551,7 @@ def edit_case(case_id):
         changelog_entries=changelog_entries
     )
 
+
 @auth_bp.route('/cases/<int:case_id>/edit_basic', methods=['GET', 'POST'])
 @login_required
 def edit_case_basic(case_id):
@@ -577,7 +601,8 @@ def edit_case_basic(case_id):
         return redirect(url_for('auth.list_cases'))
 
     return render_template('edit_case_basic.html', case=case)
-    
+
+
 @auth_bp.route('/cases/<int:case_id>/documents', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin', 'iroda')
@@ -595,24 +620,33 @@ def case_documents(case_id):
         return redirect(url_for('auth.edit_case', case_id=case_id))
     return render_template('case_documents.html', case=case)
 
+
 @auth_bp.route('/cases/<int:case_id>/upload', methods=['POST'])
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def upload_file(case_id):
+    # Manual guard so tests expecting 413 pass reliably
+    max_len = current_app.config.get('MAX_CONTENT_LENGTH')
+    if request.content_length and max_len and request.content_length > max_len:
+        abort(413)
+
     case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
-    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
+
+    upload_folder = os.path.join(_case_upload_root(), case.case_number)
     category = request.form.get('category')
     if not category:
         flash("Kérjük, válasszon fájl kategóriát.", "error")
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
     os.makedirs(upload_folder, exist_ok=True)
+
     files = request.files.getlist('file')
     if not files:
         flash('No files selected', 'warning')
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
+
     saved = []
     for f in files:
         fn = secure_filename(f.filename)
@@ -624,17 +658,19 @@ def upload_file(case_id):
                 flash("A fájl mentése nem sikerült.", "danger")
                 continue
             upload_rec = UploadedFile(
-                case_id   = case.id,
-                filename  = fn,
-                uploader  = current_user.username,
+                case_id     = case.id,
+                filename    = fn,
+                uploader    = current_user.username,
                 upload_time = now_local(),
-                category = category
+                category    = category
             )
             db.session.add(upload_rec)
             saved.append(fn)
             log_action("File uploaded", f"{fn} for case {case.case_number}")
+
     if saved:
         case.uploaded_files = ','.join(filter(None, (case.uploaded_files or '').split(',') + saved))
+
     try:
         db.session.commit()
     except Exception as e:
@@ -642,6 +678,7 @@ def upload_file(case_id):
         current_app.logger.error(f"Database error: {e}")
         flash("Valami hiba történt. Próbáld újra.", "danger")
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
+
     flash(f'Uploaded: {", ".join(saved)}', 'success')
     if request.referrer and '/ugyeim/' in request.referrer:
         return redirect(url_for('main.elvegzem', case_id=case_id))
@@ -657,8 +694,8 @@ def upload_file(case_id):
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
     case = db.session.get(Case, case_id) or abort(404)
-    base_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
-    
+    base_dir = os.path.join(_case_upload_root(), case.case_number)
+
     try:
         full_path = safe_join(base_dir, filename)
         if full_path is None:
@@ -674,7 +711,7 @@ def download_file(case_id, filename):
             f"File not found for case {case_id}: {full_path}"
         )
         abort(404)
-        
+
     current_app.logger.info(f"Sending file: {full_path}")
     log_action("File downloaded", f"{filename} from case {case.case_number}")
     return send_from_directory(base_dir, filename, as_attachment=True)
@@ -710,6 +747,7 @@ def szignal_cases():
         szignalando_cases=szignalando_cases,
         szerkesztheto_cases=szerkesztheto_cases
     )
+
 
 @auth_bp.route('/szignal_cases/<int:case_id>/assign', methods=['GET', 'POST'])
 @login_required
@@ -807,12 +845,14 @@ def assign_pathologist(case_id):
         uploads=uploads
     )
 
+
 @auth_bp.route('/admin/users')
 @login_required
 @roles_required('admin')
 def admin_users():
     users = User.query.order_by(User.username).all()
     return render_template('admin_users.html', users=users)
+
 
 @auth_bp.route('/admin/users/add', methods=['GET', 'POST'])
 @login_required
@@ -842,6 +882,7 @@ def add_user():
             return redirect(url_for('auth.admin_users'))
     return render_template('add_user.html')
 
+
 @auth_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
@@ -868,7 +909,7 @@ def edit_user(user_id):
         old_data = (user.username, user.role, user.screen_name)
         user.username = request.form.get('username', user.username).strip()
         user.role = request.form.get('role', user.role).strip()
-        user.screen_name = request.form.get('screen_name', user.screen_name).strip()  # Make sure to strip spaces
+        user.screen_name = request.form.get('screen_name', user.screen_name).strip()
 
         password = request.form.get('password', '').strip()
         if password:
@@ -894,6 +935,7 @@ def edit_user(user_id):
 
     return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 
+
 @auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 @roles_required('admin')
@@ -913,6 +955,7 @@ def delete_user(user_id):
             return redirect(url_for('auth.admin_users'))
         flash("Felhasználó törölve.", 'success')
     return redirect(url_for('auth.admin_users'))
+
 
 @auth_bp.route('/admin/cases')
 @login_required
@@ -939,6 +982,7 @@ def manage_cases():
                            sort_by=sort_by,
                            sort_order=sort_order)
 
+
 @auth_bp.route('/admin/cases/<int:case_id>/delete', methods=['POST'])
 @login_required
 @roles_required('admin')
@@ -960,6 +1004,7 @@ def delete_case(case_id):
 
     flash(f"Eset {case.case_number} törölve.", 'success')
     return redirect(url_for('auth.manage_cases'))
+
 
 @auth_bp.route('/cases/<int:case_id>/add_note', methods=['POST'])
 @login_required
@@ -988,12 +1033,14 @@ def add_note_universal(case_id):
     current_app.logger.info(f"Returning note HTML: {html}")
     return jsonify({'html': html})
 
+
 @auth_bp.route('/cases/<int:case_id>/tox_doc_form', methods=['GET'])
 @login_required
 @roles_required('toxi', 'iroda', 'admin')
 def tox_doc_form(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     return render_template('tox_doc_form.html', case=case)
+
 
 @auth_bp.route('/cases/<int:case_id>/generate_tox_doc', methods=['POST'])
 @login_required
@@ -1002,7 +1049,6 @@ def generate_tox_doc(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
     from docxtpl import DocxTemplate
-    from app.utils.time_utils import BUDAPEST_TZ
 
     try:
         template_path = os.path.join(

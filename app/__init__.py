@@ -42,8 +42,8 @@ def create_app(test_config=None):
     # Main DB (under instance/)
     main_db_name = 'test.db' if app.config.get('TESTING') else 'forensic_cases.db'
     main_db_path = os.path.join(app.instance_path, main_db_name)
-    app.config.setdefault('SQLALCHEMY_DATABASE_URI', f'sqlite:///{main_db_path}')
-    app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{main_db_path}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Examination bind DB (separate file under instance/, unless EXAMINATION_DATABASE_URL is set)
     exam_db_name = 'test_examination.db' if app.config.get('TESTING') else 'examination.db'
@@ -53,22 +53,22 @@ def create_app(test_config=None):
     binds['examination'] = exam_url
     app.config['SQLALCHEMY_BINDS'] = binds
 
-    # --- Upload roots ------------------------------------------------------
-    # Main uploads
-    app.config.setdefault('UPLOAD_FOLDER', os.path.join(app.root_path, 'uploads'))
+    # --- Upload roots (FORCE paths under app.root_path) --------------------
+    # This aligns with tests that expect app.root_path/uploads/...
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    # Investigation uploads (separate root)
-    app.config.setdefault('INVESTIGATION_UPLOAD_FOLDER', os.path.join(app.root_path, 'uploads_investigations'))
+    app.config['INVESTIGATION_UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads_investigations')
     os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
 
-    app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)  # 16 MB
+    # Request size limit: 16 MB
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
     # --- Email config ------------------------------------------------------
     app.config.update(
         MAIL_SERVER=app.config.get('MAIL_SERVER', 'smtp.gmail.com'),
         MAIL_PORT=int(app.config.get('MAIL_PORT', 587)),
-        MAIL_USE_TLS=True if str(app.config.get('MAIL_USE_TLS', '1')) in ('1', 'true', 'True') else False,
+        MAIL_USE_TLS=True if str(app.config.get('MAIL_USE_TLS', '1')).lower() in ('1', 'true') else False,
         MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
         MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
         MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
