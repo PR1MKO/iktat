@@ -16,8 +16,10 @@ def resolve_upload_root(app):
     return base
 
 def ensure_investigation_folder(app, case_number: str) -> str:
+    # Windows-safe: replace characters that can turn into a drive or invalid path
+    safe = case_number.replace(":", "-").replace("/", "-").strip(" .")
     root = resolve_upload_root(app)
-    folder = os.path.join(root, case_number)
+    folder = os.path.join(root, safe)
     os.makedirs(folder, exist_ok=True)
     return folder
 
