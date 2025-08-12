@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Vizsgálat – Dokumentumok{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h2 class="h5 mb-0">Dokumentumok – {{ investigation.case_number }}</h2>
+  <a class="btn btn-outline-secondary" href="{{ url_for('investigations.detail_investigation', id=investigation.id) }}">
+    Vissza a vizsgálathoz
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header">Fájl feltöltése</div>
+  <div class="card-body">
+    <form id="upload-form" action="{{ upload_url }}" method="post" enctype="multipart/form-data">
+      {{ upload_form.csrf_token }}
+      <div class="row g-2">
+        <div class="col-md-3">
+          {{ upload_form.category(class="form-select") }}
+        </div>
+        <div class="col-md-6">
+          {{ upload_form.file(class="form-control") }}
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">Feltöltés</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Feltöltött fájlok</div>
+  <ul id="attachments-list" class="list-group list-group-flush">
+    {% for a in attachments %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>
+          <a href="{{ url_for('investigations.download_investigation_file', id=investigation.id, filename=a.filename) }}">
+            {{ a.filename }}
+          </a>
+          <small class="text-muted">({{ a.category }})</small>
+        </span>
+        <small class="text-muted">{{ a.uploaded_at_str }}</small>
+      </li>
+    {% else %}
+      <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<script src="{{ url_for('static', filename='js/investigation_upload.js') }}"></script>
+{% endblock %}

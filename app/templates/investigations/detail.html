@@ -2,6 +2,9 @@
 {% block title %}Vizsgálat {{ investigation.case_number }}{% endblock %}
 {% block content %}
 <h1>{{ investigation.case_number }} – {{ investigation.subject_name }}</h1>
+<a class="btn btn-outline-primary" href="{{ url_for('investigations.documents', id=investigation.id) }}">
+  Dokumentumok
+</a>
 <form method="post" action="{{ url_for('investigations.edit_investigation', id=investigation.id) }}" class="mb-4">
   {{ form.hidden_tag() }}
   <div class="mb-2">{{ form.subject_name.label }} {{ form.subject_name(class='form-control') }}</div>

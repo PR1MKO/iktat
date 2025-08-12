@@ -1,9 +1,9 @@
 (function() {
-  const btn = document.getElementById('upload-btn');
-  if (!btn) return;
-  btn.addEventListener('click', function(e) {
+  const form = document.getElementById('upload-form');
+  if (!form) return;
+
+  const handler = function(e) {
     e.preventDefault();
-    const form = document.getElementById('upload-form');
     const fileInput = form.querySelector('input[type="file"]');
     const category = form.querySelector('select[name="category"]').value;
     if (!fileInput.files.length || !category) {
@@ -28,5 +28,12 @@
       fileInput.value = '';
     })
     .catch(() => alert('Hiba a fájl feltöltésekor'));
-  });
+  };
+
+  const btn = document.getElementById('upload-btn');
+  if (btn) {
+    btn.addEventListener('click', handler);
+  } else {
+    form.addEventListener('submit', handler);
+  }
 })();

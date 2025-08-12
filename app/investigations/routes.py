@@ -11,9 +11,10 @@ from flask import (
     request,
     url_for,
 )
+from flask import send_from_directory
 from flask_login import current_user, login_required
 from sqlalchemy import or_, func
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, safe_join
 
 from app import db
 from app.models import User  # ← needed for resolving author
@@ -27,7 +28,7 @@ from .models import (
     InvestigationAttachment,
     InvestigationChangeLog,
 )
-from .utils import generate_case_number
+from .utils import generate_case_number, ensure_investigation_folder
 
 
 # ---------------------------------------------------------------------------
@@ -150,12 +151,39 @@ def new_investigation():
         inv.deadline = inv.registration_time + timedelta(days=30)
         db.session.add(inv)
         db.session.commit()
+        
+        # 👇 Create investigations-only folder
+        ensure_investigation_folder(current_app, inv.case_number)
+        
         flash("Vizsgálat létrehozva.", "success")
-        return redirect(
-            url_for("investigations.detail_investigation", id=inv.id)
-        )
+        # 👇 Redirect to investigations docs page (NOT cases)
+        return redirect(url_for("investigations.documents", id=inv.id))
     return render_template("investigations/new.html", form=form)
+    
+@investigations_bp.route("/<int:id>/documents", methods=["GET"])
+@login_required
+def documents(id):
+    inv = Investigation.query.get_or_404(id)
+    # Ensure folder exists (idempotent)
+    folder = ensure_investigation_folder(current_app, inv.case_number)
 
+    attachments = (
+        InvestigationAttachment.query
+        .filter_by(investigation_id=id)
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .all()
+    )
+    for att in attachments:
+        att.uploaded_at_str = att.uploaded_at.strftime("%Y.%m.%d %H:%M")
+
+    upload_form = FileUploadForm()
+    return render_template(
+        "investigations/documents.html",
+        investigation=inv,
+        attachments=attachments,
+        upload_form=upload_form,
+        upload_url=url_for("investigations.upload_investigation_file", id=inv.id),
+    )
 
 @investigations_bp.route("/<int:id>")
 @login_required
@@ -261,21 +289,7 @@ def upload_investigation_file(id):
     file = form.file.data
     filename = secure_filename(file.filename)
 
-    # --- robust base path handling (handles "V:" and fallbacks) ---
-    base = current_app.config.get("INVESTIGATION_UPLOAD_FOLDER")
-    if not base:
-        base = os.path.join(current_app.instance_path, "uploads_investigations")
-
-    # If base is just a Windows drive letter (e.g. "V:"), make it "V:\"
-    if len(base) == 2 and base[1] == ":":
-        base = base + os.sep
-
-    base = os.path.normpath(base)
-    os.makedirs(base, exist_ok=True)
-
-    folder = os.path.join(base, inv.case_number)
-    os.makedirs(folder, exist_ok=True)
-    # --------------------------------------------------------------
+    folder = ensure_investigation_folder(current_app, inv.case_number)
 
     file_path = os.path.join(folder, filename)
     file.save(file_path)
@@ -298,3 +312,18 @@ def upload_investigation_file(id):
             "uploaded_at": fmt_date(attachment.uploaded_at),
         }
     )
+
+@investigations_bp.route("/<int:id>/files/<path:filename>")
+@login_required
+def download_investigation_file(id, filename):
+    inv = Investigation.query.get_or_404(id)
+    if not _can_note_or_upload(inv, current_user):
+        abort(403)
+
+    folder = ensure_investigation_folder(current_app, inv.case_number)
+    full_path = safe_join(folder, filename)
+    if not full_path or not os.path.isfile(full_path):
+        abort(404)
+
+    return send_from_directory(folder, os.path.basename(full_path), as_attachment=True)
+    
