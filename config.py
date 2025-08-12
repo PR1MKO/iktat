@@ -13,18 +13,13 @@ class Config:
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
 
-    # NOTE: UPLOAD paths are FORCE-set in app/__init__.py to live under app.root_path.
-    # Keeping these here for completeness, but they get overridden in create_app().
-    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+    UPLOAD_FOLDER = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\uploads"
 
     SQLALCHEMY_BINDS = {
         'examination': os.environ.get('EXAMINATION_DATABASE_URL', 'sqlite:///examination.db')
     }
 
-    INVESTIGATION_UPLOAD_FOLDER = os.environ.get(
-        'INVESTIGATION_UPLOAD_FOLDER',
-        os.path.join(BASE_DIR, 'uploads_investigations')
-    )
+    INVESTIGATION_UPLOAD_FOLDER = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\uploads_investigations"
 
     TRACK_USER_ACTIVITY = True
 

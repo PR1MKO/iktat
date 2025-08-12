@@ -8,29 +8,14 @@ from .models import Investigation
 _DRIVE_ONLY_RE = re.compile(r"^[A-Za-z]:$")
 
 def resolve_upload_root(app):
-    """
-    Resolve the upload root for Investigations ONLY.
-    - Prefer app.config['INVESTIGATION_UPLOAD_FOLDER'].
-    - If it's a bare drive like 'V:' or cannot be created, fallback to <instance>/uploads_investigations.
-    - Always return a usable, existing directory.
-    """
-    base = app.config.get("INVESTIGATION_UPLOAD_FOLDER")
-    if not base or _DRIVE_ONLY_RE.match(str(base).strip()):
+    base = (app.config.get("INVESTIGATION_UPLOAD_FOLDER") or "").strip()
+    if not base or _DRIVE_ONLY_RE.match(base):
         base = os.path.join(app.instance_path, "uploads_investigations")
-
     base = os.path.normpath(base)
-    try:
-        os.makedirs(base, exist_ok=True)
-    except OSError:
-        base = os.path.join(app.instance_path, "uploads_investigations")
-        os.makedirs(base, exist_ok=True)
-
+    os.makedirs(base, exist_ok=True)
     return base
 
 def ensure_investigation_folder(app, case_number: str) -> str:
-    """
-    Ensure per-investigation folder exists under the investigations root.
-    """
     root = resolve_upload_root(app)
     folder = os.path.join(root, case_number)
     os.makedirs(folder, exist_ok=True)

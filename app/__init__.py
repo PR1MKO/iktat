@@ -53,15 +53,16 @@ def create_app(test_config=None):
     binds['examination'] = exam_url
     app.config['SQLALCHEMY_BINDS'] = binds
 
-    # --- Upload roots -----------------------------------------------------
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
+    # --- Upload roots ------------------------------------------------------
+    # Respect values already in app.config (from Config or test overrides)
+    app.config.setdefault('UPLOAD_FOLDER', os.path.join(app.root_path, 'uploads'))
     app.config.setdefault('INVESTIGATION_UPLOAD_FOLDER', os.path.join(app.instance_path, 'uploads_investigations'))
+    
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
 
-    # Request size limit: 16 MB
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    # Max 16 MB
+    app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
 
     # --- Email config ------------------------------------------------------
     app.config.update(
