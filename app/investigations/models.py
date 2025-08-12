@@ -1,5 +1,5 @@
 from app import db
-from app.investigations.utils import now_local  # keep if this is where your helper lives
+from app.utils.time_utils import now_local
 
 
 class Investigation(db.Model):

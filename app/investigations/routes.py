@@ -9,9 +9,9 @@ from flask import (
     redirect,
     render_template,
     request,
-    url_for,
+    url_for
+    send_from_directory,
 )
-from flask import send_from_directory
 from flask_login import current_user, login_required
 from sqlalchemy import or_, func
 from werkzeug.utils import secure_filename, safe_join
@@ -146,25 +146,26 @@ def new_investigation():
             external_case_number=form.external_case_number.data,
             other_identifier=form.other_identifier.data,
         )
-        inv.case_number = generate_case_number(db.session)
+        inv.case_number = generate_case_number(db.session)  # V-####-YYYY
         inv.registration_time = now_local()
-        inv.deadline = inv.registration_time + timedelta(days=30)
+        inv.deadline = inv.registration_time + timedelta(days=30
+        
         db.session.add(inv)
         db.session.commit()
-        
-        # 👇 Create investigations-only folder
+
+        # Create per-investigation folder (separate from Cases)
         ensure_investigation_folder(current_app, inv.case_number)
         
         flash("Vizsgálat létrehozva.", "success")
-        # 👇 Redirect to investigations docs page (NOT cases)
+        # Go straight to the Investigations Documents page
         return redirect(url_for("investigations.documents", id=inv.id))
+        
     return render_template("investigations/new.html", form=form)
     
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
 def documents(id):
     inv = Investigation.query.get_or_404(id)
-    # Ensure folder exists (idempotent)
     folder = ensure_investigation_folder(current_app, inv.case_number)
 
     attachments = (
@@ -290,7 +291,6 @@ def upload_investigation_file(id):
     filename = secure_filename(file.filename)
 
     folder = ensure_investigation_folder(current_app, inv.case_number)
-
     file_path = os.path.join(folder, filename)
     file.save(file_path)
 

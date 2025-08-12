@@ -53,12 +53,11 @@ def create_app(test_config=None):
     binds['examination'] = exam_url
     app.config['SQLALCHEMY_BINDS'] = binds
 
-    # --- Upload roots (FORCE paths under app.root_path) --------------------
-    # This aligns with tests that expect app.root_path/uploads/...
+    # --- Upload roots -----------------------------------------------------
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads')
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    app.config['INVESTIGATION_UPLOAD_FOLDER'] = os.path.join(app.root_path, 'uploads_investigations')
+    app.config.setdefault('INVESTIGATION_UPLOAD_FOLDER', os.path.join(app.instance_path, 'uploads_investigations'))
     os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
 
     # Request size limit: 16 MB

@@ -1,73 +1,65 @@
+# app/investigations/utils.py
 import os
 import re
-
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from app.utils.time_utils import now_local
+from .models import Investigation
 
-
-def generate_case_number(db_session) -> str:
-    """Generate unique case number V:0001/YYYY for investigations."""
-    from app.investigations.models import Investigation
-
-    year = now_local().year
-    pattern = f"V:%/{year}"
-    while True:
-        last = (
-            db_session.query(Investigation.case_number)
-            .filter(Investigation.case_number.like(pattern))
-            .order_by(Investigation.case_number.desc())
-            .first()
-        )
-        last_num = int(last[0][2:6]) if last else 0
-        case_number = f"V:{last_num + 1:04d}/{year}"
-        try:
-            exists = (
-                db_session.query(Investigation.id)
-                .filter_by(case_number=case_number)
-                .first()
-            )
-            if exists is None:
-                return case_number
-            raise IntegrityError(None, None, None)
-        except IntegrityError:
-            db_session.rollback()
-            continue
-
+_DRIVE_ONLY_RE = re.compile(r"^[A-Za-z]:$")
 
 def resolve_upload_root(app):
-    """Resolve investigation upload root.
-
-    - Prefer app.config['INVESTIGATION_UPLOAD_FOLDER']
-    - If it's a bare drive like 'V:', turn into 'V:\\'
-    - If it's missing/unusable, fallback to instance/uploads_investigations
     """
-
+    Resolve the upload root for Investigations ONLY.
+    - Prefer app.config['INVESTIGATION_UPLOAD_FOLDER'].
+    - If it's a bare drive like 'V:' or cannot be created, fallback to <instance>/uploads_investigations.
+    - Always return a usable, existing directory.
+    """
     base = app.config.get("INVESTIGATION_UPLOAD_FOLDER")
-    if not base:
+    if not base or _DRIVE_ONLY_RE.match(str(base).strip()):
         base = os.path.join(app.instance_path, "uploads_investigations")
 
-    # Bare drive letter -> add slash
-    if re.fullmatch(r"^[A-Za-z]:$", base):
-        base = base + os.sep
-
     base = os.path.normpath(base)
-
     try:
         os.makedirs(base, exist_ok=True)
     except OSError:
         base = os.path.join(app.instance_path, "uploads_investigations")
         os.makedirs(base, exist_ok=True)
 
-    if not os.path.isdir(base):
-        base = os.path.join(app.instance_path, "uploads_investigations")
-        os.makedirs(base, exist_ok=True)
-
     return base
 
-
 def ensure_investigation_folder(app, case_number: str) -> str:
-    """Ensure per-investigation folder exists (separate from Cases)."""
+    """
+    Ensure per-investigation folder exists under the investigations root.
+    """
     root = resolve_upload_root(app)
     folder = os.path.join(root, case_number)
     os.makedirs(folder, exist_ok=True)
     return folder
+
+def generate_case_number(session) -> str:
+    """
+    Investigation case number format: V-####-YYYY
+    - #### is 1-based, zero-padded to 4, unique per calendar year
+    """
+    year = now_local().year
+
+    # Seed: count existing in this year
+    count_for_year = (
+        session.query(func.count(Investigation.id))
+        .filter(func.strftime("%Y", Investigation.registration_time) == str(year))
+        .scalar()
+        or 0
+    )
+    seq = count_for_year + 1
+
+    # Ensure uniqueness (in case of concurrent inserts)
+    while True:
+        candidate = f"V-{seq:04d}-{year}"
+        exists = (
+            session.query(Investigation.id)
+            .filter(Investigation.case_number == candidate)
+            .first()
+        )
+        if not exists:
+            return candidate
+        seq += 1
