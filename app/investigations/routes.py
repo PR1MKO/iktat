@@ -16,6 +16,7 @@ from sqlalchemy import or_, func
 from werkzeug.utils import secure_filename
 
 from app import db
+from app.models import User  # ← needed for resolving author
 from app.utils.roles import roles_required
 from app.utils.time_utils import fmt_date, now_local
 from . import investigations_bp
@@ -42,11 +43,10 @@ def _can_note_or_upload(inv, user) -> bool:
         return True
     return user.id in {inv.expert1_id, inv.expert2_id, inv.describer_id}
 
-
 def _log_changes(inv: Investigation, form: InvestigationForm):
-    """Create change log entries for modified fields."""
     fields = [
         "subject_name",
+        "maiden_name",              # ← add this
         "mother_name",
         "birth_place",
         "birth_date",
@@ -133,6 +133,7 @@ def new_investigation():
     if form.validate_on_submit():
         inv = Investigation(
             subject_name=form.subject_name.data,
+            maiden_name=getattr(form, "maiden_name", None).data if hasattr(form, "maiden_name") else None,
             mother_name=form.mother_name.data,
             birth_place=form.birth_place.data,
             birth_date=form.birth_date.data,
@@ -221,6 +222,7 @@ def add_investigation_note(id):
     inv = Investigation.query.get_or_404(id)
     if not _can_note_or_upload(inv, current_user):
         abort(403)
+
     form = InvestigationNoteForm()
     text = None
     if form.validate_on_submit():
@@ -230,13 +232,18 @@ def add_investigation_note(id):
         text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Empty note"}), 400
+
     note = InvestigationNote(
         investigation_id=inv.id, author_id=current_user.id, text=text
     )
     db.session.add(note)
     db.session.commit()
+
+    # ensure author is available for the partial
+    author = db.session.get(User, note.author_id)
     note.timestamp_str = note.timestamp.strftime("%Y.%m.%d %H:%M")
-    html = render_template("investigations/_note.html", note=note)
+
+    html = render_template("investigations/_note.html", note=note, author=author)
     return html
 
 
@@ -246,16 +253,33 @@ def upload_investigation_file(id):
     inv = Investigation.query.get_or_404(id)
     if not _can_note_or_upload(inv, current_user):
         abort(403)
+
     form = FileUploadForm()
     if not form.validate_on_submit():
         return jsonify({"error": "invalid"}), 400
+
     file = form.file.data
     filename = secure_filename(file.filename)
-    upload_root = current_app.config["INVESTIGATION_UPLOAD_FOLDER"]
-    folder = os.path.join(upload_root, inv.case_number)
+
+    # --- robust base path handling (handles "V:" and fallbacks) ---
+    base = current_app.config.get("INVESTIGATION_UPLOAD_FOLDER")
+    if not base:
+        base = os.path.join(current_app.instance_path, "uploads_investigations")
+
+    # If base is just a Windows drive letter (e.g. "V:"), make it "V:\"
+    if len(base) == 2 and base[1] == ":":
+        base = base + os.sep
+
+    base = os.path.normpath(base)
+    os.makedirs(base, exist_ok=True)
+
+    folder = os.path.join(base, inv.case_number)
     os.makedirs(folder, exist_ok=True)
+    # --------------------------------------------------------------
+
     file_path = os.path.join(folder, filename)
     file.save(file_path)
+
     attachment = InvestigationAttachment(
         investigation_id=inv.id,
         filename=filename,
@@ -265,6 +289,7 @@ def upload_investigation_file(id):
     )
     db.session.add(attachment)
     db.session.commit()
+
     return jsonify(
         {
             "id": attachment.id,

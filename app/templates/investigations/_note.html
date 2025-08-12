@@ -1,5 +1,9 @@
-<div class="note" data-id="{{ note.id }}">
-  <strong>{{ note.author.screen_name or note.author.username }}</strong>
-  <span>{{ note.timestamp_str }}</span>
+<li class="list-group-item" data-id="{{ note.id }}">
+  <div>
+    <strong>
+      {{ (author and (author.screen_name or author.username)) or 'Ismeretlen felhasználó' }}
+    </strong>
+    <small class="text-muted">{{ note.timestamp_str or (note.timestamp|localtime) }}</small>
+  </div>
   <div>{{ note.text }}</div>
-</div>
+</li>
