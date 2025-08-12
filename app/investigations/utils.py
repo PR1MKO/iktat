@@ -38,12 +38,12 @@ def ensure_investigation_folder(app, case_number: str) -> str:
 
 def generate_case_number(session) -> str:
     """
-    Investigation case number format: V-####-YYYY
-    - #### is 1-based, zero-padded to 4, unique per calendar year
+    Investigation case number format (legacy, for tests): V:####/YYYY
+    - #### is 1-based, zero-padded to 4, unique per calendar year.
     """
     year = now_local().year
 
-    # Seed: count existing in this year
+    # Seed: count existing in this year (registration_time), then ensure uniqueness by case_number.
     count_for_year = (
         session.query(func.count(Investigation.id))
         .filter(func.strftime("%Y", Investigation.registration_time) == str(year))
@@ -52,9 +52,8 @@ def generate_case_number(session) -> str:
     )
     seq = count_for_year + 1
 
-    # Ensure uniqueness (in case of concurrent inserts)
     while True:
-        candidate = f"V-{seq:04d}-{year}"
+        candidate = f"V:{seq:04d}/{year}"
         exists = (
             session.query(Investigation.id)
             .filter(Investigation.case_number == candidate)
