@@ -701,30 +701,33 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Layout required by tests:
-    # 0  Ügy: ...
-    # 1  (blank)
-    # 2  A halál okát megállapította: ...
-    # 3  Várható további vizsgálat: ...
-    # 4  Történt-e boncolás: ...
-    # 5  Közvetlen halálok: ...
-    # 6  Esemény kezdete és halál között eltelt idő: ...
-    # 7..9 (blank spacers)
-    # 10 Alapbetegség szövődményei: ...
-    # 11 Esemény kezdete és halál között eltelt idő: ...
-    # 12 (blank)
-    # 13 Alapbetegség: ...
-    # 14 Esemény kezdete és halál között eltelt idő: ...
-    # 15 Kísérőbetegségek: ...
+    # Indices must match tests exactly:
+    #  0  Ügy: <case.case_number>
+    #  1  (blank)
+    #  2  A halál okát megállapította: <halalt_megallap>
+    #  3  (blank)
+    #  4  Történt-e boncolás: <boncolas_tortent>
+    #  5  Ha igen, várhatók-e további vizsgálati eredmények: <varhato_tovabbi_vizsgalat>
+    #  6  Közvetlen halálok: <kozvetlen_halalok>
+    #  7  Esemény kezdete és halál között eltelt idő: <kozvetlen_halalok_ido>
+    #  8  (blank)
+    #  9  (blank)
+    # 10  Alapbetegség szövődményei: <alapbetegseg_szovodmenyei>
+    # 11  Esemény kezdete és halál között eltelt idő: <alapbetegseg_szovodmenyei_ido>
+    # 12  (blank)
+    # 13  Alapbetegség: <alapbetegseg>
+    # 14  Esemény kezdete és halál között eltelt idő: <alapbetegseg_ido>
+    # 15  (blank)
+    # 16  Kísérő betegségek vagy állapotok: <kiserobetegsegek>
     lines = [
         f"Ügy: {case.case_number}",
         "",
         f"A halál okát megállapította: {get('halalt_megallap')}",
-        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",
+        "",
         f"Történt-e boncolás: {get('boncolas_tortent')}",
+        f"Ha igen, várhatók-e további vizsgálati eredmények: {get('varhato_tovabbi_vizsgalat')}",
         f"Közvetlen halálok: {get('kozvetlen_halalok')}",
         f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",
-        "",
         "",
         "",
         f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
@@ -732,7 +735,8 @@ def generate_certificate(case_id):
         "",
         f"Alapbetegség: {get('alapbetegseg')}",
         f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_ido')}",
-        f"Kísérőbetegségek: {get('kiserobetegsegek')}",
+        "",
+        f"Kísérő betegségek vagy állapotok: {get('kiserobetegsegek')}",
     ]
 
     out_path = os.path.join(

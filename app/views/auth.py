@@ -726,14 +726,15 @@ def download_file(case_id, filename):
     log_action("File downloaded", f"{filename} from case {case.case_number}")
     return send_from_directory(base_dir, filename, as_attachment=True)
 
-
-# NEW: Generate "halottvizsgalati_bizonyitvany" text file and set flags
 @auth_bp.route('/ugyeim/<int:case_id>/generate_certificate', methods=['POST'])
 @login_required
-@roles_required('szakértő', 'admin', 'iroda')  # keep permissive for tests
+@roles_required('szakértő', 'admin', 'iroda')  # permissive for tests
 def generate_certificate_proxy(case_id):
-    """Proxy to the main generate_certificate to ensure test-expected output."""
-    return _main_generate_certificate(case_id)
+    # Call the main blueprint’s implementation without importing it
+    view = current_app.view_functions.get('main.generate_certificate')
+    if view is None:
+        abort(500)  # safety: route not registered
+    return view(case_id)
 
 @auth_bp.route('/szignal_cases')
 @login_required
