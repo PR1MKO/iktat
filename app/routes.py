@@ -118,18 +118,19 @@ def _normalize_certificate_file(resp):
 
             # Exact order & indexes required by tests
             lines = [
-                f"Ügy: {case.case_number}",
-                f"halalt_megallap: {get('halalt_megallap')}",
-                f"boncolas_tortent: {get('boncolas_tortent')}",
-                f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",
-                f"kozvetlen_halalok: {get('kozvetlen_halalok')}",
-                f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",
-                f"alapbetegseg: {get('alapbetegseg')}",
-                f"alapbetegseg_ido: {get('alapbetegseg_ido')}",
-                f"kiserobetegsegek: {get('kiserobetegsegek')}",
-                "",  # index 9 spacer
-                f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
-                f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
+                f"Ügy: {case.case_number}",                                        # 0
+                f"boncolas_tortent: {get('boncolas_tortent')}",                    # 1
+                f"A halál okát megállapította: {get('halalt_megallap')}",          # 2
+                f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",  # 3
+                f"kozvetlen_halalok: {get('kozvetlen_halalok')}",                  # 4
+                f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",          # 5
+                f"alapbetegseg: {get('alapbetegseg')}",                            # 6
+                f"alapbetegseg_ido: {get('alapbetegseg_ido')}",                    # 7
+                f"kiserobetegsegek: {get('kiserobetegsegek')}",                    # 8
+                "",                                                                # 9 spacer
+                f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # 10
+                "Esemény kezdete és halál között eltelt idő: "
+                f"{get('alapbetegseg_szovodmenyei_ido')}",                         # 11
             ]
 
             base = os.path.join(current_app.root_path, "uploads")
@@ -144,9 +145,7 @@ def _normalize_certificate_file(resp):
             if os.path.exists(out_path):
                 try:
                     with open(out_path, encoding='utf-8') as fh:
-                        first = fh.readline().rstrip('\n')
-                        rest = fh.read().splitlines()
-                    current_lines = [first] + rest
+                        current_lines = fh.read().splitlines()
                     needs_fix = not (len(current_lines) == 12 and current_lines[0].startswith("Ügy: "))
                 except Exception:
                     needs_fix = True
@@ -763,23 +762,26 @@ def generate_certificate(case_id):
 
     # Exact order and indexes asserted by tests:
     # 0  Ügy: ...
-    # 1..8 key: value
+    # 1  boncolas_tortent
+    # 2  A halál okát megállapította
+    # 3..8 other key: value
     # 9  blank spacer
     # 10 Alapbetegség szövődményei: ...
-    # 11 Alapbetegség szövődményei ideje: ...
+    # 11 Esemény kezdete és halál között eltelt idő: ...
     lines = [
-        f"Ügy: {case.case_number}",
-        f"halalt_megallap: {get('halalt_megallap')}",
-        f"boncolas_tortent: {get('boncolas_tortent')}",
-        f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",
-        f"kozvetlen_halalok: {get('kozvetlen_halalok')}",
-        f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",
-        f"alapbetegseg: {get('alapbetegseg')}",
-        f"alapbetegseg_ido: {get('alapbetegseg_ido')}",
-        f"kiserobetegsegek: {get('kiserobetegsegek')}",
-        "",  # index 9 spacer, must be present even if previous lines are blank
-        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
-        f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
+        f"Ügy: {case.case_number}",                                        # 0
+        f"boncolas_tortent: {get('boncolas_tortent')}",                    # 1
+        f"A halál okát megállapította: {get('halalt_megallap')}",          # 2
+        f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",  # 3
+        f"kozvetlen_halalok: {get('kozvetlen_halalok')}",                  # 4
+        f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",          # 5
+        f"alapbetegseg: {get('alapbetegseg')}",                            # 6
+        f"alapbetegseg_ido: {get('alapbetegseg_ido')}",                    # 7
+        f"kiserobetegsegek: {get('kiserobetegsegek')}",                    # 8
+        "",                                                                # 9 spacer
+        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # 10
+        "Esemény kezdete és halál között eltelt idő: "
+        f"{get('alapbetegseg_szovodmenyei_ido')}",                         # 11
     ]
 
     out_path = os.path.join(
