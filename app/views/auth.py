@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename, safe_join
 from sqlalchemy import or_, and_, func
 
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
+from app.investigations.models import Investigation
 from app.forms import CaseIdentifierForm
 from app import db
 from app.email_utils import send_email
@@ -188,6 +189,18 @@ def dashboard():
         missing_fields=missing_fields,
         upcoming_deadlines=upcoming_deadlines,
     )
+
+    if current_user.role in {'szak', 'szakértő'}:
+        assigned_investigations = (
+            Investigation.query
+            .filter(
+                Investigation.assignment_type == 'SZAKÉRTŐI',
+                Investigation.assigned_expert_id == current_user.id,
+            )
+            .order_by(Investigation.registration_time.desc())
+            .all()
+        )
+        template_ctx['assigned_investigations'] = assigned_investigations
 
     if current_user.role == 'szakértő':
         task_messages = (

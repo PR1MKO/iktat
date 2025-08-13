@@ -204,6 +204,48 @@ def documents(id):
     )
 
 
+@investigations_bp.route("/<int:id>/view")
+@login_required
+def view_investigation(id):
+    inv = Investigation.query.get_or_404(id)
+
+    attachments = (
+        InvestigationAttachment.query
+        .filter_by(investigation_id=id)
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .all()
+    )
+
+    notes = (
+        InvestigationNote.query.filter_by(investigation_id=id)
+        .order_by(InvestigationNote.timestamp.desc())
+        .all()
+    )
+
+    changelog_entries = (
+        InvestigationChangeLog.query.filter_by(investigation_id=id)
+        .order_by(InvestigationChangeLog.timestamp.desc())
+        .all()
+    )
+    for entry in changelog_entries:
+        if isinstance(entry.edited_by, int):
+            user = db.session.get(User, entry.edited_by)
+            entry.edited_by = (user.screen_name or user.username) if user else entry.edited_by
+
+    assigned_expert = None
+    if inv.assigned_expert_id:
+        assigned_expert = db.session.get(User, inv.assigned_expert_id)
+
+    return render_template(
+        "investigations/view.html",
+        investigation=inv,
+        attachments=attachments,
+        notes=notes,
+        assigned_expert=assigned_expert,
+        changelog_entries=changelog_entries,
+    )
+
+
 @investigations_bp.route("/<int:id>")
 @login_required
 def detail_investigation(id):

@@ -28,7 +28,20 @@
           </li>
         {% endfor %}
       </ul>
-    {% else %}
+    {% endif %}
+    {% if assigned_investigations %}
+      <ul class="list-unstyled mb-0">
+        {% for inv in assigned_investigations %}
+          <li class="mb-2">
+            <strong>{{ inv.case_number }}</strong>
+            has been signalled to you
+            <small class="text-muted ms-2">[{{ inv.registration_time|localtime }}]</small>
+            <a href="{{ url_for('investigations.view_investigation', id=inv.id) }}" class="btn btn-sm btn-outline-primary ms-2">Megnyitás</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if not task_messages and not assigned_investigations %}
       <p class="text-muted mb-0">Nincs megjelenítendő ügy.</p>
     {% endif %}
   </div>
