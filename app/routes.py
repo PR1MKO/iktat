@@ -1,3 +1,4 @@
+# app/routes.py
 import os
 import json
 from datetime import datetime
@@ -700,36 +701,38 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Exact order and indexes asserted by tests:
+    # Layout required by tests:
     # 0  Ügy: ...
-    # 1  (blank spacer)
+    # 1  (blank)
     # 2  A halál okát megállapította: ...
     # 3  Várható további vizsgálat: ...
     # 4  Történt-e boncolás: ...
     # 5  Közvetlen halálok: ...
-    # 6  Esemény kezdete és halál között eltelt idő: ...   (for kozvetlen_halalok_ido)
-    # 7  Kísérőbetegségek: ...
-    # 8  Alapbetegség ideje: ...
-    # 9  (blank spacer)
+    # 6  Esemény kezdete és halál között eltelt idő: ...
+    # 7..9 (blank spacers)
     # 10 Alapbetegség szövődményei: ...
-    # 11 Esemény kezdete és halál között eltelt idő: ...   (for alapbetegseg_szovodmenyei_ido)
-    # 12 (blank spacer)
+    # 11 Esemény kezdete és halál között eltelt idő: ...
+    # 12 (blank)
     # 13 Alapbetegség: ...
+    # 14 Esemény kezdete és halál között eltelt idő: ...
+    # 15 Kísérőbetegségek: ...
     lines = [
-        f"Ügy: {case.case_number}",                                            # 0
-        "",                                                                    # 1
-        f"A halál okát megállapította: {get('halalt_megallap')}",              # 2
-        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",      # 3
-        f"Történt-e boncolás: {get('boncolas_tortent')}",                      # 4
-        f"Közvetlen halálok: {get('kozvetlen_halalok')}",                      # 5
-        f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",  # 6
-        f"Kísérőbetegségek: {get('kiserobetegsegek')}",                        # 7
-        f"Alapbetegség ideje: {get('alapbetegseg_ido')}",                      # 8
-        "",                                                                    # 9
-        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",      # 10
-        f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_szovodmenyei_ido')}",  # 11
-        "",                                                                    # 12
-        f"Alapbetegség: {get('alapbetegseg')}",                                # 13
+        f"Ügy: {case.case_number}",
+        "",
+        f"A halál okát megállapította: {get('halalt_megallap')}",
+        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",
+        f"Történt-e boncolás: {get('boncolas_tortent')}",
+        f"Közvetlen halálok: {get('kozvetlen_halalok')}",
+        f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",
+        "",
+        "",
+        "",
+        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
+        f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_szovodmenyei_ido')}",
+        "",
+        f"Alapbetegség: {get('alapbetegseg')}",
+        f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_ido')}",
+        f"Kísérőbetegségek: {get('kiserobetegsegek')}",
     ]
 
     out_path = os.path.join(
