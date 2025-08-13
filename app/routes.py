@@ -701,24 +701,6 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Exact indices required by tests:
-    #  0 Ügy: ...
-    #  1 (blank)
-    #  2 A halál okát megállapította: ...
-    #  3 (blank)
-    #  4 Történt-e boncolás: ...
-    #  5 Ha igen, várhatók-e további vizsgálati eredmények: ...
-    #  6 (blank)   <-- IMPORTANT spacer
-    #  7 Közvetlen halálok: ...
-    #  8 Esemény kezdete és halál között eltelt idő: ...
-    #  9 (blank)
-    # 10 Alapbetegség szövődményei: ...
-    # 11 Esemény kezdete és halál között eltelt idő: ...
-    # 12 (blank)
-    # 13 Alapbetegség: ...
-    # 14 Esemény kezdete és halál között eltelt idő: ...
-    # 15 (blank)
-    # 16 Kísérő betegségek vagy állapotok: ...
     lines = [
         f"Ügy: {case.case_number}",
         "",
@@ -726,7 +708,7 @@ def generate_certificate(case_id):
         "",
         f"Történt-e boncolás: {get('boncolas_tortent')}",
         f"Ha igen, várhatók-e további vizsgálati eredmények: {get('varhato_tovabbi_vizsgalat')}",
-        "",  # index 6 spacer (this was missing)
+        "",  # spacer
         f"Közvetlen halálok: {get('kozvetlen_halalok')}",
         f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",
         "",
@@ -738,6 +720,9 @@ def generate_certificate(case_id):
         "",
         f"Kísérő betegségek vagy állapotok: {get('kiserobetegsegek')}",
     ]
+
+    # NEW: footer line the test asserts with lines[-1].startswith('Generálva: ')
+    lines.append(f"Generálva: {now_local().strftime('%Y-%m-%d %H:%M')}")
 
     out_path = os.path.join(
         case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
