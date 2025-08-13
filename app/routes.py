@@ -25,6 +25,9 @@ except ImportError:  # Flask-WTF < 1.2
 
 # Models used in this module
 from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
+# NOTE: Do NOT import ExaminationCase here unless it truly exists and is used.
+# Investigation models belong to the investigations blueprint module:
+# from app.investigations.models import Investigation, InvestigationNote, ...
 
 # Blueprint
 main_bp = Blueprint("main", __name__)
@@ -94,69 +97,6 @@ def enforce_upload_size_limit():
     cl = request.content_length
     if cl is not None and cl > _max_upload_bytes():
         abort(413)
-
-# --- Safety net to guarantee certificate file format (handles duplicate routes) ---
-
-@main_bp.after_app_request
-def _normalize_certificate_file(resp):
-    """
-    Some environments may have multiple handlers for the same POST URL.
-    To guarantee tests see the expected file content, rewrite the file here
-    when the request path matches the certificate endpoint.
-    """
-    try:
-        if request.method == 'POST' and request.path.endswith('/generate_certificate'):
-            parts = request.path.rstrip('/').split('/')
-            # .../ugyeim/<case_id>/generate_certificate
-            case_id = int(parts[-2])
-            case = db.session.get(Case, case_id)
-            if not case:
-                return resp
-
-            f = request.form
-            get = lambda k: (f.get(k) or "").strip()
-
-            # Exact order & indexes required by tests
-            lines = [
-                f"Ügy: {case.case_number}",                                        # 0
-                f"boncolas_tortent: {get('boncolas_tortent')}",                    # 1
-                f"A halál okát megállapította: {get('halalt_megallap')}",          # 2
-                f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",  # 3
-                f"kozvetlen_halalok: {get('kozvetlen_halalok')}",                  # 4
-                f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",          # 5
-                f"alapbetegseg: {get('alapbetegseg')}",                            # 6
-                f"alapbetegseg_ido: {get('alapbetegseg_ido')}",                    # 7
-                f"kiserobetegsegek: {get('kiserobetegsegek')}",                    # 8
-                "",                                                                # 9 spacer
-                f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # 10
-                "Esemény kezdete és halál között eltelt idő: "
-                f"{get('alapbetegseg_szovodmenyei_ido')}",                         # 11
-            ]
-
-            base = os.path.join(current_app.root_path, "uploads")
-            case_dir = os.path.join(base, case.case_number)
-            os.makedirs(case_dir, exist_ok=True)
-            out_path = os.path.join(
-                case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
-            )
-
-            # If file missing or has wrong first line or missing lines, (re)write it.
-            needs_fix = True
-            if os.path.exists(out_path):
-                try:
-                    with open(out_path, encoding='utf-8') as fh:
-                        current_lines = fh.read().splitlines()
-                    needs_fix = not (len(current_lines) == 12 and current_lines[0].startswith("Ügy: "))
-                except Exception:
-                    needs_fix = True
-
-            if needs_fix:
-                with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
-                    fh.write("\n".join(lines))
-    except Exception:
-        # Never block the response because of this safety net.
-        pass
-    return resp
 
 # --- Routes ---
 
@@ -762,26 +702,34 @@ def generate_certificate(case_id):
 
     # Exact order and indexes asserted by tests:
     # 0  Ügy: ...
-    # 1  boncolas_tortent
-    # 2  A halál okát megállapította
-    # 3..8 other key: value
-    # 9  blank spacer
+    # 1  (blank spacer)
+    # 2  A halál okát megállapította: ...
+    # 3  Várható további vizsgálat: ...
+    # 4  Történt-e boncolás: ...
+    # 5  Közvetlen halálok: ...
+    # 6  Esemény kezdete és halál között eltelt idő: ...   (for kozvetlen_halalok_ido)
+    # 7  Kísérőbetegségek: ...
+    # 8  Alapbetegség ideje: ...
+    # 9  (blank spacer)
     # 10 Alapbetegség szövődményei: ...
-    # 11 Esemény kezdete és halál között eltelt idő: ...
+    # 11 Esemény kezdete és halál között eltelt idő: ...   (for alapbetegseg_szovodmenyei_ido)
+    # 12 (blank spacer)
+    # 13 Alapbetegség: ...
     lines = [
-        f"Ügy: {case.case_number}",                                        # 0
-        f"boncolas_tortent: {get('boncolas_tortent')}",                    # 1
-        f"A halál okát megállapította: {get('halalt_megallap')}",          # 2
-        f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",  # 3
-        f"kozvetlen_halalok: {get('kozvetlen_halalok')}",                  # 4
-        f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",          # 5
-        f"alapbetegseg: {get('alapbetegseg')}",                            # 6
-        f"alapbetegseg_ido: {get('alapbetegseg_ido')}",                    # 7
-        f"kiserobetegsegek: {get('kiserobetegsegek')}",                    # 8
-        "",                                                                # 9 spacer
-        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # 10
-        "Esemény kezdete és halál között eltelt idő: "
-        f"{get('alapbetegseg_szovodmenyei_ido')}",                         # 11
+        f"Ügy: {case.case_number}",                                            # 0
+        "",                                                                    # 1
+        f"A halál okát megállapította: {get('halalt_megallap')}",              # 2
+        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",      # 3
+        f"Történt-e boncolás: {get('boncolas_tortent')}",                      # 4
+        f"Közvetlen halálok: {get('kozvetlen_halalok')}",                      # 5
+        f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",  # 6
+        f"Kísérőbetegségek: {get('kiserobetegsegek')}",                        # 7
+        f"Alapbetegség ideje: {get('alapbetegseg_ido')}",                      # 8
+        "",                                                                    # 9
+        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",      # 10
+        f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_szovodmenyei_ido')}",  # 11
+        "",                                                                    # 12
+        f"Alapbetegség: {get('alapbetegseg')}",                                # 13
     ]
 
     out_path = os.path.join(
