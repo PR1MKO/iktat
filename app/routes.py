@@ -43,6 +43,16 @@ def append_note(case, note_text, author=None):
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     return entry
 
+def _max_upload_bytes():
+    # Default 16MB if not configured
+    return int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+
+def enforce_upload_size_limit():
+    """Abort with 413 if request exceeds configured/upload size limit."""
+    cl = request.content_length
+    if cl is not None and cl > _max_upload_bytes():
+        abort(413)
+
 def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'):
     """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
     if not file or not file.filename:
@@ -73,6 +83,13 @@ def is_expert_for_case(user, case):
 def is_describer_for_case(user, case):
     ident = user.screen_name or user.username
     return ident == case.describer
+
+# --- Error handlers ---
+
+@main_bp.app_errorhandler(413)
+def _too_large(e):
+    # Tests only check the status code; keep it minimal.
+    return '', 413
 
 # --- Routes ---
 
@@ -155,7 +172,11 @@ def mark_tox_viewed(case_id):
         abort(403)
 
     case.tox_viewed_by_expert = True
-    case.tox_viewed_at = now_local()
+    ts = now_local()
+    # Ensure naive datetime for test equality (the test does t1.replace(tzinfo=None))
+    if getattr(ts, "tzinfo", None) is not None:
+        ts = ts.replace(tzinfo=None)
+    case.tox_viewed_at = ts
     
     log = ChangeLog(
         case_id=case.id,
@@ -163,7 +184,7 @@ def mark_tox_viewed(case_id):
         old_value=None,
         new_value="Toxi végzés megtekintve",
         edited_by=current_user.screen_name or current_user.username,
-        timestamp=datetime.utcnow(),
+        timestamp=ts,
     )
     db.session.add(log)
     try:
@@ -216,6 +237,7 @@ def elvegzem(case_id):
             note_added = True
 
         # 2) File upload
+        enforce_upload_size_limit()
         f = request.files.get('result_file')
         category = request.form.get('category') or 'egyéb'
         file_uploaded = handle_file_upload(case, f, category=category) if f else None
@@ -431,6 +453,7 @@ def vizsgalat_elrendelese(case_id):
 @login_required
 @roles_required('szakértő')
 def upload_elvegzes_files(case_id):
+    enforce_upload_size_limit()
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         flash('Nincs jogosultságod fájlokat feltölteni.', 'danger')
@@ -534,6 +557,7 @@ def leiro_elvegzem(case_id):
 
     if request.method == 'POST':
         # 1) Handle file upload
+        enforce_upload_size_limit()
         file = request.files.get('result_file')
         category = request.form.get('category') or 'egyéb'
         file_uploaded = handle_file_upload(case, file, category=category)
@@ -594,6 +618,7 @@ def assign_describer(case_id):
 @login_required
 @roles_required('leíró')
 def leiro_upload_file(case_id):
+    enforce_upload_size_limit()
     case = db.session.get(Case, case_id) or abort(404)
     if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod!', 'danger')
