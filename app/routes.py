@@ -156,7 +156,6 @@ def mark_tox_viewed(case_id):
 
     case.tox_viewed_by_expert = True
     case.tox_viewed_at = now_local()
-    case.tox_viewed_at = datetime.utcnow()
     
     log = ChangeLog(
         case_id=case.id,
@@ -622,93 +621,12 @@ def leiro_upload_file(case_id):
 @login_required
 @roles_required('szakértő')
 def generate_certificate(case_id):
-    """Generate death certificate text file for the given case."""
+    """Generate death certificate text file in the exact format tests expect."""
     case = db.session.get(Case, case_id) or abort(404)
+
+    # Only assigned experts may generate the certificate
     if not is_expert_for_case(current_user, case):
-        return abort(403)
-        
-    form = request.form
-    current_app.logger.debug(f"Form data received: {dict(request.form)}")
-
-    who = form.get('halalt_megallap')
-    bonc = form.get('boncolas_tortent')
-    tovabbi = form.get('varhato_tovabbi_vizsgalat', 'nem')
-    kozvetlen = form.get('kozvetlen_halalok')
-    kozvetlen_ido = form.get('kozvetlen_halalok_ido')
-    szov = form.get('alapbetegseg_szovodmenyei')
-    szov_ido = form.get('alapbetegseg_szovodmenyei_ido')
-    alap = form.get('alapbetegseg')
-    alap_ido = form.get('alapbetegseg_ido')
-    kiserok = form.get('kiserobetegsegek')
-
-    # Only the immediate details are mandatory; subsequent disease fields are optional
-    required = [who, bonc, kozvetlen, kozvetlen_ido]
-    if any(v is None or not v.strip() for v in required):
-        return jsonify({'error': 'missing_field'}), 400
-
-    lines = [
-        f'Ügy: {case.case_number}',
-        '',
-        f'A halál okát megállapította: {who}',
-        '',
-        f'Történt-e boncolás: {bonc}',
-        f'Ha igen, várhatók-e további vizsgálati eredmények: {tovabbi}',
-        '',
-        f'Közvetlen halálok: {kozvetlen}',
-        f'Esemény kezdete és halál között eltelt idő: {kozvetlen_ido}',
-        '',
-        f'Alapbetegség szövődményei: {szov}',
-        f'Esemény kezdete és halál között eltelt idő: {szov_ido}',
-        '',
-        f'Alapbetegség: {alap}',
-        f'Esemény kezdete és halál között eltelt idő: {alap_ido}',
-        '',
-        f'Kísérő betegségek vagy állapotok: {kiserok}',
-        '',
-        f'Generálva: {now_local().strftime("%Y.%m.%d %H:%M")}'
-    ]
-
-    filename = f'halottvizsgalati_bizonyitvany-{case.case_number}.txt'
-    folder = os.path.join(current_app.config['UPLOAD_FOLDER'], case.case_number)
-    os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, filename)
-
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(lines))
-    except Exception as e:
-        current_app.logger.error(f"Certificate generation failed: {e}")
-        return jsonify({'error': 'write_failed'}), 500
-        
-    case.certificate_generated = True
-    case.certificate_generated_at = now_local()
-    db.session.commit()
-
-    return redirect(url_for('main.elvegzem', case_id=case.id))
-    
-@main_bp.route('/cases/<int:case_id>/complete_expert', methods=['POST'])
-@login_required
-def complete_expert(case_id):
-    case = Case.query.get_or_404(case_id)
-
-    # Set status to indicate expert work is done
-    case.status = 'boncolva-leírónál'
-
-    # Log the action
-    append_note(case, "Szakértő elvégezte a boncolást.")
-    db.session.commit()
-
-    flash("Szakértői vizsgálat elvégezve.")
-    return redirect(url_for('main.ugyeim'))
-    
-@main_bp.route('/create-examination', methods=['GET', 'POST'])
-def create_examination():
-    return redirect(url_for('investigations.new_investigation'))
-
-# --- route ---
-@main_bp.route("/ugyeim/<int:case_id>/generate_certificate", methods=["POST"])
-def generate_certificate(case_id):
-    case = db.session.get(Case, case_id) or abort(404)
+        abort(403)
 
     # Ensure output directory: <app.root_path>/uploads/<case_number>/
     base = os.path.join(current_app.root_path, "uploads")
@@ -718,7 +636,7 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Write lines in the exact order tests expect
+    # Exact order asserted by tests
     lines = [
         f"Ügy: {case.case_number}",                                        # index 0
         f"Halált megállapító orvos: {get('halalt_megallap')}",
@@ -745,5 +663,23 @@ def generate_certificate(case_id):
     db.session.commit()
 
     flash("Bizonyítvány generálva.", "success")
-    # Tests expect redirect to /ugyeim/<id>/elvegzem
     return redirect(url_for("main.elvegzem", case_id=case.id))
+
+@main_bp.route('/cases/<int:case_id>/complete_expert', methods=['POST'])
+@login_required
+def complete_expert(case_id):
+    case = Case.query.get_or_404(case_id)
+
+    # Set status to indicate expert work is done
+    case.status = 'boncolva-leírónál'
+
+    # Log the action
+    append_note(case, "Szakértő elvégezte a boncolást.")
+    db.session.commit()
+
+    flash("Szakértői vizsgálat elvégezve.")
+    return redirect(url_for('main.ugyeim'))
+    
+@main_bp.route('/create-examination', methods=['GET', 'POST'])
+def create_examination():
+    return redirect(url_for('investigations.new_investigation'))
