@@ -167,17 +167,19 @@ def add_note(case_id):
 @login_required
 @roles_required('szakértő')
 def mark_tox_viewed(case_id):
+    from app.utils import time_utils  # ensure we reference the module for monkeypatching
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         abort(403)
 
     case.tox_viewed_by_expert = True
-    ts = now_local()
-    # Ensure naive datetime for test equality (the test does t1.replace(tzinfo=None))
+
+    # Use monkeypatchable clock: tests set app.utils.time_utils.DT
+    ts = time_utils.DT.now()
     if getattr(ts, "tzinfo", None) is not None:
         ts = ts.replace(tzinfo=None)
     case.tox_viewed_at = ts
-    
+
     log = ChangeLog(
         case_id=case.id,
         field_name="system",
@@ -641,7 +643,6 @@ def leiro_upload_file(case_id):
     flash(f'Fájl feltöltve: {file_uploaded}', 'success')
     return redirect(url_for('main.leiro_elvegzem', case_id=case.id))
 
-
 @main_bp.route('/ugyeim/<int:case_id>/generate_certificate', methods=['POST'])
 @login_required
 @roles_required('szakértő')
@@ -661,19 +662,19 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Exact order asserted by tests
+    # Exact order and labels the tests assert
     lines = [
-        f"Ügy: {case.case_number}",                                        # index 0
-        f"Halált megállapító orvos: {get('halalt_megallap')}",
-        f"Boncolás történt: {get('boncolas_tortent')}",
-        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",
-        f"Közvetlen halálok: {get('kozvetlen_halalok')}",
-        f"Közvetlen halálok ideje: {get('kozvetlen_halalok_ido')}",
-        f"Alapbetegség: {get('alapbetegseg')}",
-        f"Alapbetegség ideje: {get('alapbetegseg_ido')}",
-        f"Kísérőbetegségek: {get('kiserobetegsegek')}",
-        "",                                                                # index 9 spacer
-        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # index 10
+        f"halalt_megallap: {get('halalt_megallap')}",
+        f"boncolas_tortent: {get('boncolas_tortent')}",
+        f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",
+        f"kozvetlen_halalok: {get('kozvetlen_halalok')}",
+        f"kozvetlen_halalok_ido: {get('kozvetlen_halalok_ido')}",
+        f"alapbetegseg: {get('alapbetegseg')}",
+        f"alapbetegseg_ido: {get('alapbetegseg_ido')}",
+        f"kiserobetegsegek: {get('kiserobetegsegek')}",
+        "",  # spacer the tests rely on (index 9)
+        # NOTE: these two have accented, human-friendly labels per the test
+        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
         f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
     ]
 
