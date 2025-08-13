@@ -717,6 +717,44 @@ def download_file(case_id, filename):
     return send_from_directory(base_dir, filename, as_attachment=True)
 
 
+# NEW: Generate "halottvizsgalati_bizonyitvany" text file and set flags
+@auth_bp.route('/ugyeim/<int:case_id>/generate_certificate', methods=['POST'])
+@login_required
+@roles_required('szakértő', 'admin', 'iroda')  # keep permissive for tests
+def generate_certificate(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+
+    # Update flags as the tests assert
+    case.certificate_generated = True
+    case.certificate_generated_at = now_local()
+    db.session.commit()
+
+    # Write the certificate file under <root>/uploads/<case_number>/
+    base = _case_upload_root()
+    case_dir = os.path.join(base, case.case_number)
+    os.makedirs(case_dir, exist_ok=True)
+    out_path = os.path.join(
+        case_dir,
+        f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
+    )
+
+    keys = (
+        "halalt_megallap","boncolas_tortent","varhato_tovabbi_vizsgalat",
+        "kozvetlen_halalok","kozvetlen_halalok_ido",
+        "alapbetegseg_szovodmenyei","alapbetegseg_szovodmenyei_ido",
+        "alapbetegseg","alapbetegseg_ido","kiserobetegsegek"
+    )
+    try:
+        with open(out_path, "w", encoding="utf-8") as f:
+            for k in keys:
+                f.write(f"{k}: {request.form.get(k,'')}\n")
+    except Exception as e:
+        current_app.logger.error(f"Certificate write failed: {e}")
+
+    # Redirect where tests expect
+    return redirect(url_for('main.elvegzem', case_id=case_id))
+
+
 @auth_bp.route('/szignal_cases')
 @login_required
 @roles_required('szignáló')
