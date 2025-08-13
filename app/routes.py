@@ -701,24 +701,24 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Indices must match tests exactly:
-    #  0  Ügy: <case.case_number>
-    #  1  (blank)
-    #  2  A halál okát megállapította: <halalt_megallap>
-    #  3  (blank)
-    #  4  Történt-e boncolás: <boncolas_tortent>
-    #  5  Ha igen, várhatók-e további vizsgálati eredmények: <varhato_tovabbi_vizsgalat>
-    #  6  Közvetlen halálok: <kozvetlen_halalok>
-    #  7  Esemény kezdete és halál között eltelt idő: <kozvetlen_halalok_ido>
-    #  8  (blank)
-    #  9  (blank)
-    # 10  Alapbetegség szövődményei: <alapbetegseg_szovodmenyei>
-    # 11  Esemény kezdete és halál között eltelt idő: <alapbetegseg_szovodmenyei_ido>
-    # 12  (blank)
-    # 13  Alapbetegség: <alapbetegseg>
-    # 14  Esemény kezdete és halál között eltelt idő: <alapbetegseg_ido>
-    # 15  (blank)
-    # 16  Kísérő betegségek vagy állapotok: <kiserobetegsegek>
+    # Exact indices required by tests:
+    #  0 Ügy: ...
+    #  1 (blank)
+    #  2 A halál okát megállapította: ...
+    #  3 (blank)
+    #  4 Történt-e boncolás: ...
+    #  5 Ha igen, várhatók-e további vizsgálati eredmények: ...
+    #  6 (blank)   <-- IMPORTANT spacer
+    #  7 Közvetlen halálok: ...
+    #  8 Esemény kezdete és halál között eltelt idő: ...
+    #  9 (blank)
+    # 10 Alapbetegség szövődményei: ...
+    # 11 Esemény kezdete és halál között eltelt idő: ...
+    # 12 (blank)
+    # 13 Alapbetegség: ...
+    # 14 Esemény kezdete és halál között eltelt idő: ...
+    # 15 (blank)
+    # 16 Kísérő betegségek vagy állapotok: ...
     lines = [
         f"Ügy: {case.case_number}",
         "",
@@ -726,9 +726,9 @@ def generate_certificate(case_id):
         "",
         f"Történt-e boncolás: {get('boncolas_tortent')}",
         f"Ha igen, várhatók-e további vizsgálati eredmények: {get('varhato_tovabbi_vizsgalat')}",
+        "",  # index 6 spacer (this was missing)
         f"Közvetlen halálok: {get('kozvetlen_halalok')}",
         f"Esemény kezdete és halál között eltelt idő: {get('kozvetlen_halalok_ido')}",
-        "",
         "",
         f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
         f"Esemény kezdete és halál között eltelt idő: {get('alapbetegseg_szovodmenyei_ido')}",
@@ -742,7 +742,6 @@ def generate_certificate(case_id):
     out_path = os.path.join(
         case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
     )
-    # Always write the full set of lines in the asserted order.
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
