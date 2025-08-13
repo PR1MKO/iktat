@@ -80,10 +80,18 @@ def is_describer_for_case(user, case):
 def _too_large(e):
     # Tests only check the status code; keep it minimal.
     return '', 413
-    
+
 def _max_upload_bytes():
-    # Default 16MB if not configured
-    return int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    """Return max upload size in bytes, defaulting to 16MB if not configured or set to a non-number/None."""
+    val = current_app.config.get('MAX_CONTENT_LENGTH', None)
+    # Treat None/0/invalid as unset -> default 16MB
+    try:
+        if val is None:
+            return 16 * 1024 * 1024
+        # Allow int/float/str that can be cast
+        return int(val)
+    except Exception:
+        return 16 * 1024 * 1024
 
 def enforce_upload_size_limit():
     """Abort with 413 if request exceeds configured/upload size limit."""
@@ -103,7 +111,7 @@ def track_user_activity():
     data = request.get_json()
     if not data:
         return '', 400
-        
+
     value = data.get("value")
     extra = data.get("extra") or {}
 
@@ -162,29 +170,28 @@ def add_note(case_id):
 
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
-    
+
 @main_bp.before_app_request
 def _enforce_global_upload_cap():
+    # Only check multipart POSTs
     if request.method != 'POST':
         return
     ct = request.content_type or ''
     if 'multipart/form-data' not in ct:
         return
-    limit = int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
 
-    # First try Content-Length
+    limit = _max_upload_bytes()
+
+    # Prefer Content-Length if provided by client
     cl = request.content_length
     if cl is not None and cl > limit:
         abort(413)
 
-    # Fallback: inspect uploaded files individually (Werkzeug FileStorage)
-    # Safe for tests; we reset stream positions afterwards.
+    # Fallback: inspect uploaded files (Werkzeug FileStorage)
     try:
         for fs in request.files.values():
-            size = None
-            if getattr(fs, 'content_length', None):
-                size = fs.content_length
-            else:
+            size = getattr(fs, 'content_length', None)
+            if size is None:
                 pos = fs.stream.tell()
                 fs.stream.seek(0, os.SEEK_END)
                 size = fs.stream.tell()
@@ -192,7 +199,7 @@ def _enforce_global_upload_cap():
             if size is not None and size > limit:
                 abort(413)
     except Exception:
-        # If anything goes sideways, do not block; tests rely on clear 413 only when confident
+        # Do not block if we cannot determine size
         pass
 
 @main_bp.route('/cases/<int:case_id>/mark_tox_viewed')
@@ -246,7 +253,7 @@ def elvegzem(case_id):
         if not is_describer_for_case(current_user, case):
             flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
             return redirect(url_for('main.leiro_ugyeim'))
-            
+
     if current_user.role == 'szakértő' and not case.started_by_expert:
         case.started_by_expert = True
         try:
@@ -298,7 +305,7 @@ def elvegzem(case_id):
         # 4) Status transition
         previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
-        
+
         # Auto-assign default leíró if the expert has one and none selected
         if (
             current_user.role == 'szakértő'
@@ -308,7 +315,7 @@ def elvegzem(case_id):
             leiro = db.session.get(User, current_user.default_leiro_id)
             if leiro:
                 case.describer = leiro.screen_name or leiro.username
-                
+
         try:
             db.session.commit()
         except Exception as e:
@@ -529,7 +536,7 @@ def leiro_ugyeim():
     return render_template('leiro_ugyeim.html',
                            pending_cases=pending,
                            completed_cases=completed)
-                           
+
 # Toxi dashboard
 @main_bp.route('/ugyeim/toxi')
 @login_required
@@ -545,7 +552,7 @@ def toxi_ugyeim():
 
     assigned_cases = Case.query.filter(pending_filter, vegzes_exists).all()
     done_cases = Case.query.filter(Case.tox_completed.is_(True), vegzes_exists).all()
-    
+
     return render_template(
         'toxi_ugyeim.html',
         assigned_cases=assigned_cases,
@@ -715,7 +722,9 @@ def generate_certificate(case_id):
         f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
     ]
 
-    out_path = os.path.join(case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt")
+    out_path = os.path.join(
+        case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
+    )
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
@@ -740,7 +749,7 @@ def complete_expert(case_id):
 
     flash("Szakértői vizsgálat elvégezve.")
     return redirect(url_for('main.ugyeim'))
-    
+
 @main_bp.route('/create-examination', methods=['GET', 'POST'])
 def create_examination():
     return redirect(url_for('investigations.new_investigation'))
