@@ -21,6 +21,13 @@ class Investigation(db.Model):
     residence = db.Column(db.String(255), nullable=False)
     citizenship = db.Column(db.String(255), nullable=False)
     institution_name = db.Column(db.String(128), nullable=False)
+    
+    assignment_type = db.Column(
+        db.Enum('INTEZETI', 'SZAKÉRTŐI', name='assignment_type'),
+        nullable=False,
+        default='INTEZETI',
+    )
+    assigned_expert_id = db.Column(db.Integer, index=True)
 
     registration_time = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
     deadline = db.Column(db.DateTime(timezone=True))

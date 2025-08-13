@@ -7,7 +7,33 @@
   <h3>Új vizsgálat</h3>
   <form method="post">
     {{ form.csrf_token }}
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <label class="form-label d-block">{{ form.assignment_type.label }}</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" id="assignment_type-intezeti" name="assignment_type" value="INTEZETI" {% if form.assignment_type.data == 'INTEZETI' %}checked{% endif %}>
+          <label class="form-check-label" for="assignment_type-intezeti">Intézeti</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" id="assignment_type-szakertoi" name="assignment_type" value="SZAKÉRTŐI" {% if form.assignment_type.data == 'SZAKÉRTŐI' %}checked{% endif %}>
+          <label class="form-check-label" for="assignment_type-szakertoi">Szakértői</label>
+        </div>
+        {% for e in form.assignment_type.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
 
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <label class="form-label" for="assigned_expert_id">{{ form.assigned_expert_id.label }}</label>
+        <select class="form-select" id="assigned_expert_id" name="assigned_expert_id" disabled>
+          {% for val, label in form.assigned_expert_id.choices %}
+            <option value="{{ val }}" {% if form.assigned_expert_id.data == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        {% for e in form.assigned_expert_id.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
+    </div>
+	
     <div class="row">
       <div class="col-md-6">
         <label class="form-label">{{ form.external_case_number.label }}</label>
@@ -88,5 +114,22 @@
       <a href="{{ url_for('investigations.list_investigations') }}" class="btn btn-secondary">Mégse</a>
     </div>
   </form>
+  <script>
+    function toggleExpertSelect() {
+      const szak = document.getElementById('assignment_type-szakertoi');
+      const select = document.getElementById('assigned_expert_id');
+      if (szak.checked) {
+        select.disabled = false;
+        select.required = true;
+      } else {
+        select.disabled = true;
+        select.required = false;
+        select.value = '0';
+      }
+    }
+    document.getElementById('assignment_type-intezeti').addEventListener('change', toggleExpertSelect);
+    document.getElementById('assignment_type-szakertoi').addEventListener('change', toggleExpertSelect);
+    window.addEventListener('load', toggleExpertSelect);
+  </script>
 </div>
 {% endblock %}

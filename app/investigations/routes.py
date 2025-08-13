@@ -131,7 +131,21 @@ def list_investigations():
 @roles_required("admin", "iroda")
 def new_investigation():
     form = InvestigationForm()
+    
+    experts = (
+        User.query.filter(User.role.in_(["szakértő", "szak"]))
+        .order_by(User.screen_name, User.username)
+        .all()
+    )
+    form.assigned_expert_id.choices = [
+        (0, "— Válasszon —")
+    ] + [(u.id, u.screen_name or u.username) for u in experts]
+    
     if form.validate_on_submit():
+        assignment_type = form.assignment_type.data
+        assigned_expert_id = (
+            form.assigned_expert_id.data if assignment_type == "SZAKÉRTŐI" else None
+        )
         inv = Investigation(
             subject_name=form.subject_name.data,
             maiden_name=getattr(form, "maiden_name", None).data if hasattr(form, "maiden_name") else None,
@@ -145,6 +159,8 @@ def new_investigation():
             investigation_type=form.investigation_type.data,
             external_case_number=form.external_case_number.data,
             other_identifier=form.other_identifier.data,
+            assignment_type=assignment_type,
+            assigned_expert_id=assigned_expert_id,
         )
         inv.case_number = generate_case_number(db.session)  # V-####-YYYY
         inv.registration_time = now_local()

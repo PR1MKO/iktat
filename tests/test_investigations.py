@@ -223,3 +223,60 @@ def test_permissions(client, app):
         content_type='multipart/form-data',
     )
     assert resp.status_code == 403
+
+
+def test_new_page_shows_assignment_fields(client, app):
+    with app.app_context():
+        create_user()  # admin
+        create_user(username='expert', role='szakértő')
+    login(client, 'admin', 'secret')
+    resp = client.get('/investigations/new')
+    assert b'id="assignment_type-intezeti"' in resp.data
+    assert b'id="assignment_type-szakertoi"' in resp.data
+    assert b'id="assigned_expert_id"' in resp.data
+    assert b'id="assigned_expert_id"' in resp.data and b'disabled' in resp.data
+
+
+def test_post_intezeti_sets_no_expert(client, app):
+    with app.app_context():
+        create_user()  # admin
+        expert = create_user(username='exp', role='szakértő')
+        expert_id = expert.id
+    login(client, 'admin', 'secret')
+    data = _base_form_data()
+    data.update({'external_case_number': 'EXT1', 'assignment_type': 'INTEZETI', 'assigned_expert_id': expert_id})
+    resp = client.post('/investigations/new', data=data, follow_redirects=False)
+    assert resp.status_code == 302
+    with app.app_context():
+        inv = Investigation.query.order_by(Investigation.id.desc()).first()
+        assert inv.assignment_type == 'INTEZETI'
+        assert inv.assigned_expert_id is None
+
+
+def test_post_szakertoi_requires_expert(client, app):
+    with app.app_context():
+        create_user()  # admin
+        create_user(username='exp', role='szakértő')
+    login(client, 'admin', 'secret')
+    data = _base_form_data()
+    data.update({'external_case_number': 'EXT1', 'assignment_type': 'SZAKÉRTŐI', 'assigned_expert_id': 0})
+    resp = client.post('/investigations/new', data=data)
+    assert 'Szakértő kiválasztása kötelező.' in resp.get_data(as_text=True)
+    with app.app_context():
+        assert Investigation.query.count() == 0
+
+
+def test_post_szakertoi_persists_expert(client, app):
+    with app.app_context():
+        create_user()  # admin
+        expert = create_user(username='exp', role='szakértő')
+        expert_id = expert.id
+    login(client, 'admin', 'secret')
+    data = _base_form_data()
+    data.update({'external_case_number': 'EXT1', 'assignment_type': 'SZAKÉRTŐI', 'assigned_expert_id': expert_id})
+    resp = client.post('/investigations/new', data=data, follow_redirects=False)
+    assert resp.status_code == 302
+    with app.app_context():
+        inv = Investigation.query.order_by(Investigation.id.desc()).first()
+        assert inv.assignment_type == 'SZAKÉRTŐI'
+        assert inv.assigned_expert_id == expert_id
