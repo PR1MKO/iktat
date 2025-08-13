@@ -642,12 +642,11 @@ def upload_file(case_id):
         flash('No files selected', 'warning')
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
 
-    # Robust per-file size check (handles cases where request.content_length is missing)
-    max_len = int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    # Robust per-file size check (avoid int(None))
+    max_len = current_app.config.get('MAX_CONTENT_LENGTH') or (16 * 1024 * 1024)
 
     saved = []
     for f in files:
-        # Try to determine file size without consuming the stream
         size = getattr(f, 'content_length', None)
         if size is None:
             try:
@@ -670,11 +669,11 @@ def upload_file(case_id):
                 flash("A fájl mentése nem sikerült.", "danger")
                 continue
             upload_rec = UploadedFile(
-                case_id     = case.id,
-                filename    = fn,
-                uploader    = current_user.username,
-                upload_time = now_local(),
-                category    = category
+                case_id=case.id,
+                filename=fn,
+                uploader=current_user.username,
+                upload_time=now_local(),
+                category=category
             )
             db.session.add(upload_rec)
             saved.append(fn)
@@ -699,8 +698,6 @@ def upload_file(case_id):
     if request.referrer and '/documents' in request.referrer:
         return redirect(url_for('auth.case_documents', case_id=case_id))
     return redirect(url_for('auth.case_detail', case_id=case_id))
-
-
 
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')
 @login_required

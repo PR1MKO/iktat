@@ -293,13 +293,12 @@ def upload_investigation_file(id):
     if not filename:
         return jsonify({"error": "empty-filename"}), 400
 
-    # ---- Use RAW case_number to match tests (creates nested dirs like V:0001/2025) ----
     base = current_app.config["INVESTIGATION_UPLOAD_FOLDER"]
-    case_dir = os.path.join(base, inv.case_number)
+    case_dir = os.path.join(base, inv.case_number)   # raw case_number (tests expect this)
     os.makedirs(case_dir, exist_ok=True)
 
-    # ---- Robust per-file size guard (mirrors /cases upload behavior) ----
-    max_len = int(current_app.config.get("MAX_CONTENT_LENGTH", 16 * 1024 * 1024))
+    # Safe size guard (no int(None))
+    max_len = current_app.config.get("MAX_CONTENT_LENGTH") or (16 * 1024 * 1024)
     size = getattr(upfile, "content_length", None)
     if size is None:
         try:
@@ -330,14 +329,12 @@ def upload_investigation_file(id):
     db.session.add(attachment)
     db.session.commit()
 
-    return jsonify(
-        {
-            "id": attachment.id,
-            "filename": attachment.filename,
-            "category": attachment.category,
-            "uploaded_at": fmt_date(attachment.uploaded_at),
-        }
-    )
+    return jsonify({
+        "id": attachment.id,
+        "filename": attachment.filename,
+        "category": attachment.category,
+        "uploaded_at": fmt_date(attachment.uploaded_at),
+    })
 
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required

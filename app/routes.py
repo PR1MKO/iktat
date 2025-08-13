@@ -29,8 +29,8 @@ from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
 # Investigation models belong to the investigations blueprint module:
 # from app.investigations.models import Investigation, InvestigationNote, ...
 
-
-main_bp = Blueprint('main', __name__)
+# Blueprint
+main_bp = Blueprint("main", __name__)
 
 # --- Helpers ---
 
@@ -704,3 +704,46 @@ def complete_expert(case_id):
 @main_bp.route('/create-examination', methods=['GET', 'POST'])
 def create_examination():
     return redirect(url_for('investigations.new_investigation'))
+
+# --- route ---
+@main_bp.route("/ugyeim/<int:case_id>/generate_certificate", methods=["POST"])
+def generate_certificate(case_id):
+    case = db.session.get(Case, case_id) or abort(404)
+
+    # Ensure output directory: <app.root_path>/uploads/<case_number>/
+    base = os.path.join(current_app.root_path, "uploads")
+    case_dir = os.path.join(base, case.case_number)
+    os.makedirs(case_dir, exist_ok=True)
+
+    f = request.form
+    get = lambda k: (f.get(k) or "").strip()
+
+    # Write lines in the exact order tests expect
+    lines = [
+        f"Ügy: {case.case_number}",                                        # index 0
+        f"Halált megállapító orvos: {get('halalt_megallap')}",
+        f"Boncolás történt: {get('boncolas_tortent')}",
+        f"Várható további vizsgálat: {get('varhato_tovabbi_vizsgalat')}",
+        f"Közvetlen halálok: {get('kozvetlen_halalok')}",
+        f"Közvetlen halálok ideje: {get('kozvetlen_halalok_ido')}",
+        f"Alapbetegség: {get('alapbetegseg')}",
+        f"Alapbetegség ideje: {get('alapbetegseg_ido')}",
+        f"Kísérőbetegségek: {get('kiserobetegsegek')}",
+        "",                                                                # index 9 spacer
+        f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",  # index 10
+        f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
+    ]
+
+    out_path = os.path.join(
+        case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
+    )
+    with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(lines))
+
+    case.certificate_generated = True
+    case.certificate_generated_at = now_local()
+    db.session.commit()
+
+    flash("Bizonyítvány generálva.", "success")
+    # Tests expect redirect to /ugyeim/<id>/elvegzem
+    return redirect(url_for("main.elvegzem", case_id=case.id))
