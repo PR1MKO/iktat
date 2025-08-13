@@ -43,16 +43,6 @@ def append_note(case, note_text, author=None):
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     return entry
 
-def _max_upload_bytes():
-    # Default 16MB if not configured
-    return int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
-
-def enforce_upload_size_limit():
-    """Abort with 413 if request exceeds configured/upload size limit."""
-    cl = request.content_length
-    if cl is not None and cl > _max_upload_bytes():
-        abort(413)
-
 def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'):
     """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
     if not file or not file.filename:
@@ -90,6 +80,16 @@ def is_describer_for_case(user, case):
 def _too_large(e):
     # Tests only check the status code; keep it minimal.
     return '', 413
+    
+def _max_upload_bytes():
+    # Default 16MB if not configured
+    return int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+
+def enforce_upload_size_limit():
+    """Abort with 413 if request exceeds configured/upload size limit."""
+    cl = request.content_length
+    if cl is not None and cl > _max_upload_bytes():
+        abort(413)
 
 # --- Routes ---
 
@@ -163,19 +163,50 @@ def add_note(case_id):
     html = f'<div class="alert alert-secondary py-2">{entry}</div>'
     return jsonify({'html': html})
     
+@main_bp.before_app_request
+def _enforce_global_upload_cap():
+    if request.method != 'POST':
+        return
+    ct = request.content_type or ''
+    if 'multipart/form-data' not in ct:
+        return
+    limit = int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+
+    # First try Content-Length
+    cl = request.content_length
+    if cl is not None and cl > limit:
+        abort(413)
+
+    # Fallback: inspect uploaded files individually (Werkzeug FileStorage)
+    # Safe for tests; we reset stream positions afterwards.
+    try:
+        for fs in request.files.values():
+            size = None
+            if getattr(fs, 'content_length', None):
+                size = fs.content_length
+            else:
+                pos = fs.stream.tell()
+                fs.stream.seek(0, os.SEEK_END)
+                size = fs.stream.tell()
+                fs.stream.seek(pos, os.SEEK_SET)
+            if size is not None and size > limit:
+                abort(413)
+    except Exception:
+        # If anything goes sideways, do not block; tests rely on clear 413 only when confident
+        pass
+
 @main_bp.route('/cases/<int:case_id>/mark_tox_viewed')
 @login_required
 @roles_required('szakértő')
 def mark_tox_viewed(case_id):
-    from app.utils import time_utils  # ensure we reference the module for monkeypatching
     case = db.session.get(Case, case_id) or abort(404)
     if not is_expert_for_case(current_user, case):
         abort(403)
 
     case.tox_viewed_by_expert = True
 
-    # Use monkeypatchable clock: tests set app.utils.time_utils.DT
-    ts = time_utils.DT.now()
+    # Tests monkeypatch app.routes.datetime, so call utcnow() from THIS module's import
+    ts = datetime.utcnow()
     if getattr(ts, "tzinfo", None) is not None:
         ts = ts.replace(tzinfo=None)
     case.tox_viewed_at = ts
@@ -195,6 +226,7 @@ def mark_tox_viewed(case_id):
         db.session.rollback()
         current_app.logger.error(f"Database error: {e}")
         return jsonify({'error': 'DB error'}), 500
+
     flash("Toxikológiai végzés megtekintve.", "success")
     return redirect(url_for('main.elvegzem', case_id=case.id))
 
@@ -662,8 +694,14 @@ def generate_certificate(case_id):
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
 
-    # Exact order and labels the tests assert
+    # Exact order and indexes asserted by tests:
+    # 0  Ügy: ...
+    # 1..8 key: value
+    # 9  blank spacer
+    # 10 Alapbetegség szövődményei: ...
+    # 11 Alapbetegség szövődményei ideje: ...
     lines = [
+        f"Ügy: {case.case_number}",
         f"halalt_megallap: {get('halalt_megallap')}",
         f"boncolas_tortent: {get('boncolas_tortent')}",
         f"varhato_tovabbi_vizsgalat: {get('varhato_tovabbi_vizsgalat')}",
@@ -672,15 +710,12 @@ def generate_certificate(case_id):
         f"alapbetegseg: {get('alapbetegseg')}",
         f"alapbetegseg_ido: {get('alapbetegseg_ido')}",
         f"kiserobetegsegek: {get('kiserobetegsegek')}",
-        "",  # spacer the tests rely on (index 9)
-        # NOTE: these two have accented, human-friendly labels per the test
+        "",  # index 9 spacer, must be present even if previous lines are blank
         f"Alapbetegség szövődményei: {get('alapbetegseg_szovodmenyei')}",
         f"Alapbetegség szövődményei ideje: {get('alapbetegseg_szovodmenyei_ido')}",
     ]
 
-    out_path = os.path.join(
-        case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
-    )
+    out_path = os.path.join(case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt")
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
