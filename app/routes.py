@@ -88,7 +88,6 @@ def _max_upload_bytes():
     try:
         if val is None:
             return 16 * 1024 * 1024
-        # Allow int/float/str that can be cast
         return int(val)
     except Exception:
         return 16 * 1024 * 1024
@@ -725,6 +724,7 @@ def generate_certificate(case_id):
     out_path = os.path.join(
         case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
     )
+    # Always write the full set of lines in the asserted order.
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
