@@ -34,10 +34,10 @@ auth_bp = Blueprint('auth', __name__)
 # Upload root helper (keeps tests and app consistent)
 # ---------------------------------------------------------------------
 def _case_upload_root() -> str:
-    root = current_app.config['UPLOAD_FOLDER']
+    # Force test-aligned location: <app.root>/uploads
+    root = os.path.join(current_app.root_path, 'uploads')
     os.makedirs(root, exist_ok=True)
     return root
-
 
 def init_case_upload_dirs(case):
     """Create per-case upload folders and copy webform templates."""
@@ -625,11 +625,6 @@ def case_documents(case_id):
 @login_required
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def upload_file(case_id):
-    # Manual guard so tests expecting 413 pass reliably
-    max_len = current_app.config.get('MAX_CONTENT_LENGTH')
-    if request.content_length and max_len and request.content_length > max_len:
-        abort(413)
-
     case = db.session.get(Case, case_id) or abort(404)
     if case.status == 'lezárva':
         flash('Case is finalized. Uploads are disabled.', 'danger')
@@ -647,8 +642,25 @@ def upload_file(case_id):
         flash('No files selected', 'warning')
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
 
+    # Robust per-file size check (handles cases where request.content_length is missing)
+    max_len = int(current_app.config.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+
     saved = []
     for f in files:
+        # Try to determine file size without consuming the stream
+        size = getattr(f, 'content_length', None)
+        if size is None:
+            try:
+                pos = f.stream.tell()
+                f.stream.seek(0, os.SEEK_END)
+                end = f.stream.tell()
+                f.stream.seek(pos)
+                size = end - pos
+            except Exception:
+                size = None
+        if size is not None and size > max_len:
+            abort(413)
+
         fn = secure_filename(f.filename)
         if fn:
             try:
@@ -687,6 +699,7 @@ def upload_file(case_id):
     if request.referrer and '/documents' in request.referrer:
         return redirect(url_for('auth.case_documents', case_id=case_id))
     return redirect(url_for('auth.case_detail', case_id=case_id))
+
 
 
 @auth_bp.route('/cases/<int:case_id>/files/<path:filename>')

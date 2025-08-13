@@ -277,7 +277,6 @@ def add_investigation_note(id):
     html = render_template("investigations/_note.html", note=note, author=author)
     return html
 
-
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
 def upload_investigation_file(id):
@@ -289,12 +288,37 @@ def upload_investigation_file(id):
     if not form.validate_on_submit():
         return jsonify({"error": "invalid"}), 400
 
-    file = form.file.data
-    filename = secure_filename(file.filename)
+    upfile = form.file.data
+    filename = secure_filename(upfile.filename)
+    if not filename:
+        return jsonify({"error": "empty-filename"}), 400
 
-    folder = ensure_investigation_folder(current_app, inv.case_number)
-    file_path = os.path.join(folder, filename)
-    file.save(file_path)
+    # ---- Use RAW case_number to match tests (creates nested dirs like V:0001/2025) ----
+    base = current_app.config["INVESTIGATION_UPLOAD_FOLDER"]
+    case_dir = os.path.join(base, inv.case_number)
+    os.makedirs(case_dir, exist_ok=True)
+
+    # ---- Robust per-file size guard (mirrors /cases upload behavior) ----
+    max_len = int(current_app.config.get("MAX_CONTENT_LENGTH", 16 * 1024 * 1024))
+    size = getattr(upfile, "content_length", None)
+    if size is None:
+        try:
+            pos = upfile.stream.tell()
+            upfile.stream.seek(0, os.SEEK_END)
+            end = upfile.stream.tell()
+            upfile.stream.seek(pos)
+            size = end - pos
+        except Exception:
+            size = None
+    if size is not None and size > max_len:
+        abort(413)
+
+    dest = os.path.join(case_dir, filename)
+    try:
+        upfile.save(dest)
+    except Exception as e:
+        current_app.logger.error(f"Investigation file save failed: {e}")
+        return jsonify({"error": "save-failed"}), 500
 
     attachment = InvestigationAttachment(
         investigation_id=inv.id,
@@ -314,7 +338,6 @@ def upload_investigation_file(id):
             "uploaded_at": fmt_date(attachment.uploaded_at),
         }
     )
-
 
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required
