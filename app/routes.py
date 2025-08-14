@@ -11,6 +11,7 @@ from flask import (
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename, safe_join
+from app.paths import ensure_case_folder
 
 from app import db
 from app.utils.time_utils import now_local
@@ -44,13 +45,12 @@ def append_note(case, note_text, author=None):
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     return entry
 
-def handle_file_upload(case, file, folder_key='UPLOAD_FOLDER', category='egyéb'):
+def handle_file_upload(case, file, category='egyéb'):
     """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
     if not file or not file.filename:
         return None
     fn = secure_filename(file.filename)
-    upload_dir = os.path.join(current_app.config[folder_key], case.case_number)
-    os.makedirs(upload_dir, exist_ok=True)
+    upload_dir = ensure_case_folder(case.case_number)
     try:
         file.save(os.path.join(upload_dir, fn))
     except Exception as e:
@@ -693,10 +693,8 @@ def generate_certificate(case_id):
     if not is_expert_for_case(current_user, case):
         abort(403)
 
-    # Ensure output directory: <app.root_path>/uploads/<case_number>/
-    base = os.path.join(current_app.root_path, "uploads")
-    case_dir = os.path.join(base, case.case_number)
-    os.makedirs(case_dir, exist_ok=True)
+    # Ensure output directory: <case_root>/<case_number>/
+    case_dir = ensure_case_folder(case.case_number)
 
     f = request.form
     get = lambda k: (f.get(k) or "").strip()

@@ -10,6 +10,7 @@ from app.investigations.models import (
     InvestigationNote,
     InvestigationChangeLog,
 )  # examination bind
+from app.paths import case_root
 
 def _safe_rmtree(path):
     try:
@@ -23,7 +24,7 @@ def main():
     app = create_app()
     with app.app_context():
         # Folders from config
-        cases_root = app.config.get("UPLOAD_FOLDER")
+        cases_root = case_root()
         inv_root = app.config.get("INVESTIGATION_UPLOAD_FOLDER")
 
         print(f"[INFO] Resetting storage:\n  Cases: {cases_root}\n  Investigations: {inv_root}")

@@ -25,6 +25,7 @@ from app.audit import log_action
 from ..utils.case_helpers import build_case_context
 from ..utils.roles import roles_required
 from app.routes import handle_file_upload
+from app.paths import case_root, ensure_case_folder
 import csv
 import io
 import codecs
@@ -35,15 +36,12 @@ auth_bp = Blueprint('auth', __name__)
 # Upload root helper (keeps tests and app consistent)
 # ---------------------------------------------------------------------
 def _case_upload_root() -> str:
-    # Force test-aligned location: <app.root>/uploads
-    root = os.path.join(current_app.root_path, 'uploads')
-    os.makedirs(root, exist_ok=True)
-    return root
+    return case_root()
 
 def init_case_upload_dirs(case):
     """Create per-case upload folders and copy webform templates."""
-    base = _case_upload_root()
-    case_dir = os.path.join(base, case.case_number)
+    base = case_root()
+    case_dir = ensure_case_folder(case.case_number)
     webfill_dir = os.path.join(case_dir, 'webfill-do-not-edit')
     os.makedirs(webfill_dir, exist_ok=True)
 
@@ -643,7 +641,7 @@ def upload_file(case_id):
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
 
-    upload_folder = os.path.join(_case_upload_root(), case.case_number)
+    upload_folder = ensure_case_folder(case.case_number)
     category = request.form.get('category')
     if not category:
         flash("Kérjük, válasszon fájl kategóriát.", "error")
@@ -717,7 +715,7 @@ def upload_file(case_id):
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
     case = db.session.get(Case, case_id) or abort(404)
-    base_dir = os.path.join(_case_upload_root(), case.case_number)
+    base_dir = os.path.join(case_root(), case.case_number)
 
     try:
         full_path = safe_join(base_dir, filename)
@@ -1084,16 +1082,12 @@ def generate_tox_doc(case_id):
 
     try:
         template_path = os.path.join(
-            current_app.config['UPLOAD_FOLDER'],
+            case_root(),
             'autofill-word-do-not-edit',
             'Toxikológiai-kirendelő.docx'
         )
 
-        output_folder = os.path.join(
-            current_app.config['UPLOAD_FOLDER'],
-            str(case.case_number)
-        )
-        os.makedirs(output_folder, exist_ok=True)
+        output_folder = ensure_case_folder(str(case.case_number))
 
         output_path = os.path.join(
             output_folder,

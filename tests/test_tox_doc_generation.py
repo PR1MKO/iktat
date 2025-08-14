@@ -24,9 +24,11 @@ def test_tox_doc_generation_saves_and_registers(client, app):
         case = create_case()
         cid = case.id
 
-    upload_root = os.path.join(app.root_path, 'uploads')
-    if os.path.exists(upload_root):
-        shutil.rmtree(upload_root)
+    with app.app_context():
+        from app.paths import case_root
+        upload_root = case_root()
+        if os.path.exists(upload_root):
+            shutil.rmtree(upload_root)
 
     tpl_dir = os.path.join(upload_root, 'autofill-word-do-not-edit')
     os.makedirs(tpl_dir, exist_ok=True)

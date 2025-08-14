@@ -13,13 +13,9 @@ class Config:
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
 
-    UPLOAD_FOLDER = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\uploads"
-
     SQLALCHEMY_BINDS = {
         'examination': os.environ.get('EXAMINATION_DATABASE_URL', 'sqlite:///examination.db')
     }
-
-    INVESTIGATION_UPLOAD_FOLDER = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\uploads_investigations"
 
     TRACK_USER_ACTIVITY = True
 

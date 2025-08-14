@@ -29,9 +29,11 @@ def test_certificate_generation_success(client, app):
         create_user('doc', 'pw', 'szakértő')
         case = create_case()
         cid = case.id
-    upload_root = os.path.join(app.root_path, 'uploads')
-    if os.path.exists(upload_root):
-        shutil.rmtree(upload_root)
+    with app.app_context():
+        from app.paths import case_root
+        upload_root = case_root()
+        if os.path.exists(upload_root):
+            shutil.rmtree(upload_root)
     form_data = {
         'halalt_megallap': 'pathologus',
         'boncolas_tortent': 'igen',
@@ -53,8 +55,10 @@ def test_certificate_generation_success(client, app):
         case = db.session.get(Case, cid)
         assert case.certificate_generated is True
         assert case.certificate_generated_at is not None
-    path = os.path.join(app.root_path, 'uploads', case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
-    assert os.path.exists(path)
+    with app.app_context():
+        from app.paths import case_root
+        path = os.path.join(case_root(), case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
     assert lines[0] == 'Ügy: 0001-2025'
@@ -78,9 +82,11 @@ def test_certificate_generation_optional_fields_blank(client, app):
         case.alapbetegseg = ''
         db.session.commit()
         cid = case.id
-    upload_root = os.path.join(app.root_path, 'uploads')
-    if os.path.exists(upload_root):
-        shutil.rmtree(upload_root)
+    with app.app_context():
+        from app.paths import case_root
+        upload_root = case_root()
+        if os.path.exists(upload_root):
+            shutil.rmtree(upload_root)
     form_data = {
         'halalt_megallap': 'pathologus',
         'boncolas_tortent': 'igen',
@@ -98,8 +104,10 @@ def test_certificate_generation_optional_fields_blank(client, app):
         resp = client.post(f'/ugyeim/{cid}/generate_certificate', data=form_data)
         assert resp.status_code == 302
         assert resp.headers['Location'].endswith(f'/ugyeim/{cid}/elvegzem')
-    path = os.path.join(app.root_path, 'uploads', case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
-    assert os.path.exists(path)
+    with app.app_context():
+        from app.paths import case_root
+        path = os.path.join(case_root(), case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
     assert lines[10] == 'Alapbetegség szövődményei: '

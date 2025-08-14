@@ -12,6 +12,7 @@ import os
 import re
 from app import create_app, db
 from app.models import Case, AuditLog, TaskMessage
+from app.paths import case_root
 
 OLD_RE = re.compile(r"^(\d{4})-(\d{3})$")
 LOG_RE = re.compile(r"\b(\d{4})-(\d{3})\b")
@@ -47,7 +48,7 @@ def rename_files(base_dir: str, old: str, new: str) -> None:
 
 
 with app.app_context():
-    upload_root = app.config['UPLOAD_FOLDER']
+    upload_root = case_root()
     cases = Case.query.all()
     for case in cases:
         m = OLD_RE.match(case.case_number)
