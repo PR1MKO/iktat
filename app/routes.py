@@ -11,7 +11,7 @@ from flask import (
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from werkzeug.utils import secure_filename, safe_join
-from app.paths import ensure_case_folder
+from app.paths import ensure_case_folder, file_safe_case_number
 
 from app import db
 from app.utils.time_utils import now_local
@@ -723,7 +723,7 @@ def generate_certificate(case_id):
     lines.append(f"Generálva: {now_local().strftime('%Y-%m-%d %H:%M')}")
 
     out_path = os.path.join(
-        case_dir, f"halottvizsgalati_bizonyitvany-{case.case_number}.txt"
+        case_dir, f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt"
     )
     with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))

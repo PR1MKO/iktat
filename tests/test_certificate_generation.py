@@ -2,11 +2,12 @@ import os
 import shutil
 from app.models import Case, db
 from tests.helpers import create_user, login
+from app.paths import ensure_case_folder, file_safe_case_number
 
 
 def create_case():
     case = Case(
-        case_number='0001-2025',
+        case_number='B:0001/2025',
         expert_1='doc',
         halalt_megallap_pathologus=True,
         boncolas_tortent=True,
@@ -56,12 +57,14 @@ def test_certificate_generation_success(client, app):
         assert case.certificate_generated is True
         assert case.certificate_generated_at is not None
     with app.app_context():
-        from app.paths import ensure_case_folder
-        path = os.path.join(ensure_case_folder(case.case_number), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        path = os.path.join(
+            ensure_case_folder(case.case_number),
+            f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt",
+        )
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
-    assert lines[0] == 'Ügy: 0001-2025'
+    assert lines[0] == 'Ügy: B:0001/2025'
     assert lines[2] == 'A halál okát megállapította: pathologus'
     assert lines[4] == 'Történt-e boncolás: igen'
     assert lines[5] == 'Ha igen, várhatók-e további vizsgálati eredmények: nem'
@@ -105,8 +108,10 @@ def test_certificate_generation_optional_fields_blank(client, app):
         assert resp.status_code == 302
         assert resp.headers['Location'].endswith(f'/ugyeim/{cid}/elvegzem')
     with app.app_context():
-        from app.paths import ensure_case_folder
-        path = os.path.join(ensure_case_folder(case.case_number), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        path = os.path.join(
+            ensure_case_folder(case.case_number),
+            f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt",
+        )
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]

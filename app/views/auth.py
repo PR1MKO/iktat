@@ -25,7 +25,8 @@ from app.audit import log_action
 from ..utils.case_helpers import build_case_context
 from ..utils.roles import roles_required
 from app.routes import handle_file_upload
-from app.paths import case_root, ensure_case_folder
+from app.paths import case_root, ensure_case_folder, file_safe_case_number
+from app.utils.case_number import generate_case_number_for_year
 import csv
 import io
 import codecs
@@ -115,7 +116,7 @@ def export_changelog_csv(case_id):
         output,
         mimetype='text/csv; charset=utf-8',
         headers={
-            "Content-Disposition": f"attachment; filename=changelog_{case.case_number}.csv"
+            "Content-Disposition": f"attachment; filename=changelog_{file_safe_case_number(case.case_number)}.csv"
         }
     )
 
@@ -285,8 +286,8 @@ def list_cases():
 
     # Determine order_by column and direction
     if sort_by == 'case_number':
-        year_col = func.substr(Case.case_number, 6, 4)
-        seq_col = func.substr(Case.case_number, 1, 4)
+        year_col = func.substr(Case.case_number, 8, 4)
+        seq_col = func.substr(Case.case_number, 3, 4)
         if sort_order == 'desc':
             ordering = [year_col.desc(), seq_col.desc()]
         else:
@@ -419,11 +420,7 @@ def create_case():
         if request.form.get('birth_date'):
             birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
         registration_time = now_local()
-        year = registration_time.year
-        count = Case.query.filter(
-            func.strftime("%Y", Case.registration_time) == str(year)
-        ).count() + 1
-        case_number = f"{count:04d}-{year}"
+        case_number = generate_case_number_for_year(db.session)
         notes = request.form.get('notes', '').strip() or None
 
         # --- Handle the new "További adatok" fields ---
@@ -996,8 +993,8 @@ def manage_cases():
     sort_order = request.args.get('sort_order', 'desc')
 
     if sort_by == 'case_number':
-        year_col = func.substr(Case.case_number, 6, 4)
-        seq_col = func.substr(Case.case_number, 1, 4)
+        year_col = func.substr(Case.case_number, 8, 4)
+        seq_col = func.substr(Case.case_number, 3, 4)
         if sort_order == 'asc':
             cases = Case.query.order_by(year_col.asc(), seq_col.asc()).all()
         else:

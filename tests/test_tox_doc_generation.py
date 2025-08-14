@@ -9,10 +9,11 @@ except ImportError:
 
 from app.models import Case, UploadedFile, db
 from tests.helpers import create_user, login
+from app.paths import ensure_case_folder
 
 
 def create_case():
-    case = Case(case_number='0002-2025', anyja_neve='Teszt Anyja')
+    case = Case(case_number='B:0002/2025', anyja_neve='Teszt Anyja')
     db.session.add(case)
     db.session.commit()
     return case
@@ -47,12 +48,14 @@ def test_tox_doc_generation_saves_and_registers(client, app):
         resp = client.post(f'/cases/{cid}/generate_tox_doc', data=form_data)
         assert resp.status_code == 302
 
-    out_path = os.path.join(upload_root, case.case_number, 'Toxikológiai-kirendelő-kitöltött.docx')
+    out_path = os.path.join(
+        ensure_case_folder(case.case_number),
+        'Toxikológiai-kirendelő-kitöltött.docx',
+    )
     assert os.path.exists(out_path)
     assert not os.path.exists(
         os.path.join(
-            upload_root,
-            case.case_number,
+            ensure_case_folder(case.case_number),
             'webfill-do-not-edit',
             'Toxikológiai-kirendelő-kitöltött.docx',
         )

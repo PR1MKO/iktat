@@ -29,9 +29,13 @@ def _safe_case_segment(s: str) -> str:
     # Windows-safe normalization for folder segments
     return (s or "").replace(":", "-").replace("/", "-").strip(" .")
 
+def file_safe_case_number(n: str) -> str:
+    """Public: convert case_number to a Windows-safe filename segment."""
+    return _safe_case_segment(n)
+
 def case_folder_name(case_number: str) -> str:
-    # NEW: prefix "B-" for all case folders
-    return f"B-{_safe_case_segment(case_number)}"
+    safe = _safe_case_segment(case_number)
+    return safe if safe.startswith("B-") else f"B-{safe}"
 
 def ensure_case_folder(case_number: str) -> str:
     folder = _norm(os.path.join(case_root(), case_folder_name(case_number)))
