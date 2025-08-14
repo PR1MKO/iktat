@@ -29,3 +29,23 @@ def ensure_case_folder(case_number: str) -> str:
     folder = _norm(os.path.join(case_root(), case_number))
     os.makedirs(folder, exist_ok=True)
     return folder
+
+# === INVESTIGATION uploads (vizsgálatok) ===
+def investigation_root() -> str:
+    # canonical default: EXACT absolute path requested by user
+    default_path = r"C:\Users\kiss.istvan3\Desktop\folyamatok\IKTATAS2.0\forensic-case-tracker\app\uploads_vizsgalatok"
+    app = current_app
+    raw = (app.config.get("INVESTIGATION_UPLOAD_FOLDER") or "").strip()
+    # If config is empty or only a drive letter, use the EXACT default absolute path.
+    if not raw or _DRIVE_ONLY_RE.match(raw):
+        raw = default_path
+    root = _norm(raw)
+    os.makedirs(root, exist_ok=True)
+    return root
+
+def ensure_investigation_folder(case_number: str) -> str:
+    safe = case_number.replace(":", "-").replace("/", "-").strip(" .")
+    folder = _norm(os.path.join(investigation_root(), safe))
+    os.makedirs(folder, exist_ok=True)
+    return folder
+    

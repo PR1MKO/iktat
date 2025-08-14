@@ -144,12 +144,12 @@ def test_upload_endpoint_stores_file(client, app):
         content_type='multipart/form-data',
     )
     assert resp.status_code == 200
-    upload_path = os.path.join(
-        app.config['INVESTIGATION_UPLOAD_FOLDER'], case_number, 'file.txt'
-    )
+    from app.paths import ensure_investigation_folder
+    inv_dir = ensure_investigation_folder(case_number)
+    upload_path = os.path.join(inv_dir, 'file.txt')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
-    os.rmdir(os.path.dirname(upload_path))
+    os.rmdir(inv_dir)
 
 
 def test_note_creation(client, app):
@@ -205,12 +205,12 @@ def test_permissions(client, app):
         content_type='multipart/form-data',
     )
     assert resp.status_code == 200
-    upload_path = os.path.join(
-        app.config['INVESTIGATION_UPLOAD_FOLDER'], case_number, 'x.txt'
-    )
+    from app.paths import ensure_investigation_folder
+    inv_dir = ensure_investigation_folder(case_number)
+    upload_path = os.path.join(inv_dir, 'x.txt')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
-    os.rmdir(os.path.dirname(upload_path))
+    os.rmdir(inv_dir)
     # unassigned user blocked
     login(client, 'other', 'secret')
     resp = client.post(

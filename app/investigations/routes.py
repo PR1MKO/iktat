@@ -351,9 +351,7 @@ def upload_investigation_file(id):
     if not filename:
         return jsonify({"error": "empty-filename"}), 400
 
-    base = current_app.config["INVESTIGATION_UPLOAD_FOLDER"]
-    case_dir = os.path.join(base, inv.case_number)   # raw case_number (tests expect this)
-    os.makedirs(case_dir, exist_ok=True)
+    case_dir = ensure_investigation_folder(current_app, inv.case_number)
 
     # Safe size guard (no int(None))
     max_len = current_app.config.get("MAX_CONTENT_LENGTH") or (16 * 1024 * 1024)

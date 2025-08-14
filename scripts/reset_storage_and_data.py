@@ -10,7 +10,7 @@ from app.investigations.models import (
     InvestigationNote,
     InvestigationChangeLog,
 )  # examination bind
-from app.paths import case_root
+from app.paths import case_root, investigation_root
 
 def _safe_rmtree(path):
     try:
@@ -25,7 +25,7 @@ def main():
     with app.app_context():
         # Folders from config
         cases_root = case_root()
-        inv_root = app.config.get("INVESTIGATION_UPLOAD_FOLDER")
+        inv_root = investigation_root()
 
         print(f"[INFO] Resetting storage:\n  Cases: {cases_root}\n  Investigations: {inv_root}")
         _safe_rmtree(cases_root)
@@ -52,3 +52,4 @@ def main():
 if __name__ == "__main__":
     # This script is meant to be run manually (e.g., `python scripts/reset_storage_and_data.py`)
     main()
+    

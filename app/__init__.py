@@ -54,11 +54,6 @@ def create_app(test_config=None):
     binds['examination'] = exam_url
     app.config['SQLALCHEMY_BINDS'] = binds
 
-    # --- Upload roots ------------------------------------------------------
-    # Investigation uploads: respect config or default under instance
-    app.config.setdefault('INVESTIGATION_UPLOAD_FOLDER', os.path.join(app.instance_path, 'uploads_investigations'))
-    os.makedirs(app.config['INVESTIGATION_UPLOAD_FOLDER'], exist_ok=True)
-
     # Max 16 MB
     app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
 
@@ -83,9 +78,10 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     
-    from app.paths import case_root
+    from app.paths import case_root, investigation_root
     with app.app_context():
         case_root()
+        investigation_root()
 
     # Ensure core models are registered
     from .models import User  # noqa: F401

@@ -1,27 +1,20 @@
 # app/investigations/utils.py
-import os
-import re
 from sqlalchemy import func
 from app.utils.time_utils import now_local
 from .models import Investigation
+from app.paths import (
+    investigation_root as _invest_root,
+    ensure_investigation_folder as _ensure_invest,
+)
 
-_DRIVE_ONLY_RE = re.compile(r"^[A-Za-z]:$")
+def resolve_investigation_upload_root(app):
+    return _invest_root()
 
 def resolve_upload_root(app):
-    base = (app.config.get("INVESTIGATION_UPLOAD_FOLDER") or "").strip()
-    if not base or _DRIVE_ONLY_RE.match(base):
-        base = os.path.join(app.instance_path, "uploads_investigations")
-    base = os.path.normpath(base)
-    os.makedirs(base, exist_ok=True)
-    return base
+    return _invest_root()
 
 def ensure_investigation_folder(app, case_number: str) -> str:
-    # Windows-safe: replace characters that can turn into a drive or invalid path
-    safe = case_number.replace(":", "-").replace("/", "-").strip(" .")
-    root = resolve_upload_root(app)
-    folder = os.path.join(root, safe)
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return _ensure_invest(case_number)
 
 def generate_case_number(session) -> str:
     """
@@ -49,4 +42,5 @@ def generate_case_number(session) -> str:
         if not exists:
             return candidate
         seq += 1
+
 
