@@ -102,7 +102,7 @@ def test_file_upload_success(client, app, tmp_path):
         data = {'file': (io.BytesIO(b'pdfdata'), 'report.pdf'), 'category': 'egyéb'}
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
-    with app.app_context
+    with app.app_context():
         from app.paths import case_root
         upload_path = os.path.join(case_root(), case.case_number, 'report.pdf')
         assert os.path.exists(upload_path)
@@ -272,5 +272,4 @@ def test_elvegzem_keeps_existing_describer(client, app):
 
     with app.app_context():
         updated = db.session.get(Case, cid)
-        assert updated.describer == 'other'    
-        
+        assert updated.describer == 'other'
