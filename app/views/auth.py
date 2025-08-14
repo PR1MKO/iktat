@@ -715,7 +715,7 @@ def upload_file(case_id):
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
     case = db.session.get(Case, case_id) or abort(404)
-    base_dir = os.path.join(case_root(), case.case_number)
+    base_dir = ensure_case_folder(case.case_number)
 
     try:
         full_path = safe_join(base_dir, filename)

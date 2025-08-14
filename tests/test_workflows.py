@@ -103,8 +103,8 @@ def test_file_upload_success(client, app, tmp_path):
         resp = client.post(f'/cases/{case_id}/upload', data=data, content_type='multipart/form-data')
         assert resp.status_code == 302
     with app.app_context():
-        from app.paths import case_root
-        upload_path = os.path.join(case_root(), case.case_number, 'report.pdf')
+        from app.paths import ensure_case_folder
+        upload_path = os.path.join(ensure_case_folder(case.case_number), 'report.pdf')
         assert os.path.exists(upload_path)
         rec = UploadedFile.query.filter_by(case_id=case_id, filename='report.pdf').first()
         assert rec is not None
@@ -140,8 +140,8 @@ def test_upload_requires_auth(client, app):
     assert resp.status_code == 302
     assert '/login' in resp.headers['Location']
     with app.app_context():
-        from app.paths import case_root
-        upload_path = os.path.join(case_root(), case.case_number, 'file.pdf')
+        from app.paths import ensure_case_folder
+        upload_path = os.path.join(ensure_case_folder(case.case_number), 'file.pdf')
         assert not os.path.exists(upload_path)
 
 
@@ -159,8 +159,8 @@ def test_upload_blocked_for_finalized_case(client, app):
         assert resp.status_code == 302
         assert '/cases/' in resp.headers['Location']
     with app.app_context():
-        from app.paths import case_root
-        upload_path = os.path.join(case_root(), case.case_number, 'closed.pdf')
+        from app.paths import ensure_case_folder
+        upload_path = os.path.join(ensure_case_folder(case.case_number), 'closed.pdf')
         assert not os.path.exists(upload_path)
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
 
@@ -182,8 +182,8 @@ def test_upload_large_file_blocked(client, app):
         )
         assert resp.status_code == 413
     with app.app_context():
-        from app.paths import case_root
-        upload_path = os.path.join(case_root(), case.case_number, 'big.pdf')
+        from app.paths import ensure_case_folder
+        upload_path = os.path.join(ensure_case_folder(case.case_number), 'big.pdf')
         assert not os.path.exists(upload_path)
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
         

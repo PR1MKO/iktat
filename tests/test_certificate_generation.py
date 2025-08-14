@@ -56,8 +56,8 @@ def test_certificate_generation_success(client, app):
         assert case.certificate_generated is True
         assert case.certificate_generated_at is not None
     with app.app_context():
-        from app.paths import case_root
-        path = os.path.join(case_root(), case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        from app.paths import ensure_case_folder
+        path = os.path.join(ensure_case_folder(case.case_number), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]
@@ -105,8 +105,8 @@ def test_certificate_generation_optional_fields_blank(client, app):
         assert resp.status_code == 302
         assert resp.headers['Location'].endswith(f'/ugyeim/{cid}/elvegzem')
     with app.app_context():
-        from app.paths import case_root
-        path = os.path.join(case_root(), case.case_number, f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
+        from app.paths import ensure_case_folder
+        path = os.path.join(ensure_case_folder(case.case_number), f'halottvizsgalati_bizonyitvany-{case.case_number}.txt')
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
         lines = [line.rstrip('\n') for line in f]

@@ -12,7 +12,7 @@ import os
 import re
 from app import create_app, db
 from app.models import Case, AuditLog, TaskMessage
-from app.paths import case_root
+from app.paths import case_root, case_folder_name
 
 OLD_RE = re.compile(r"^(\d{4})-(\d{3})$")
 LOG_RE = re.compile(r"\b(\d{4})-(\d{3})\b")
@@ -22,8 +22,8 @@ app = create_app()
 
 def rename_files(base_dir: str, old: str, new: str) -> None:
     """Rename case folder and known files from old to new numbering."""
-    old_dir = os.path.join(base_dir, old)
-    new_dir = os.path.join(base_dir, new)
+    old_dir = os.path.join(base_dir, case_folder_name(old))
+    new_dir = os.path.join(base_dir, case_folder_name(new))
     if os.path.exists(old_dir):
         os.rename(old_dir, new_dir)
         mappings = [

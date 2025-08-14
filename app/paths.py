@@ -24,9 +24,17 @@ def case_root() -> str:
     # canonical default: <app_root>/uploads_boncolasok
     legacy = ["UPLOAD_FOLDER", "CASE_UPLOAD_FOLDER_LEGACY", "CASE_UPLOAD_DIR"]
     return _safe_root("CASE_UPLOAD_FOLDER", "uploads_boncolasok", legacy)
+    
+def _safe_case_segment(s: str) -> str:
+    # Windows-safe normalization for folder segments
+    return (s or "").replace(":", "-").replace("/", "-").strip(" .")
+
+def case_folder_name(case_number: str) -> str:
+    # NEW: prefix "B-" for all case folders
+    return f"B-{_safe_case_segment(case_number)}"
 
 def ensure_case_folder(case_number: str) -> str:
-    folder = _norm(os.path.join(case_root(), case_number))
+    folder = _norm(os.path.join(case_root(), case_folder_name(case_number)))
     os.makedirs(folder, exist_ok=True)
     return folder
 
