@@ -54,24 +54,59 @@
     <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
   </div>
 
+  <div class="col-md-6">
+    <label for="default_leiro_id" class="form-label">Default leíró</label>
+    <select class="form-select" id="default_leiro_id" name="default_leiro_id" disabled>
+      <option value="0">-- Válasszon --</option>
+      {% for leiro in leiro_users %}
+        <option value="{{ leiro.id }}">{{ leiro.screen_name or leiro.username }}</option>
+      {% endfor %}
+    </select>
+    {% if form and form.default_leiro_id.errors %}
+      {% for e in form.default_leiro_id.errors %}
+        <div class="text-danger small">{{ e }}</div>
+      {% endfor %}
+    {% endif %}
+    <small class="form-text text-muted">Szakértő esetén kötelező.</small>
+  </div>
+
   <div class="col-12 d-flex gap-2">
     <button type="submit" class="btn btn-success">Létrehozás</button>
     <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-secondary">Mégse</a>
   </div>
 </form>
 
-<script>
-  (function() {
-    'use strict';
-    document.querySelectorAll('.needs-validation').forEach(form => {
-      form.addEventListener('submit', event => {
-        if (!form.checkValidity()) {
-          event.preventDefault();
-          event.stopPropagation();
+  <script>
+    (function() {
+      'use strict';
+      document.querySelectorAll('.needs-validation').forEach(form => {
+        form.addEventListener('submit', event => {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          form.classList.add('was-validated');
+        }, false);
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      const role = document.getElementById('role');
+      const leiro = document.getElementById('default_leiro_id');
+      function toggle() {
+        const isExpert = role && role.value === 'szakértő';
+        if (!leiro) return;
+        leiro.disabled = !isExpert;
+        if (isExpert) {
+          leiro.setAttribute('required', 'required');
+        } else {
+          leiro.removeAttribute('required');
+          leiro.value = '0';
         }
-        form.classList.add('was-validated');
-      }, false);
-    });
-  })();
-</script>
-{% endblock %}
+      }
+      if (role) role.addEventListener('change', toggle);
+      toggle();
+    })();
+  </script>
+  {% endblock %}

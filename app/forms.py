@@ -2,10 +2,20 @@
 
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField, SelectField, TextAreaField, DateField,
+    StringField, PasswordField, SelectField, TextAreaField, DateField,
     DateTimeLocalField
 )
-from wtforms.validators import DataRequired, Optional
+from wtforms.validators import DataRequired, Optional, Length
+
+class AdminUserForm(FlaskForm):
+    username = StringField('Felhasználónév', validators=[DataRequired(), Length(max=64)])
+    screen_name = StringField('Megjelenítendő név', validators=[Optional(), Length(max=64)])
+    password = PasswordField('Jelszó', validators=[Optional()])
+    role = SelectField('Szerepkör', choices=[
+        ('admin','admin'),('iroda','iroda'),('szignáló','szignáló'),
+        ('szakértő','szakértő'),('leíró','leíró'),('toxi','toxi')
+    ])
+    default_leiro_id = SelectField('Default leíró', coerce=int, validators=[Optional()], choices=[], render_kw={'disabled': True})
 
 class EditCaseForm(FlaskForm):
     deceased_name = StringField(

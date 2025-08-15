@@ -18,7 +18,7 @@ from sqlalchemy import or_, and_, func
 
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
 from app.investigations.models import Investigation
-from app.forms import CaseIdentifierForm
+from app.forms import CaseIdentifierForm, AdminUserForm
 from app import db
 from app.email_utils import send_email
 from app.audit import log_action
@@ -885,17 +885,36 @@ def admin_users():
 @login_required
 @roles_required('admin')
 def add_user():
+    form = AdminUserForm()
+    leiro_users = User.query.filter_by(role='leíró').order_by(User.username).all()
+    form.default_leiro_id.choices = [(0, '-- Válasszon --')] + [(u.id, (u.screen_name or u.username)) for u in leiro_users]
+    
     if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
-        role = request.form['role'].strip()
+        username = (form.username.data or '').strip()
+        password = (form.password.data or '').strip()
+        role = (form.role.data or '').strip()
+        chosen = form.default_leiro_id.data or None
+        if role == 'szakértő':
+            if not chosen:
+                errs = list(form.default_leiro_id.errors)
+                errs.append('Szakértő esetén kötelező.')
+                form.default_leiro_id.errors = errs
+            else:
+                leiro = db.session.get(User, chosen)
+                if not leiro or leiro.role != 'leíró':
+                    errs = list(form.default_leiro_id.errors)
+                    errs.append('Csak leíró választható.')
+                    form.default_leiro_id.errors = errs
         if not username or not password or not role:
             flash("Minden mező kitöltése kötelező.", 'warning')
         elif User.query.filter_by(username=username).first():
             flash("Felhasználónév már foglalt.", 'warning')
+        elif form.default_leiro_id.errors:
+            pass
         else:
-            user = User(username=username, role=role)
+            user = User(username=username, role=role, screen_name=(form.screen_name.data or '').strip() or None)
             user.set_password(password)
+            user.default_leiro_id = chosen if role == 'szakértő' else None
             db.session.add(user)
             try:
                 db.session.commit()
@@ -903,12 +922,11 @@ def add_user():
                 db.session.rollback()
                 current_app.logger.error(f"Database error: {e}")
                 flash("Valami hiba történt. Próbáld újra.", "danger")
-                return render_template('add_user.html')
+                return render_template('add_user.html', form=form, leiro_users=leiro_users)
             log_action("User created", f"{username} ({role})")
             flash("Felhasználó létrehozva.", 'success')
             return redirect(url_for('auth.admin_users'))
-    return render_template('add_user.html')
-
+    return render_template('add_user.html', form=form, leiro_users=leiro_users)
 
 @auth_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -917,6 +935,10 @@ def edit_user(user_id):
 
     user = db.session.get(User, user_id) or abort(404)
     leiro_users = User.query.filter_by(role='leíró').order_by(User.username).all()
+    form = AdminUserForm(obj=user)
+    form.default_leiro_id.choices = [(0, '-- Válasszon --')] + [(u.id, (u.screen_name or u.username)) for u in leiro_users]
+    if request.method == 'GET':
+        form.default_leiro_id.data = user.default_leiro_id or 0
     
     assigned_cases = []
     if user.role in ('szakértő', 'leíró'):
@@ -933,35 +955,40 @@ def edit_user(user_id):
         )
 
     if request.method == 'POST':
-        old_data = (user.username, user.role, user.screen_name)
-        user.username = request.form.get('username', user.username).strip()
-        user.role = request.form.get('role', user.role).strip()
-        user.screen_name = request.form.get('screen_name', user.screen_name).strip()
+        role = (form.role.data or '').strip()
+        chosen = form.default_leiro_id.data or None
+        if role == 'szakértő':
+            if not chosen:
+                errs = list(form.default_leiro_id.errors)
+                errs.append('Szakértő esetén kötelező.')
+                form.default_leiro_id.errors = errs
+            else:
+                leiro = db.session.get(User, chosen)
+                if not leiro or leiro.role != 'leíró':
+                    errs = list(form.default_leiro_id.errors)
+                    errs.append('Csak leíró választható.')
+                    form.default_leiro_id.errors = errs
+        if form.validate_on_submit() and not form.default_leiro_id.errors:
+            old_data = (user.username, user.role, user.screen_name)
+            user.username = form.username.data.strip()
+            user.role = role
+            user.screen_name = (form.screen_name.data or '').strip()
+            password = (form.password.data or '').strip()
+            if password:
+                user.set_password(password)
+            user.default_leiro_id = chosen if role == 'szakértő' else None
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Database error: {e}")
+                flash("Valami hiba történt. Próbáld újra.", "danger")
+                return render_template('edit_user.html', form=form, user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
+            log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
+            flash("Felhasználó adatai frissítve.", 'success')
+            return redirect(url_for('auth.admin_users'))
 
-        password = request.form.get('password', '').strip()
-        if password:
-            user.set_password(password)
-
-        if user.role == 'szakértő':
-            dl_id = request.form.get('default_leiro_id')
-            user.default_leiro_id = int(dl_id) if dl_id else None
-        else:
-            user.default_leiro_id = None
-
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Database error: {e}")
-            flash("Valami hiba történt. Próbáld újra.", "danger")
-            return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
-
-        log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
-        flash("Felhasználó adatai frissítve.", 'success')
-        return redirect(url_for('auth.admin_users'))
-
-    return render_template('edit_user.html', user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
-
+    return render_template('edit_user.html', form=form, user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 
 @auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required

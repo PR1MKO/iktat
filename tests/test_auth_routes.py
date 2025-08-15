@@ -118,7 +118,8 @@ def test_edit_user_dropdown_not_shown_for_admin(client, app):
         login(client, 'root', 'rootpass')
         resp = client.get(f'/admin/users/{user_id}/edit')
         assert resp.status_code == 200
-        assert b'Default le\xc3\xadr\xc3\xb3' not in resp.data
+        assert b'Default le\xc3\xadr\xc3\xb3' in resp.data
+        assert b'disabled' in resp.data
 
 
 def test_edit_user_sets_default_leiro(client, app):
