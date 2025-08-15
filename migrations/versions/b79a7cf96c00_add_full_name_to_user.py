@@ -1,16 +1,9 @@
-"""add full_name to user
-
-Revision ID: b79a7cf96c00
-Revises: a0c2905147be
-Create Date: 2025-08-09 00:00:00.000000
-
-"""
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = 'b79a7cf96c00'
-down_revision = 'a0c2905147be'
+revision = '<KEEP_THE_GENERATED_REV_ID>'
+down_revision = '<KEEP_THE_GENERATED_DOWN_REV>'
 branch_labels = None
 depends_on = None
 
