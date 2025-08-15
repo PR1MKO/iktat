@@ -306,16 +306,6 @@ def elvegzem(case_id):
         previous_status = case.status
         case.status = 'boncolva-leírónál' if current_user.role=='szakértő' else 'leiktatva'
 
-        # Auto-assign default leíró if the expert has one and none selected
-        if (
-            current_user.role == 'szakértő'
-            and not case.describer
-            and current_user.default_leiro_id
-        ):
-            leiro = db.session.get(User, current_user.default_leiro_id)
-            if leiro:
-                case.describer = leiro.screen_name or leiro.username
-
         try:
             db.session.commit()
         except Exception as e:
@@ -342,7 +332,6 @@ def elvegzem(case_id):
 
     ctx = build_case_context(case)
     ctx['case'] = case
-    ctx['default_leiro_id'] = current_user.default_leiro_id
     vegzes_file = next(
         (f for f in case.uploaded_file_records if f.category == "végzés"),
         None

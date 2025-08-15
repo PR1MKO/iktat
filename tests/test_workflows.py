@@ -235,7 +235,7 @@ def test_file_download_traversal_blocked(client, app):
         assert resp.status_code == 403
 
 
-def test_elvegzem_auto_assigns_default_describer(client, app):
+def test_elvegzem_does_not_auto_assign_describer_anymore(client, app):
     with app.app_context():
         leiro = create_user('leiro', 'pw', role='leíró')
         expert = create_user('doc', 'pw', role='szakértő')
@@ -252,7 +252,8 @@ def test_elvegzem_auto_assigns_default_describer(client, app):
 
     with app.app_context():
         updated = db.session.get(Case, cid)
-        assert updated.describer == 'leiro'
+        # No implicit default assignment anymore
+        assert updated.describer in (None, "")
 
 
 def test_elvegzem_keeps_existing_describer(client, app):
