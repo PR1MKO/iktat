@@ -13,6 +13,7 @@ class User(db.Model, UserMixin):
     id            = db.Column(db.Integer, primary_key=True)
     username      = db.Column(db.String(64), unique=True, nullable=False)
     screen_name   = db.Column(db.String(128), nullable=True)
+    full_name     = db.Column(db.String(128), nullable=True)
     password_hash = db.Column(db.String(128), nullable=False)
     role          = db.Column(db.String(20), nullable=False)
     default_leiro_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)

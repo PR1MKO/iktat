@@ -28,21 +28,27 @@
     <div class="invalid-feedback">Kérjük, adja meg a felhasználónevet.</div>
   </div>
 
-  <div class="col-md-6">
-    <label for="screen_name" class="form-label">Megjelenítendő név</label>
-    <input type="text"
-           id="screen_name"
-           name="screen_name"
-           class="form-control"
-           value="{{ user.screen_name }}"
-           aria-label="Megjelenítendő név" title="Megjelenítendő név" placeholder="Megjelenítendő név">
-  </div>
+    <div class="col-md-6">
+      <label for="screen_name" class="form-label">Megjelenítendő név</label>
+      <input type="text"
+             id="screen_name"
+             name="screen_name"
+             class="form-control"
+             value="{{ user.screen_name }}"
+             aria-label="Megjelenítendő név" title="Megjelenítendő név" placeholder="Megjelenítendő név">
+    </div>
 
-  <div class="col-md-6">
-    <label for="password" class="form-label">Jelszó (változtatáshoz)</label>
-    <input type="password"
-           id="password"
-           name="password"
+    <div class="col-md-6">
+      <label for="full_name" class="form-label">Teljes név</label>
+      <input type="text" id="full_name" name="full_name" class="form-control"
+             maxlength="128" aria-label="Teljes név" title="Teljes név"
+             value="{{ (form.full_name.data if form and form.full_name.data is not none else (user.full_name or '')) }}">
+    </div>
+
+    <div class="col-md-6">
+      <label for="password" class="form-label">Jelszó (változtatáshoz)</label>
+      <input type="password"
+             id="password"
            class="form-control"
            aria-label="Jelszó" title="Jelszó" placeholder="Új jelszó (hagyja üresen, ha nem változik)">
     <div class="form-text">Csak akkor adja meg, ha módosítani szeretné a jelszót.</div>

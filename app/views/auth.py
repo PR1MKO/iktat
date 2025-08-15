@@ -912,7 +912,12 @@ def add_user():
         elif form.default_leiro_id.errors:
             pass
         else:
-            user = User(username=username, role=role, screen_name=(form.screen_name.data or '').strip() or None)
+            user = User(
+                username=username,
+                role=role,
+                screen_name=(form.screen_name.data or '').strip() or None,
+                full_name=(form.full_name.data or '').strip() or None,
+            )
             user.set_password(password)
             user.default_leiro_id = chosen if role == 'szakértő' else None
             db.session.add(user)
@@ -973,6 +978,7 @@ def edit_user(user_id):
             user.username = form.username.data.strip()
             user.role = role
             user.screen_name = (form.screen_name.data or '').strip()
+            user.full_name = (form.full_name.data or '').strip() or None
             password = (form.password.data or '').strip()
             if password:
                 user.set_password(password)

@@ -9,7 +9,8 @@ from wtforms.validators import DataRequired, Optional, Length
 
 class AdminUserForm(FlaskForm):
     username = StringField('Felhasználónév', validators=[DataRequired(), Length(max=64)])
-    screen_name = StringField('Megjelenítendő név', validators=[Optional(), Length(max=64)])
+    screen_name = StringField('Megjelenítendő név', validators=[Optional(), Length(max=64
+    full_name = StringField('Teljes név', validators=[Optional(), Length(max=128)])
     password = PasswordField('Jelszó', validators=[Optional()])
     role = SelectField('Szerepkör', choices=[
         ('admin','admin'),('iroda','iroda'),('szignáló','szignáló'),

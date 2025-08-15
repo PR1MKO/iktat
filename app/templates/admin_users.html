@@ -17,24 +17,26 @@
 
 <table class="table table-striped table-hover">
   <thead class="table-dark">
-    <tr>
-      <th>ID</th>
-      <th>Felhasználónév</th>
-      <th>Megjelenítési név</th>
-      <th>Szerepkör</th>
-      <th>Utolsó belépés</th>
-      <th>Műveletek</th>
-    </tr>
+      <tr>
+        <th>ID</th>
+        <th>Felhasználónév</th>
+        <th>Megjelenítési név</th>
+        <th>Teljes név</th>
+        <th>Szerepkör</th>
+        <th>Utolsó belépés</th>
+        <th>Műveletek</th>
+      </tr>
   </thead>
   <tbody>
     {% for u in users %}
     <tr>
       <td>{{ u.id }}</td>
       <td>{{ u.username }}</td>
-      <td>{{ u.screen_name or '-' }}</td>
-      <td>{{ u.role }}</td>
-      <td>{{ u.last_login|localtime if u.last_login else '-' }}</td>
-      <td>
+        <td>{{ u.screen_name or '-' }}</td>
+        <td>{{ u.full_name or '' }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ u.last_login|localtime if u.last_login else '-' }}</td>
+        <td>
         <a class="btn btn-sm btn-outline-secondary"
            href="{{ url_for('auth.edit_user', user_id=u.id) }}"
            aria-label="Felhasználó szerkesztése"
@@ -43,7 +45,7 @@
       </td>
     </tr>
     {% else %}
-    <tr><td colspan="6" class="text-center fst-italic">Nincs felhasználó.</td></tr>
+      <tr><td colspan="7" class="text-center fst-italic">Nincs felhasználó.</td></tr>
     {% endfor %}
   </tbody>
 </table>
