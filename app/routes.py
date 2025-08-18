@@ -27,7 +27,6 @@ except ImportError:  # Flask-WTF < 1.2
 
 # Models used in this module
 from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
-# NOTE: Do NOT import ExaminationCase here unless it truly exists and is used.
 # Investigation models belong to the investigations blueprint module:
 # from app.investigations.models import Investigation, InvestigationNote, ...
 
