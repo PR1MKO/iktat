@@ -56,21 +56,6 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
-def run_migrations_online() -> None:
-    app = create_app()
-    with app.app_context():
-        connectable = db.get_engine(app, bind='examination')  # <-- force the exam bind
-        with connectable.connect() as connection:
-            context.configure(
-                connection=connection,
-                target_metadata=target_metadata,
-                version_table='alembic_version_examination',  # <-- separate version table
-                compare_type=True,
-                render_as_batch=True,
-            )
-            with context.begin_transaction():
-                context.run_migrations()
-
 if context.is_offline_mode():
     run_migrations_offline()
 else:
