@@ -48,7 +48,7 @@ def rename_files(base_dir: str, old: str, new: str) -> None:
 
 
 with app.app_context():
-    upload_root = case_root()
+    upload_root = str(case_root())
     cases = Case.query.all()
     for case in cases:
         m = OLD_RE.match(case.case_number)

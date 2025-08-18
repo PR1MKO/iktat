@@ -28,8 +28,8 @@ from .models import (
     InvestigationAttachment,
     InvestigationChangeLog,
 )
-from .utils import generate_case_number, ensure_investigation_folder
-
+from .utils import generate_case_number
+from app.paths import ensure_investigation_folder
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -37,7 +37,6 @@ from .utils import generate_case_number, ensure_investigation_folder
 
 def _can_modify(inv, user) -> bool:
     return user.role in {"admin", "iroda"}
-
 
 def _can_note_or_upload(inv, user) -> bool:
     if user.role in {"admin", "iroda"}:
@@ -170,7 +169,7 @@ def new_investigation():
         db.session.commit()
 
         # Create per-investigation folder (separate from Cases)
-        ensure_investigation_folder(current_app, inv.case_number)
+        ensure_investigation_folder(inv.case_number)
 
         flash("Vizsgálat létrehozva.", "success")
         # Go straight to the Investigations Documents page
@@ -183,7 +182,7 @@ def new_investigation():
 @login_required
 def documents(id):
     inv = Investigation.query.get_or_404(id)
-    folder = ensure_investigation_folder(current_app, inv.case_number)
+    folder = str(ensure_investigation_folder(inv.case_number))
 
     attachments = (
         InvestigationAttachment.query
@@ -351,7 +350,7 @@ def upload_investigation_file(id):
     if not filename:
         return jsonify({"error": "empty-filename"}), 400
 
-    case_dir = ensure_investigation_folder(current_app, inv.case_number)
+    case_dir = str(ensure_investigation_folder(inv.case_number))
 
     # Safe size guard (no int(None))
     max_len = current_app.config.get("MAX_CONTENT_LENGTH") or (16 * 1024 * 1024)
@@ -399,7 +398,7 @@ def download_investigation_file(id, filename):
     if not _can_note_or_upload(inv, current_user):
         abort(403)
 
-    folder = ensure_investigation_folder(current_app, inv.case_number)
+    folder = str(ensure_investigation_folder(inv.case_number))
     full_path = safe_join(folder, filename)
     if not full_path or not os.path.isfile(full_path):
         abort(404)

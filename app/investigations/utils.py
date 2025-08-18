@@ -3,18 +3,19 @@ from sqlalchemy import func
 from app.utils.time_utils import now_local
 from .models import Investigation
 from app.paths import (
-    investigation_root as _invest_root,
-    ensure_investigation_folder as _ensure_invest,
+    investigation_root as invest_root_path,
+    ensure_investigation_folder as ensure_invest_path,
 )
 
-def resolve_investigation_upload_root(app):
-    return _invest_root()
+def resolve_investigation_upload_root(app) -> str:
+    return str(invest_root_path())
 
-def resolve_upload_root(app):
-    return _invest_root()
+
+def resolve_upload_root(app) -> str:
+    return str(invest_root_path())
 
 def ensure_investigation_folder(app, case_number: str) -> str:
-    return _ensure_invest(case_number)
+    return str(ensure_invest_path(case_number))
 
 def generate_case_number(session) -> str:
     """

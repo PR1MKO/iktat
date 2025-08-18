@@ -78,10 +78,10 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     
-    from app.paths import case_root, investigation_root
+    from .paths import _default_case_root, _default_investigation_root, case_root, investigation_root
     with app.app_context():
-        case_root()
-        investigation_root()
+        _ = case_root()
+        _ = investigation_root()
 
     # Ensure core models are registered
     from .models import User  # noqa: F401

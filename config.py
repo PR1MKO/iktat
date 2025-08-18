@@ -13,6 +13,10 @@ class Config:
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER')
 
+    # Optional upload folder overrides (defaults computed from instance path)
+    CASE_UPLOAD_FOLDER = os.environ.get("CASE_UPLOAD_FOLDER")
+    INVESTIGATION_UPLOAD_FOLDER = os.environ.get("INVESTIGATION_UPLOAD_FOLDER")
+
     SQLALCHEMY_BINDS = {
         'examination': os.environ.get('EXAMINATION_DATABASE_URL', 'sqlite:///examination.db')
     }

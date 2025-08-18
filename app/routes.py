@@ -49,7 +49,7 @@ def handle_file_upload(case, file, category='egyéb'):
     if not file or not file.filename:
         return None
     fn = secure_filename(file.filename)
-    upload_dir = ensure_case_folder(case.case_number)
+    upload_dir = str(ensure_case_folder(case.case_number))
     try:
         file.save(os.path.join(upload_dir, fn))
     except Exception as e:
@@ -682,7 +682,7 @@ def generate_certificate(case_id):
         abort(403)
 
     # Ensure output directory: <case_root>/<case_number>/
-    case_dir = ensure_case_folder(case.case_number)
+    case_dir = str(ensure_case_folder(case.case_number))
 
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
