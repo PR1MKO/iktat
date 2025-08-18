@@ -72,3 +72,21 @@ pytest
 ---
 
 *More documentation to be added as the project develops.*
+
+## Migrations (multi-DB)
+
+We use two Alembic trees:
+- Core (forensic_cases.db): `migrations` (version table: `alembic_version`)
+- Examination (examination.db): `migrations_examination` (version table: `alembic_version_examination`)
+
+Scoping:
+- Core excludes tables starting with `investigation*`.
+- Examination includes only: `investigation`, `investigation_note`, `investigation_attachment`, `investigation_change_log`.
+
+Commands:
+- Core upgrade:          `db-core-up.bat`
+- Core migrate:          `db-core-migrate.bat "message"`
+- Examination upgrade:   `db-exam-up.bat`
+- Examination migrate:   `db-exam-migrate.bat "message"`
+
+**Never** run `flask db migrate` without `-d`. Each tree only manages its own DB.

@@ -1,28 +1,55 @@
-# migrations_examination/env.py
 from __future__ import with_statement
 from logging.config import fileConfig
-from alembic import context
-from sqlalchemy import engine_from_config, pool
-from flask import current_app
 
-from app import create_app, db
+from alembic import context
+from flask import current_app
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# All your exam models share the same metadata object
+db = current_app.extensions["migrate"].db
+
 target_metadata = db.metadata
 
+EXAM_TABLES = {
+    "investigation",
+    "investigation_note",
+    "investigation_attachment",
+    "investigation_change_log",
+}
+
+
+def include_object(object, name, type_, reflected, compare_to):
+    # exam repo: include only the investigation* tables
+    if type_ == "table":
+        return name in EXAM_TABLES
+    # allow indexes/constraints that belong to included tables
+    return True
+
 def run_migrations_offline() -> None:
-    app = create_app()
-    with app.app_context():
-        url = app.config['SQLALCHEMY_BINDS']['examination']
+    exam_url = str(db.get_engine(current_app, bind="examination").url)
+    context.configure(
+        url=exam_url,
+        target_metadata=target_metadata,
+        include_object=include_object,
+        version_table="alembic_version_examination",
+        compare_type=True,
+        render_as_batch=True,
+        literal_binds=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    engine = db.get_engine(current_app, bind="examination")
+    with engine.connect() as connection:
         context.configure(
-            url=url,
+            connection=connection,
             target_metadata=target_metadata,
-            literal_binds=True,
-            version_table='alembic_version_examination',
+            include_object=include_object,
+            version_table="alembic_version_examination",
             compare_type=True,
             render_as_batch=True,
         )

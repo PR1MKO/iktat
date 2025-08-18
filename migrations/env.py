@@ -37,19 +37,14 @@ def get_engine_url():
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 config.set_main_option('sqlalchemy.url', get_engine_url())
-target_db = current_app.extensions['migrate'].db
+db = current_app.extensions['migrate'].db
+target_metadata = db.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
-
-def get_metadata():
-    if hasattr(target_db, 'metadatas'):
-        return target_db.metadatas[None]
-    return target_db.metadata
-
+def include_object(object, name, type_, reflected, compare_to):
+    # core repo: exclude examination tables
+    if type_ == "table" and name.startswith(("investigation",)):
+        return False
+    return True
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -65,7 +60,10 @@ def run_migrations_offline():
     """
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=get_metadata(), literal_binds=True
+        url=url,
+        target_metadata=target_metadata,
+        include_object=include_object,
+        literal_binds=True,
     )
 
     with context.begin_transaction():
@@ -99,7 +97,8 @@ def run_migrations_online():
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
-            target_metadata=get_metadata(),
+            target_metadata=target_metadata,
+            include_object=include_object,
             **conf_args
         )
 
