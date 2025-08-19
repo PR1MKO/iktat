@@ -42,9 +42,9 @@
   <button type="button" id="add-note-btn" class="btn btn-secondary mt-2">Hozzáad</button>
 </div>
 <div id="notes">
-  {% for note in notes %}
-    {% include 'investigations/_note.html' %}
-  {% endfor %}
+    {% for note in notes %}
+      {% include 'investigations/_note.html' with note=note, author=note.author %}
+    {% endfor %}
 </div>
 
 <h2>Változásnapló</h2>

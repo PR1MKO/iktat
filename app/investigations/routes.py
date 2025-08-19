@@ -13,13 +13,14 @@ from flask import (
     send_from_directory,  # ✅ fix: comma + include here
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, text
 from werkzeug.utils import secure_filename, safe_join
 
 from app import db
-from app.models import User  # ← needed for resolving author
 from app.utils.roles import roles_required
 from app.utils.time_utils import fmt_date, now_local
+from app.paths import ensure_investigation_folder
+from app.services.core_user_read import get_user_safe
 from . import investigations_bp
 from .forms import InvestigationForm, FileUploadForm, InvestigationNoteForm
 from .models import (
@@ -28,8 +29,7 @@ from .models import (
     InvestigationAttachment,
     InvestigationChangeLog,
 )
-from .utils import generate_case_number
-from app.paths import ensure_investigation_folder
+from .utils import generate_case_number, user_display_name
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -117,6 +117,9 @@ def list_investigations():
         inv.birth_date_str = fmt_date(inv.birth_date)
         inv.registration_time_str = fmt_date(inv.registration_time)
         inv.deadline_str = fmt_date(inv.deadline)
+        inv.expert1_name = user_display_name(get_user_safe(inv.expert1_id))
+        inv.expert2_name = user_display_name(get_user_safe(inv.expert2_id))
+        inv.describer_name = user_display_name(get_user_safe(inv.describer_id))
     return render_template(
         "investigations/list.html",
         investigations=investigations,
@@ -131,14 +134,15 @@ def list_investigations():
 def new_investigation():
     form = InvestigationForm()
     
-    experts = (
-        User.query.filter(User.role.in_(["szakértő", "szak"]))
-        .order_by(User.screen_name, User.username)
-        .all()
-    )
+    experts = db.session.execute(
+        text(
+            "SELECT id, screen_name, username FROM user "
+            "WHERE role IN ('szakértő', 'szak') ORDER BY screen_name, username"
+        )
+    ).all()
     form.assigned_expert_id.choices = [
         (0, "— Válasszon —")
-    ] + [(u.id, u.screen_name or u.username) for u in experts]
+    ] + [(row.id, row.screen_name or row.username) for row in experts]
     
     if form.validate_on_submit():
         assignment_type = form.assignment_type.data
@@ -214,6 +218,8 @@ def view_investigation(id):
         .order_by(InvestigationAttachment.uploaded_at.desc())
         .all()
     )
+    for note in notes:
+        note.author = get_user_safe(note.author_id)
 
     notes = (
         InvestigationNote.query.filter_by(investigation_id=id)
@@ -227,13 +233,9 @@ def view_investigation(id):
         .all()
     )
     for entry in changelog_entries:
-        if isinstance(entry.edited_by, int):
-            user = db.session.get(User, entry.edited_by)
-            entry.edited_by = (user.screen_name or user.username) if user else entry.edited_by
+        entry.edited_by = user_display_name(get_user_safe(entry.edited_by))
 
-    assigned_expert = None
-    if inv.assigned_expert_id:
-        assigned_expert = db.session.get(User, inv.assigned_expert_id)
+    assigned_expert = get_user_safe(inv.assigned_expert_id)
 
     return render_template(
         "investigations/view.html",
@@ -242,6 +244,7 @@ def view_investigation(id):
         notes=notes,
         assigned_expert=assigned_expert,
         changelog_entries=changelog_entries,
+        user_display_name=user_display_name,
     )
 
 
@@ -267,6 +270,7 @@ def detail_investigation(id):
     )
     for note in notes:
         note.timestamp_str = note.timestamp.strftime("%Y.%m.%d %H:%M")
+        note.author = get_user_safe(note.author_id)
     for att in attachments:
         att.uploaded_at_str = att.uploaded_at.strftime("%Y.%m.%d %H:%M")
     changelog = (
@@ -276,6 +280,7 @@ def detail_investigation(id):
     )
     for log in changelog:
         log.timestamp_str = log.timestamp.strftime("%Y.%m.%d %H:%M")
+        log.editor = get_user_safe(log.edited_by)
     return render_template(
         "investigations/detail.html",
         investigation=inv,
@@ -285,6 +290,7 @@ def detail_investigation(id):
         notes=notes,
         attachments=attachments,
         changelog=changelog,
+        user_display_name=user_display_name,
     )
 
 
@@ -328,10 +334,15 @@ def add_investigation_note(id):
     db.session.commit()
 
     # ensure author is available for the partial
-    author = db.session.get(User, note.author_id)
+    author = get_user_safe(note.author_id)
     note.timestamp_str = note.timestamp.strftime("%Y.%m.%d %H:%M")
 
-    html = render_template("investigations/_note.html", note=note, author=author)
+    html = render_template(
+        "investigations/_note.html",
+        note=note,
+        author=author,
+        user_display_name=user_display_name,
+    )
     return html
 
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])

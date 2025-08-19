@@ -42,9 +42,9 @@
           <td>{{ inv.institution_name }}</td>
           <td>{{ inv.registration_time_str }}</td>
           <td>{{ inv.deadline_str }}</td>
-          <td>{{ inv.expert1.screen_name or inv.expert1.username if inv.expert1 else '' }}</td>
-          <td>{{ inv.expert2.screen_name or inv.expert2.username if inv.expert2 else '' }}</td>
-          <td>{{ inv.describer.screen_name or inv.describer.username if inv.describer else '' }}</td>
+            <td>{{ inv.expert1_name }}</td>
+            <td>{{ inv.expert2_name }}</td>
+            <td>{{ inv.describer_name }}</td>
         </tr>
         {% else %}
         <tr>

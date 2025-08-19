@@ -23,7 +23,7 @@
       <tr><th scope="row">Registration time</th><td>{{ investigation.registration_time|localtime }}</td></tr>
       <tr><th scope="row">Deadline</th><td>{{ investigation.deadline|localtime if investigation.deadline else '–' }}</td></tr>
       <tr><th scope="row">Assignment type</th><td>{{ investigation.assignment_type }}</td></tr>
-      <tr><th scope="row">Assigned expert</th><td>{{ assigned_expert.screen_name or assigned_expert.username if assigned_expert else '–' }}</td></tr>
+        <tr><th scope="row">Assigned expert</th><td>{{ user_display_name(assigned_expert) }}</td></tr>
     </table>
   </div>
 </div>
@@ -54,7 +54,9 @@
     </div>
     <ul id="notes" class="list-group">
       {% for note in notes %}
-        {% include 'investigations/_note.html' with note=note, author=note.author_user %}
+        {% for note in notes %}
+          {% include 'investigations/_note.html' with note=note, author=note.author %}
+        {% endfor %}
       {% endfor %}
     </ul>
   </div>

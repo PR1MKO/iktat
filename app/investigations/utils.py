@@ -44,4 +44,6 @@ def generate_case_number(session) -> str:
             return candidate
         seq += 1
 
-
+def user_display_name(u):
+    return (u.full_name or u.screen_name or u.username) if u else "—"
+    

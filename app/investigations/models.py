@@ -60,29 +60,6 @@ class Investigation(db.Model):
         db.Index('ix_investigation_taj_number', 'taj_number'),
     )
 
-    # Optional convenience accessors to resolve User from the main DB
-    @property
-    def expert1_user(self):
-        if not self.expert1_id:
-            return None
-        from app.models import User
-        return db.session.get(User, self.expert1_id)
-
-    @property
-    def expert2_user(self):
-        if not self.expert2_id:
-            return None
-        from app.models import User
-        return db.session.get(User, self.expert2_id)
-
-    @property
-    def describer_user(self):
-        if not self.describer_id:
-            return None
-        from app.models import User
-        return db.session.get(User, self.describer_id)
-
-
 class InvestigationNote(db.Model):
     __bind_key__ = 'examination'
     __tablename__ = 'investigation_note'
@@ -94,12 +71,6 @@ class InvestigationNote(db.Model):
     timestamp = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
 
     investigation = db.relationship('Investigation', back_populates='notes')
-
-    @property
-    def author_user(self):
-        from app.models import User
-        return db.session.get(User, self.author_id)
-
 
 class InvestigationAttachment(db.Model):
     __bind_key__ = 'examination'
@@ -113,12 +84,6 @@ class InvestigationAttachment(db.Model):
     uploaded_at = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
 
     investigation = db.relationship('Investigation', back_populates='attachments')
-
-    @property
-    def uploader_user(self):
-        from app.models import User
-        return db.session.get(User, self.uploaded_by)
-
 
 class InvestigationChangeLog(db.Model):
     __bind_key__ = 'examination'
@@ -134,7 +99,3 @@ class InvestigationChangeLog(db.Model):
 
     investigation = db.relationship('Investigation', back_populates='change_logs')
 
-    @property
-    def editor_user(self):
-        from app.models import User
-        return db.session.get(User, self.edited_by)
