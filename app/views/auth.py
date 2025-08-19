@@ -2,6 +2,7 @@
 
 import os
 import shutil
+from pathlib import Path
 from datetime import datetime, timedelta, date
 
 from app.utils.time_utils import now_local, BUDAPEST_TZ
@@ -40,9 +41,11 @@ def _case_upload_root() -> str:
     return str(case_root())
 
 def init_case_upload_dirs(case):
-    """Create per-case upload folders and copy webform templates."""
+    """Create per-case upload folders and copy webform templates + DO-NOT-EDIT template set."""
     base = str(case_root())
     case_dir = str(ensure_case_folder(case.case_number))
+    
+    # Keep existing webfill handling
     webfill_dir = os.path.join(case_dir, 'webfill-do-not-edit')
     os.makedirs(webfill_dir, exist_ok=True)
 
@@ -58,6 +61,24 @@ def init_case_upload_dirs(case):
                     shutil.copy(src, dst)
                 except Exception as e:
                     current_app.logger.error(f'Template copy failed: {e}')
+                    
+    # NEW: Populate DO-NOT-EDIT from instance/docs/boncolas
+    src_root = Path(current_app.instance_path) / "docs" / "boncolas"
+    dst_root = Path(case_dir) / "DO-NOT-EDIT"
+    dst_root.mkdir(parents=True, exist_ok=True)
+
+    if not src_root.exists():
+        current_app.logger.warning("Case template dir missing: %s", src_root)
+        return
+
+    current_app.logger.info("Populating DO-NOT-EDIT: %s -> %s", src_root, dst_root)
+    for child in src_root.iterdir():
+        target = dst_root / child.name
+        if child.is_dir():
+            shutil.copytree(child, target, dirs_exist_ok=True)
+        else:
+            if not target.exists():
+                shutil.copy2(child, target)
 
 
 @auth_bp.route('/cases/<int:case_id>/changelog.csv')
