@@ -25,7 +25,7 @@ from app.investigations.models import (
 from app.paths import case_root, investigation_root
 
 # Preserve rules for *legacy/live* app roots ONLY
-PRESERVE_DIR_NAMES = {"autofill-word-do-not-edit", "webfill-do-not-edit"}
+PRESERVE_DIR_NAMES = {"autofill-word-do-not-edit"}
 PRESERVE_SUFFIXES = ("-do-not-edit",)
 
 def _is_preserved(name: str, preserve_names, preserve_suffixes) -> bool:

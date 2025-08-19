@@ -57,7 +57,6 @@ def test_tox_doc_generation_saves_and_registers(client, app):
         os.path.join(
             ensure_case_folder(case.case_number),
             'webfill-do-not-edit',
-            'Toxikológiai-kirendelő-kitöltött.docx',
         )
     )
 

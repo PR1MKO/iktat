@@ -38,6 +38,7 @@ def test_boncolas_templates_copied(client, app):
         dst_root = ensure_case_folder(case.case_number) / "DO-NOT-EDIT"
         assert (dst_root / "README.txt").exists()
         assert (dst_root / "forms" / "blank.txt").exists()
+        assert not (ensure_case_folder(case.case_number) / "webfill-do-not-edit").exists()
 
 
 def test_boncolas_missing_template_dir_warns(client, app, caplog):
@@ -81,3 +82,4 @@ def test_init_case_dirs_idempotent(client, app):
         readme.write_text("custom")
         init_case_upload_dirs(case)
         assert readme.read_text() == "custom"
+
