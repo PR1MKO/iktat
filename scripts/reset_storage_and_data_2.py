@@ -24,17 +24,23 @@ from app.investigations.models import (
 )
 from app.paths import case_root, investigation_root
 
-# Preserve rules
+# Preserve rules for *legacy/live* app roots ONLY
 PRESERVE_DIR_NAMES = {"autofill-word-do-not-edit", "webfill-do-not-edit"}
 PRESERVE_SUFFIXES = ("-do-not-edit",)
 
-def _is_preserved_dirname(name: str) -> bool:
-    return (name in PRESERVE_DIR_NAMES) or any(name.endswith(sfx) for sfx in PRESERVE_SUFFIXES)
+def _is_preserved(name: str, preserve_names, preserve_suffixes) -> bool:
+    return (name in preserve_names) or any(name.endswith(sfx) for sfx in preserve_suffixes)
 
-def _clear_dir_preserving(root_path: str, dry_run: bool = False):
+def _clear_dir_preserving(
+    root_path: str,
+    dry_run: bool = False,
+    preserve_names=PRESERVE_DIR_NAMES,
+    preserve_suffixes=PRESERVE_SUFFIXES,
+):
     """
     Remove everything under root_path EXCEPT any directories whose *basename*
-    should be preserved. If root_path does not exist, create it (unless dry_run).
+    matches the provided preserve rules. To nuke everything, pass empty sets/tuples
+    for preserve_names and preserve_suffixes.
     """
     try:
         if not dry_run:
@@ -47,12 +53,15 @@ def _clear_dir_preserving(root_path: str, dry_run: bool = False):
             base = os.path.basename(current_root)
 
             # If the current directory itself is preserved, don't descend
-            if _is_preserved_dirname(base):
+            if _is_preserved(base, preserve_names, preserve_suffixes):
                 dirnames[:] = []
                 continue
 
             # Prune preserved subdirs from traversal
-            dirnames[:] = [d for d in dirnames if not _is_preserved_dirname(d)]
+            dirnames[:] = [
+                d for d in dirnames
+                if not _is_preserved(d, preserve_names, preserve_suffixes)
+            ]
 
             # Delete files in current directory
             for fname in filenames:
@@ -67,7 +76,7 @@ def _clear_dir_preserving(root_path: str, dry_run: bool = False):
 
             # Delete any non-preserved subdirectories
             for d in os.listdir(current_root):
-                if _is_preserved_dirname(d):
+                if _is_preserved(d, preserve_names, preserve_suffixes):
                     continue
                 dpath = os.path.join(current_root, d)
                 if os.path.isdir(dpath):
@@ -113,7 +122,11 @@ def _vacuum_sqlite(bind_name, dry_run: bool = False):
 
 def parse_args():
     p = argparse.ArgumentParser(
-        description="Factory reset: wipe all case/investigation data and uploads, preserve users and template dirs."
+        description=(
+            "Factory reset: wipe all case/investigation data and uploads. "
+            "Instance roots are wiped with NO preservation. "
+            "Legacy app roots preserve *-do-not-edit directories."
+        )
     )
     p.add_argument("--dry-run", action="store_true", help="Show what would be deleted without actually deleting.")
     p.add_argument("--yes", action="store_true", help="Skip interactive prompt. USE WITH CAUTION.")
@@ -124,8 +137,9 @@ def main():
     args = parse_args()
 
     if not args.yes and not args.dry_run:
-        print("⚠️  This will permanently delete ALL case/investigation data and uploaded files,")
-        print("   preserving only users and any directories named:", ", ".join(sorted(PRESERVE_DIR_NAMES)))
+        print("⚠️  This will permanently delete ALL case/investigation data and uploaded files.")
+        print("   Instance roots will be wiped with NO preserved directories.")
+        print("   Legacy app roots will preserve:", ", ".join(sorted(PRESERVE_DIR_NAMES)))
         confirm = input('Type YES to confirm factory reset: ')
         if confirm.strip() != "YES":
             print("Aborted.")
@@ -133,35 +147,55 @@ def main():
 
     app = create_app()
     with app.app_context():
-        # Canonical roots from app.paths
-        cases_root = case_root()
-        inv_root = investigation_root()
+        # Canonical instance roots (WIPE EVERYTHING here)
+        cases_root = case_root()               # instance\uploads_cases
+        inv_root = investigation_root()        # instance\uploads_investigations
 
-        # Live folders under app root (as you specified)
+        # Legacy/live app roots (preserve *-do-not-edit)
         legacy_cases_root = os.path.join(app.root_path, "uploads_boncolasok")
         legacy_invest_root = os.path.join(app.root_path, "uploads_vizsgalatok")
 
         mode = "(dry-run) " if args.dry_run else ""
-        print(f"[INFO] {mode}Resetting storage (preserving {sorted(PRESERVE_DIR_NAMES)}):")
-        print(f"  Cases (canonical):          {cases_root}")
-        print(f"  Investigations (canonical): {inv_root}")
-        print(f"  Cases (live):               {legacy_cases_root}")
-        print(f"  Investigations (live):      {legacy_invest_root}")
+        print(f"[INFO] {mode}Resetting storage...")
+        print(f"  Instance cases (NO preserve):          {cases_root}")
+        print(f"  Instance investigations (NO preserve): {inv_root}")
+        print(f"  App cases (preserve do-not-edit):      {legacy_cases_root}")
+        print(f"  App investigations (preserve):         {legacy_invest_root}")
 
-        # Purge canonical roots
-        _clear_dir_preserving(cases_root, dry_run=args.dry_run)
-        _clear_dir_preserving(inv_root,  dry_run=args.dry_run)
+        # Purge instance roots with NO preservation at all
+        _clear_dir_preserving(
+            cases_root,
+            dry_run=args.dry_run,
+            preserve_names=set(),
+            preserve_suffixes=(),
+        )
+        _clear_dir_preserving(
+            inv_root,
+            dry_run=args.dry_run,
+            preserve_names=set(),
+            preserve_suffixes=(),
+        )
 
-        # Purge live folders
+        # Purge legacy/live app roots WITH preservation of do-not-edit dirs
         if os.path.exists(legacy_cases_root):
-            _clear_dir_preserving(legacy_cases_root, dry_run=args.dry_run)
+            _clear_dir_preserving(
+                legacy_cases_root,
+                dry_run=args.dry_run,
+                preserve_names=PRESERVE_DIR_NAMES,
+                preserve_suffixes=PRESERVE_SUFFIXES,
+            )
         else:
-            print(f"[INFO] {mode}Live cases folder missing (ok): {legacy_cases_root}")
+            print(f"[INFO] {mode}Legacy cases folder missing (ok): {legacy_cases_root}")
 
         if os.path.exists(legacy_invest_root):
-            _clear_dir_preserving(legacy_invest_root, dry_run=args.dry_run)
+            _clear_dir_preserving(
+                legacy_invest_root,
+                dry_run=args.dry_run,
+                preserve_names=PRESERVE_DIR_NAMES,
+                preserve_suffixes=PRESERVE_SUFFIXES,
+            )
         else:
-            print(f"[INFO] {mode}Live investigations folder missing (ok): {legacy_invest_root}")
+            print(f"[INFO] {mode}Legacy investigations folder missing (ok): {legacy_invest_root}")
 
         print(f"[INFO] {mode}Deleting investigation-related rows (examination bind)...")
         _delete_all(InvestigationAttachment, "examination.InvestigationAttachment", dry_run=args.dry_run)
@@ -178,8 +212,9 @@ def main():
         _delete_all(Case,                "default.Case",              dry_run=args.dry_run)
 
         if args.dry_run:
-            print("[INFO] (dry-run) Preserved dir names:", sorted(PRESERVE_DIR_NAMES))
-            print("[DONE] (dry-run) No changes committed. Users preserved; template dirs would be kept.")
+            print("[INFO] (dry-run) Instance roots: wiped with NO preservation.")
+            print("[INFO] (dry-run) App roots preserved dir names:", sorted(PRESERVE_DIR_NAMES))
+            print("[DONE] (dry-run) No changes committed. Users preserved.")
             return
 
         db.session.commit()
@@ -189,7 +224,8 @@ def main():
             _vacuum_sqlite(bind_name=None,          dry_run=False)
             _vacuum_sqlite(bind_name="examination", dry_run=False)
 
-        print("[DONE] Storage cleared and tables wiped (users preserved; template dirs kept).")
+        print("[DONE] Storage cleared and tables wiped (users preserved).")
+        print("[NOTE] Instance roots were fully cleared; re-seed do-not-edit templates from the safe source.")
 
 if __name__ == "__main__":
     # Usage (Windows, repo root, venv):
