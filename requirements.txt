@@ -3,6 +3,7 @@ bcrypt==4.0.1
 blinker==1.9.0
 click==8.2.1
 coverage==7.3.2
+docxtpl==0.16.8
 et_xmlfile==2.0.0
 Flask==2.3.2
 Flask-Login==0.6.3
