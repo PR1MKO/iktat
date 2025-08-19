@@ -42,3 +42,15 @@ def case_upload_dir(case_number: str) -> str:
 
 def investigation_upload_dir(case_number: str) -> str:
     return str(ensure_investigation_folder(case_number))
+
+
+def investigation_subdir_from_case_number(case_number: str) -> str:
+    """Return the sanitized subfolder name used for this case number."""
+    safe = case_number.replace(":", "-").replace("/", "-").strip(" .")
+    return safe
+
+
+def investigation_expected_folder(case_number: str) -> Path:
+    """Return expected investigation folder path (no mkdir)."""
+    from .paths import investigation_root  # local import to avoid cycles
+    return Path(investigation_root()) / investigation_subdir_from_case_number(case_number)

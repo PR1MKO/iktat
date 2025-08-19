@@ -90,3 +90,18 @@ Commands:
 - Examination migrate:   `db-exam-migrate.bat "message"`
 
 **Never** run `flask db migrate` without `-d`. Each tree only manages its own DB.
+
+## Verifying investigation uploads
+
+Use the read-only helper script to ensure that investigation attachments listed in
+the examination database are present on disk:
+
+```
+python scripts/verify_examination_uploads.py --case "V:0002/2025"
+```
+
+Exit codes:
+
+- `0` – all attachments are present
+- `1` – one or more files are missing
+- `2` – investigation not found
