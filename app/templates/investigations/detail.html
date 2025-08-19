@@ -60,8 +60,8 @@
   <tbody>
     {% for log in changelog %}
     <tr>
-      <td>{{ log.timestamp_str }}</td>
-      <td>{{ log.editor.screen_name or log.editor.username }}</td>
+        <td>{{ log.timestamp_str }}</td>
+        <td>{{ user_display_name(log.editor) }}</td>
       <td>{{ log.field_name }}</td>
       <td>{{ log.old_value }} → {{ log.new_value }}</td>
     </tr>
