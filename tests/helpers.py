@@ -6,6 +6,20 @@ from app.investigations.utils import generate_case_number
 
 
 def create_user(username="admin", password="secret", role="admin"):
+    # Idempotent: return existing user; also sync role/password so tests remain deterministic
+    existing = User.query.filter_by(username=username).first()
+    if existing:
+        changed = False
+        if role and existing.role != role:
+            existing.role = role
+            changed = True
+        if password:
+            existing.set_password(password)
+            changed = True
+        if changed:
+            db.session.commit()
+        return existing
+
     user = User(username=username, screen_name=username, role=role)
     user.set_password(password)
     db.session.add(user)
@@ -19,6 +33,7 @@ def login(client, username, password):
         data={'username': username, 'password': password},
         follow_redirects=False,
     )
+
 
 def create_investigation(**kwargs):
     data = {
