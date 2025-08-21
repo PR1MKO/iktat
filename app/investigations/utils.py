@@ -1,5 +1,8 @@
 # app/investigations/utils.py
 from sqlalchemy import func
+from flask import current_app
+from pathlib import Path
+import shutil
 from app.utils.time_utils import now_local
 from .models import Investigation
 from app.paths import (
@@ -16,6 +19,39 @@ def resolve_upload_root(app) -> str:
 
 def ensure_investigation_folder(app, case_number: str) -> str:
     return str(ensure_invest_path(case_number))
+    
+def init_investigation_upload_dirs(case_or_inv) -> str:
+    """Seed per-investigation upload scaffold.
+
+    Accepts a case number string or an Investigation instance. Ensures the
+    investigation folder exists, creates a ``DO-NOT-EDIT`` subdirectory and
+    copies template files from ``instance/docs/vizsgalat`` into it. Existing
+    files are left untouched so repeated calls are safe.
+    """
+
+    if isinstance(case_or_inv, Investigation):
+        case_number = case_or_inv.case_number
+    else:
+        case_number = str(case_or_inv)
+
+    inv_root = ensure_invest_path(case_number)
+    target = inv_root / "DO-NOT-EDIT"
+    target.mkdir(exist_ok=True)
+
+    src_root = Path(current_app.instance_path) / "docs" / "vizsgalat"
+    if not src_root.exists():
+        current_app.logger.warning("Investigation template dir missing: %s", src_root)
+        return str(target)
+
+    for item in src_root.iterdir():
+        dest = target / item.name
+        if item.is_dir():
+            shutil.copytree(item, dest, dirs_exist_ok=True)
+        else:
+            if not dest.exists():
+                shutil.copy2(item, dest)
+
+    return str(target)
 
 def generate_case_number(session) -> str:
     """

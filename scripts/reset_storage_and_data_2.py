@@ -226,6 +226,10 @@ def main():
 
         print("[DONE] Storage cleared and tables wiped (users preserved).")
         print("[NOTE] Instance roots were fully cleared; re-seed do-not-edit templates from the safe source.")
+        print(
+            "[NOTE] Instance roots were fully cleared; DO-NOT-EDIT scaffolds will "
+            "be recreated when new investigations or cases are added."
+        )
 
 if __name__ == "__main__":
     # Usage (Windows, repo root, venv):

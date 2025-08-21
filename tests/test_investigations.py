@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 from datetime import date, datetime
 
 import pytest
@@ -149,7 +150,7 @@ def test_upload_endpoint_stores_file(client, app):
     upload_path = os.path.join(inv_dir, 'file.txt')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
-    os.rmdir(inv_dir)
+    shutil.rmtree(inv_dir)
 
 
 def test_note_creation(client, app):
@@ -210,7 +211,7 @@ def test_permissions(client, app):
     upload_path = os.path.join(inv_dir, 'x.txt')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
-    os.rmdir(inv_dir)
+    shutil.rmtree(inv_dir)
     # unassigned user blocked
     login(client, 'other', 'secret')
     resp = client.post(

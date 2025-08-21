@@ -29,7 +29,7 @@ from .models import (
     InvestigationAttachment,
     InvestigationChangeLog,
 )
-from .utils import generate_case_number, user_display_name
+from .utils import generate_case_number, user_display_name, init_investigation_upload_dirs
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -174,6 +174,7 @@ def new_investigation():
 
         # Create per-investigation folder (separate from Cases)
         ensure_investigation_folder(inv.case_number)
+        init_investigation_upload_dirs(inv.case_number)
 
         flash("Vizsgálat létrehozva.", "success")
         # Go straight to the Investigations Documents page
