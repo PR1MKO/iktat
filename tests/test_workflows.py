@@ -274,3 +274,51 @@ def test_elvegzem_keeps_existing_describer(client, app):
     with app.app_context():
         updated = db.session.get(Case, cid)
         assert updated.describer == 'other'
+
+
+def test_complete_expert_forbidden_for_non_expert(client, app):
+    with app.app_context():
+        create_user('office2', 'pw', 'iroda')
+        case = Case(case_number='RB1')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+    with client:
+        login(client, 'office2', 'pw')
+        resp = client.post(f'/cases/{cid}/complete_expert')
+        assert resp.status_code == 403
+    with app.app_context():
+        refreshed = db.session.get(Case, cid)
+        assert refreshed.status != 'boncolva-leírónál'
+
+
+def test_complete_expert_allowed_for_expert(client, app):
+    with app.app_context():
+        create_user('expert2', 'pw', 'szakértő')
+        case = Case(case_number='RB2', expert_1='expert2')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+    with client:
+        login(client, 'expert2', 'pw')
+        resp = client.post(f'/cases/{cid}/complete_expert')
+        assert resp.status_code in (200, 302)
+    with app.app_context():
+        refreshed = db.session.get(Case, cid)
+        assert refreshed.status == 'boncolva-leírónál'
+
+
+def test_complete_button_hidden_for_non_expert(client, app):
+    with app.app_context():
+        create_user('office3', 'pw', 'iroda')
+        create_user('expert3', 'pw', 'szakértő')
+        case = Case(case_number='RB3', expert_1='expert3')
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+    with client:
+        login(client, 'office3', 'pw')
+        page = client.get(f'/ugyeim/{cid}/elvegzem')
+        assert page.status_code in (302, 403)
+        if page.status_code == 200:
+            assert b'Elv\xc3\xa9gezve' not in page.data

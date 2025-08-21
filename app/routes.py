@@ -707,9 +707,6 @@ def generate_certificate(case_id):
         f"Kísérő betegségek vagy állapotok: {get('kiserobetegsegek')}",
     ]
 
-    # NEW: footer line the test asserts with lines[-1].startswith('Generálva: ')
-    lines.append(f"Generálva: {now_local().strftime('%Y-%m-%d %H:%M')}")
-
     out_path = os.path.join(
         case_dir, f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt"
     )
@@ -725,6 +722,7 @@ def generate_certificate(case_id):
 
 @main_bp.route('/cases/<int:case_id>/complete_expert', methods=['POST'])
 @login_required
+@roles_required('szakértő', 'admin')
 def complete_expert(case_id):
     case = Case.query.get_or_404(case_id)
 

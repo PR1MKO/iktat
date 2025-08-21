@@ -275,6 +275,7 @@
 
   </form>
 
+{% if current_user.is_authenticated and current_user.role in ['szakértő', 'admin'] %}
   <form method="post" action="{{ url_for('main.complete_expert', case_id=case.id) }}" class="mt-2">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="d-flex gap-2 mb-4">
@@ -282,6 +283,7 @@
       <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
     </div>
   </form>
+{% endif %}
 
 <script>
 

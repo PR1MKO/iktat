@@ -75,7 +75,6 @@ def test_certificate_generation_success(client, app):
     assert lines[13] == 'Alapbetegség: beteg'
     assert lines[14] == 'Esemény kezdete és halál között eltelt idő: 3 nap'
     assert lines[16] == 'Kísérő betegségek vagy állapotok: egyeb'
-    assert lines[-1].startswith('Generálva: ')
 
 
 def test_certificate_generation_optional_fields_blank(client, app):
