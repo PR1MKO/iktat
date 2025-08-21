@@ -724,7 +724,9 @@ def generate_certificate(case_id):
 @login_required
 @roles_required('szakértő', 'admin')
 def complete_expert(case_id):
-    case = Case.query.get_or_404(case_id)
+    case = db.session.get(Case, case_id)
+    if case is None:
+        abort(404)
 
     # Set status to indicate expert work is done
     case.status = 'boncolva-leírónál'

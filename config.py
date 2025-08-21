@@ -28,6 +28,10 @@ class TestingConfig(Config):
     TESTING = True
     WTF_CSRF_ENABLED = False
     TRACK_USER_ACTIVITY = False
+    # 👇 ensure SQLAlchemy doesn’t expire objects after commit in tests
+    SQLALCHEMY_SESSION_OPTIONS = {
+        "expire_on_commit": False
+    }
 
     @staticmethod
     def init_app(app):

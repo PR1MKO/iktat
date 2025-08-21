@@ -186,7 +186,9 @@ def new_investigation():
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
 def documents(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     folder = str(ensure_investigation_folder(inv.case_number))
 
     attachments = (
@@ -211,7 +213,9 @@ def documents(id):
 @investigations_bp.route("/<int:id>/view")
 @login_required
 def view_investigation(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
 
     attachments = (
         InvestigationAttachment.query
@@ -252,7 +256,9 @@ def view_investigation(id):
 @investigations_bp.route("/<int:id>")
 @login_required
 def detail_investigation(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     form = InvestigationForm(obj=inv)
     note_form = InvestigationNoteForm()
     upload_form = FileUploadForm()
@@ -299,7 +305,9 @@ def detail_investigation(id):
 @login_required
 @roles_required("admin", "iroda")
 def edit_investigation(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     form = InvestigationForm()
     if not form.validate_on_submit():
         flash("Hibás űrlap", "error")
@@ -314,7 +322,9 @@ def edit_investigation(id):
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
 def add_investigation_note(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     if not _can_note_or_upload(inv, current_user):
         abort(403)
 
@@ -349,7 +359,9 @@ def add_investigation_note(id):
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
 def upload_investigation_file(id):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     if not _can_note_or_upload(inv, current_user):
         abort(403)
 
@@ -406,7 +418,9 @@ def upload_investigation_file(id):
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required
 def download_investigation_file(id, filename):
-    inv = Investigation.query.get_or_404(id)
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
     if not _can_note_or_upload(inv, current_user):
         abort(403)
 
