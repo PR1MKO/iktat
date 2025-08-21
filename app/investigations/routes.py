@@ -13,7 +13,7 @@ from flask import (
     send_from_directory,  # ✅ fix: comma + include here
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_, func, text
+from sqlalchemy import or_, text
 from werkzeug.utils import secure_filename, safe_join
 
 from app import db
@@ -85,12 +85,17 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 @investigations_bp.route("/")
 @login_required
 def list_investigations():
-    q = request.args.get("q", "").strip()
+    search = (request.args.get("search") or request.args.get("q") or "").strip()
+    case_type = request.args.get("case_type", "").strip()
+    sort_by = request.args.get("sort_by", "case_number")
+    sort_order = request.args.get("sort_order", "asc")
     page = request.args.get("page", 1, type=int)
     per_page = 25
+    
     query = Investigation.query
-    if q:
-        like = f"%{q}%"
+    
+    if search:
+        like = f"%{search}%"
         query = query.filter(
             or_(
                 Investigation.case_number.ilike(like),
@@ -101,30 +106,44 @@ def list_investigations():
                 Investigation.investigation_type.ilike(like),
                 Investigation.mother_name.ilike(like),
                 Investigation.birth_place.ilike(like),
-                func.strftime("%Y-%m-%d", Investigation.birth_date).like(like),
+                db.cast(Investigation.birth_date, db.String).like(like),
                 Investigation.taj_number.ilike(like),
                 Investigation.residence.ilike(like),
                 Investigation.citizenship.ilike(like),
                 Investigation.institution_name.ilike(like),
             )
         )
-    pagination = (
-        query.order_by(Investigation.id.desc())
-        .paginate(page=page, per_page=per_page, error_out=False)
-    )
+
+    if case_type:
+        query = query.filter(Investigation.investigation_type == case_type)
+
+    order_col = {
+        "case_number": Investigation.case_number,
+        "deadline": Investigation.deadline,
+    }.get(sort_by, Investigation.id)
+
+    query = query.order_by(order_col.desc() if sort_order == "desc" else order_col.asc())
+
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     investigations = pagination.items
+
+    # Precompute display strings only (no new logic)   
     for inv in investigations:
-        inv.birth_date_str = fmt_date(inv.birth_date)
         inv.registration_time_str = fmt_date(inv.registration_time)
         inv.deadline_str = fmt_date(inv.deadline)
         inv.expert1_name = user_display_name(get_user_safe(inv.expert1_id))
         inv.expert2_name = user_display_name(get_user_safe(inv.expert2_id))
         inv.describer_name = user_display_name(get_user_safe(inv.describer_id))
+        
     return render_template(
         "investigations/list.html",
         investigations=investigations,
-        q=q,
         pagination=pagination,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        case_type_filter=case_type,
+        search_query=search,
+        query_params=request.args.to_dict(),
     )
 
 

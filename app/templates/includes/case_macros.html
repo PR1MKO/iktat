@@ -385,7 +385,9 @@
       {% for case in cases %}
       <tr>
 
-        <td>{{ case.case_number }}</td>
+        <td>
+          <a href="{{ url_for('auth.view_case', case_id=case.id) }}">{{ case.case_number }}</a>
+        </td>
         <td>{{ case.deceased_name }}</td>
         <td>{{ case.case_type }}</td>
         <td>
