@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, date
 
-from app.utils.time_utils import now_local, BUDAPEST_TZ
+from app.utils.time_utils import now_local, BUDAPEST_TZ, fmt_date
 from app.utils.permissions import capabilities_for
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
@@ -20,6 +20,8 @@ from sqlalchemy import or_, and_, func
 
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
 from app.investigations.models import Investigation
+from app.investigations.utils import user_display_name
+from app.services.core_user_read import get_user_safe
 from app.forms import CaseIdentifierForm, AdminUserForm
 from app import db
 from app.email_utils import send_email
@@ -240,6 +242,7 @@ def dashboard():
         'szignáló': "dashboards/dashboard_szignalo.html",
         'szakértő': "dashboards/dashboard_szakerto.html",
         'leíró':    "dashboards/dashboard_leiro.html",
+        'pénzügy':  "dashboards/dashboard_penzugy.html",
     }
     tpl = dashboards.get(current_user.role)
     if tpl:
@@ -253,6 +256,67 @@ def dashboard():
         )
         logout_user()
         return redirect(url_for("auth.login"))
+
+
+@auth_bp.route('/dashboard/penzugy')
+@login_required
+@roles_required('pénzügy', 'admin')
+def dashboard_penzugy():
+    sort_by = request.args.get('sort_by', 'case_number')
+    sort_order = request.args.get('sort_order', 'desc')
+
+    query = Case.query
+
+    if sort_by == 'case_number':
+        year_col = func.substr(Case.case_number, 8, 4)
+        seq_col = func.substr(Case.case_number, 3, 4)
+        if sort_order == 'desc':
+            ordering = [year_col.desc(), seq_col.desc()]
+        else:
+            ordering = [year_col.asc(), seq_col.asc()]
+    else:
+        col = Case.deadline
+        col = col.desc() if sort_order == 'desc' else col.asc()
+        ordering = [col]
+
+    now = now_local()
+    expired_cases = (
+        query.filter(Case.deadline < now)
+             .order_by(*ordering)
+             .all()
+    )
+    active_cases = (
+        query.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))
+             .order_by(*ordering)
+             .all()
+    )
+    cases = expired_cases + active_cases
+
+    users = User.query.all()
+    users_map = {u.screen_name or u.username: u for u in users}
+
+    investigations = (
+        Investigation.query
+        .order_by(Investigation.case_number.desc())
+        .all()
+    )
+    for inv in investigations:
+        inv.registration_time_str = fmt_date(inv.registration_time)
+        inv.deadline_str = fmt_date(inv.deadline)
+        inv.expert1_name = user_display_name(get_user_safe(inv.expert1_id))
+        inv.expert2_name = user_display_name(get_user_safe(inv.expert2_id))
+        inv.describer_name = user_display_name(get_user_safe(inv.describer_id))
+
+    return render_template(
+        'dashboards/dashboard_penzugy.html',
+        cases=cases,
+        users_map=users_map,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        query_params=request.args.to_dict(),
+        investigations=investigations,
+        caps=capabilities_for(current_user),
+    )
 
 
 @auth_bp.route('/cases')

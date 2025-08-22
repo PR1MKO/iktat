@@ -335,7 +335,7 @@
   {%- endif -%}
 {% endmacro %}
 
-{% macro cases_table(cases, users_map, sort_by='', sort_order='', query_params={}) %}
+{% macro cases_table(cases, users_map, sort_by='', sort_order='', query_params={}, show_actions=True) %}
 <div class="card shadow-sm mb-4">
   <table class="table table-bordered align-middle mb-0">
     <thead class="table-light">
@@ -378,7 +378,9 @@
         <th>Szakértő 1</th>
         <th>Szakértő 2</th>
         <th>Leíró</th>
+        {% if show_actions %}
         <th>Részletek</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -399,6 +401,7 @@
         <td>{{ users_map[case.expert_1].screen_name if case.expert_1 in users_map else case.expert_1 or '–' }}</td>
         <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
+        {% if show_actions %}
         <td>
           {# Only office staff can edit cases; everyone else only views them #}
           {% if current_user.role == 'iroda' %}
@@ -407,10 +410,11 @@
             <a href="{{ url_for('auth.view_case', case_id=case.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>
           {% endif %}
         </td>
+        {% endif %}
       </tr>
       {% else %}
       <tr>
-        <td colspan="11" class="text-center">Nincs megjeleníthető ügy.</td>
+        <td colspan="{% if show_actions %}11{% else %}10{% endif %}" class="text-center">Nincs megjeleníthető ügy.</td>
       </tr>
       {% endfor %}
     </tbody>

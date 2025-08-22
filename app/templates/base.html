@@ -92,6 +92,20 @@
                 <i class="bi bi-archive"></i> Lezárt ügyek
               </a>
             </li>
+            {% if current_user.role in ['pénzügy', 'admin'] %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.dashboard_penzugy' %}active{% endif %}" href="{{ url_for('auth.dashboard_penzugy') }}">
+                <i class="bi bi-cash-coin"></i> Pénzügy
+              </a>
+            </li>
+            {% endif %}
+            {% if current_user.role in ['pénzügy', 'admin'] %}
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint == 'auth.dashboard_penzugy' %}active{% endif %}" href="{{ url_for('auth.dashboard_penzugy') }}">
+                <i class="bi bi-cash-coin"></i> Pénzügy
+              </a>
+            </li>
+            {% endif %}
             {% if current_user.role == 'admin' %}
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint == 'auth.admin_users' %}active{% endif %}" href="{{ url_for('auth.admin_users') }}">
