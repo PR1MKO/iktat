@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, date
 
 from app.utils.time_utils import now_local, BUDAPEST_TZ
+from app.utils.permissions import capabilities_for
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
     flash, current_app, send_from_directory, jsonify, Response, abort
@@ -328,7 +329,8 @@ def list_cases():
         query_params=query_params,
         status_filter=status_filter,
         case_type_filter=case_type_filter,
-        search_query=search_query
+        search_query=search_query,
+        caps=capabilities_for(current_user)
     )
 
 
@@ -345,6 +347,7 @@ def case_detail(case_id):
     return render_template(
         'case_detail.html',
         case=case,
+        caps=capabilities_for(current_user),
         **ctx
     )
 
@@ -638,6 +641,10 @@ def case_documents(case_id):
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def upload_file(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    caps = capabilities_for(current_user)
+    if not caps.get("can_upload_case"):
+        flash("Nincs jogosultság", "danger")
+        return redirect(url_for('auth.case_detail', case_id=case_id))
     if case.status == 'lezárva':
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))

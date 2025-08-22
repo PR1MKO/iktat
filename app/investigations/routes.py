@@ -19,6 +19,7 @@ from werkzeug.utils import secure_filename, safe_join
 from app import db
 from app.utils.roles import roles_required
 from app.utils.time_utils import fmt_date, now_local
+from app.utils.permissions import capabilities_for
 from app.paths import ensure_investigation_folder
 from app.services.core_user_read import get_user_safe
 from . import investigations_bp
@@ -160,6 +161,7 @@ def list_investigations():
         search_query=search,
         query_params=request.args.to_dict(),
         has_edit_investigation=has_edit_investigation,
+        caps=capabilities_for(current_user),
     )
 
 
@@ -288,6 +290,7 @@ def view_investigation(id):
         assigned_expert=assigned_expert,
         changelog_entries=changelog_entries,
         user_display_name=user_display_name,
+        caps=capabilities_for(current_user),
     )
 
 
@@ -346,6 +349,10 @@ def edit_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
+    caps = capabilities_for(current_user)
+    if not caps.get("can_edit_investigation"):
+        flash("Nincs jogosultság", "danger")
+        return redirect(url_for("investigations.detail_investigation", id=id))
     form = InvestigationForm()
     if not form.validate_on_submit():
         flash("Hibás űrlap", "error")
