@@ -12,10 +12,18 @@ class AdminUserForm(FlaskForm):
     screen_name = StringField('Megjelenítendő név', validators=[Optional(), Length(max=64)])
     full_name = StringField('Teljes név', validators=[Optional(), Length(max=128)])
     password = PasswordField('Jelszó', validators=[Optional()])
-    role = SelectField('Szerepkör', choices=[
-        ('admin','admin'),('iroda','iroda'),('pénzügy','pénzügy'),('szignáló','szignáló'),
-        ('szakértő','szakértő'),('leíró','leíró'),('toxi','toxi')
-    ])
+    role = SelectField(
+        'Szerepkör',
+        choices=[
+            ('admin', 'Admin'),
+            ('iroda', 'Iroda'),
+            ('pénzügy', 'Pénzügy'),
+            ('szignáló', 'Szignáló'),
+            ('szakértő', 'Szakértő'),
+            ('leíró', 'Leíró'),
+            ('toxi', 'toxi'),
+        ],
+    )
     default_leiro_id = SelectField('Default leíró', coerce=int, validators=[Optional()], choices=[], render_kw={'disabled': True})
 
 class EditCaseForm(FlaskForm):

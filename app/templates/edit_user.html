@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% import 'includes/case_macros.html' as cm %}
+{# Removed case_macros import as role field renders directly from WTForms #}
 {% block sidebar %}{% endblock %}
 
 {% block title %}Felhasználó szerkesztése – {{ user.screen_name or user.username }}{% endblock %}
@@ -55,23 +55,8 @@
   </div>
 
   <div class="col-md-6">
-    {{ cm.select_block(
-        'role',
-        'role',
-        [
-          ('', '-- Válasszon --'),
-          ('admin', 'Admin'),
-          ('iroda', 'Iroda'),
-          ('pénzügy', 'Pénzügy'),
-          ('szignáló', 'Szignáló'),
-          ('szakértő', 'Szakértő'),
-          ('leíró', 'Leíró'),
-          ('toxi', 'toxi')
-        ],
-        'Szerepkör *',
-        '-- Válasszon --',
-        selected=user.role
-    ) }}
+    <label for="role" class="form-label">Szerepkör *</label>
+    {{ form.role(class_="form-select", id="role", required=True) }}
     <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
   </div>
   
