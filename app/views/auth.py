@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, date
 
 from app.utils.time_utils import now_local, BUDAPEST_TZ, fmt_date
 from app.utils.permissions import capabilities_for
+from app.utils.query_helpers import build_cases_and_users_map, apply_case_filters
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
     flash, current_app, send_from_directory, jsonify, Response, abort
@@ -195,6 +196,9 @@ def dashboard():
         missing_fields=missing_fields,
         upcoming_deadlines=upcoming_deadlines,
     )
+    
+    if current_user.role == 'pénzügy':
+        return redirect(url_for('auth.dashboard_penzugy'))
 
     # ✅ Ensure sorting + query params exist for macros (e.g., cases_table)
     template_ctx.setdefault('sort_by', request.args.get('sort_by') or 'deadline')
@@ -267,38 +271,7 @@ def dashboard():
 @login_required
 @roles_required('pénzügy', 'admin')
 def dashboard_penzugy():
-    sort_by = request.args.get('sort_by', 'case_number')
-    sort_order = request.args.get('sort_order', 'desc')
-
-    query = Case.query
-
-    if sort_by == 'case_number':
-        year_col = func.substr(Case.case_number, 8, 4)
-        seq_col = func.substr(Case.case_number, 3, 4)
-        if sort_order == 'desc':
-            ordering = [year_col.desc(), seq_col.desc()]
-        else:
-            ordering = [year_col.asc(), seq_col.asc()]
-    else:
-        col = Case.deadline
-        col = col.desc() if sort_order == 'desc' else col.asc()
-        ordering = [col]
-
-    now = now_local()
-    expired_cases = (
-        query.filter(Case.deadline < now)
-             .order_by(*ordering)
-             .all()
-    )
-    active_cases = (
-        query.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))
-             .order_by(*ordering)
-             .all()
-    )
-    cases = expired_cases + active_cases
-
-    users = User.query.all()
-    users_map = {u.screen_name or u.username: u for u in users}
+    cases, users_map, ordering_meta = build_cases_and_users_map(request.args)
 
     investigations = (
         Investigation.query
@@ -316,8 +289,8 @@ def dashboard_penzugy():
         'dashboards/dashboard_penzugy.html',
         cases=cases,
         users_map=users_map,
-        sort_by=sort_by,
-        sort_order=sort_order,
+        sort_by=ordering_meta['sort_by'],
+        sort_order=ordering_meta['sort_order'],
         query_params=request.args.to_dict(),
         investigations=investigations,
         caps=capabilities_for(current_user),
@@ -327,65 +300,14 @@ def dashboard_penzugy():
 @auth_bp.route('/cases')
 @login_required
 def list_cases():
-    sort_by = request.args.get('sort_by', 'case_number')
-    sort_order = request.args.get('sort_order', 'desc')
-
     status_filter = request.args.get('status', '')
     case_type_filter = request.args.get('case_type', '')
     search_query = request.args.get('search', '').strip()
 
     query = Case.query
-    filters = []
+    query = apply_case_filters(query, request.args)
 
-    if status_filter:
-        filters.append(Case.status == status_filter)
-    if case_type_filter:
-        filters.append(Case.case_type == case_type_filter)
-    if search_query:
-        pat = f"%{search_query}%"
-        filters.append(or_(
-            Case.case_number.ilike(pat),
-            Case.deceased_name.ilike(pat),
-            Case.case_type.ilike(pat),
-            Case.status.ilike(pat),
-            Case.institution_name.ilike(pat),
-            Case.external_case_number.ilike(pat),
-            Case.expert_1.ilike(pat),
-            Case.expert_2.ilike(pat),
-            Case.describer.ilike(pat),
-        ))
-    if filters:
-        from sqlalchemy import and_
-        query = query.filter(and_(*filters))
-
-    # Determine order_by column and direction
-    if sort_by == 'case_number':
-        year_col = func.substr(Case.case_number, 8, 4)
-        seq_col = func.substr(Case.case_number, 3, 4)
-        if sort_order == 'desc':
-            ordering = [year_col.desc(), seq_col.desc()]
-        else:
-            ordering = [year_col.asc(), seq_col.asc()]
-    else:
-        col = Case.deadline
-        col = col.desc() if sort_order == 'desc' else col.asc()
-        ordering = [col]
-
-    now = now_local()
-    expired_cases = (
-        query.filter(Case.deadline < now)
-             .order_by(*ordering)
-             .all()
-    )
-    active_cases = (
-        query.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))
-             .order_by(*ordering)
-             .all()
-    )
-    cases = expired_cases + active_cases
-
-    users = User.query.all()
-    users_map = {u.screen_name or u.username: u for u in users}
+    cases, users_map, ordering_meta = build_cases_and_users_map(request.args, query)
 
     query_params = request.args.to_dict()
 
@@ -393,8 +315,8 @@ def list_cases():
         'list_cases.html',
         cases=cases,
         users_map=users_map,
-        sort_by=sort_by,
-        sort_order=sort_order,
+        sort_by=ordering_meta['sort_by'],
+        sort_order=ordering_meta['sort_order'],
         query_params=query_params,
         status_filter=status_filter,
         case_type_filter=case_type_filter,

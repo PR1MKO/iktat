@@ -356,13 +356,14 @@
 {% endmacro %}
 
 {% macro cases_table(cases, users_map, sort_by='', sort_order='', query_params={}, show_actions=True) %}
+{% set _users_map = users_map or {} %}
 <div class="card shadow-sm mb-4">
   <table class="table table-bordered align-middle mb-0">
     <thead class="table-light">
       <tr class="fw-bold text-secondary">
         <th>
           {# Prepare params for case_number sorting link #}
-          {% set new_params = query_params.copy() %}
+          {% set new_params = (query_params or {}).copy() %}
           {% set _ = new_params.update({'sort_by': 'case_number', 'sort_order': 'asc' if sort_by != 'case_number' or sort_order == 'desc' else 'desc'}) %}
           <a href="{{ url_for(request.endpoint) -}}{{ query_string(new_params) }}">
             Boncszám
@@ -382,7 +383,7 @@
         <th>Regisztrálva</th>
         <th>
           {# Prepare params for deadline sorting link #}
-          {% set new_params = query_params.copy() %}
+          {% set new_params = (query_params or {}).copy() %}
           {% set _ = new_params.update({'sort_by': 'deadline', 'sort_order': 'asc' if sort_by != 'deadline' or sort_order == 'desc' else 'desc'}) %}
           <a href="{{ url_for(request.endpoint) -}}{{ query_string(new_params) }}">
             Határidő
@@ -418,9 +419,9 @@
         <td>{{ case.institution_name }}</td>
         <td>{{ case.registration_time|localtime if case.registration_time else '' }}</td>
         <td>{{ case.formatted_deadline }}</td>
-        <td>{{ users_map[case.expert_1].screen_name if case.expert_1 in users_map else case.expert_1 or '–' }}</td>
-        <td>{{ users_map[case.expert_2].screen_name if case.expert_2 in users_map else case.expert_2 or '–' }}</td>
-        <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
+        <td>{{ _users_map[case.expert_1].screen_name if case.expert_1 in _users_map else case.expert_1 or '–' }}</td>
+        <td>{{ _users_map[case.expert_2].screen_name if case.expert_2 in _users_map else case.expert_2 or '–' }}</td>
+        <td>{{ _users_map[case.describer].screen_name if case.describer in _users_map else case.describer or '–' }}</td>
         {% if show_actions %}
         <td>
           {% if caps['can_edit_case'] %}
