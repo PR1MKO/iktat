@@ -196,6 +196,11 @@ def dashboard():
         upcoming_deadlines=upcoming_deadlines,
     )
 
+    # ✅ Ensure sorting + query params exist for macros (e.g., cases_table)
+    template_ctx.setdefault('sort_by', request.args.get('sort_by') or 'deadline')
+    template_ctx.setdefault('sort_order', request.args.get('sort_order') or 'asc')
+    template_ctx['query_params'] = request.args.to_dict(flat=True)
+
     if current_user.role in {'szak', 'szakértő'}:
         assigned_investigations = (
             Investigation.query
@@ -1303,4 +1308,3 @@ def generate_tox_doc(case_id):
         flash("❌ Hiba történt a dokumentum generálása közben.", "danger")
 
     return redirect(url_for('auth.case_detail', case_id=case_id))
-
