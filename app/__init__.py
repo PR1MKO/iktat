@@ -28,64 +28,64 @@ migrate = Migrate()
 migrate_examination = Migrate()
 
 def create_app(test_config=None):
-    app = Flask(__name__, instance_relative_config=True)
-    os.makedirs(app.instance_path, exist_ok=True)
+    flask_app = Flask(__name__, instance_relative_config=True)
+    os.makedirs(flask_app.instance_path, exist_ok=True)
 
     # Base configuration
-    app.config.from_object(Config)
+    flask_app.config.from_object(Config)
     if test_config:
         if isinstance(test_config, dict):
-            app.config.update(test_config)
+            flask_app.config.update(test_config)
         else:
-            app.config.from_object(test_config)
+            flask_app.config.from_object(test_config)
 
     # --- Databases ---------------------------------------------------------
     # Main DB (under instance/)
-    main_db_name = 'test.db' if app.config.get('TESTING') else 'forensic_cases.db'
-    main_db_path = os.path.join(app.instance_path, main_db_name)
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{main_db_path}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    main_db_name = 'test.db' if flask_app.config.get('TESTING') else 'forensic_cases.db'
+    main_db_path = os.path.join(flask_app.instance_path, main_db_name)
+    flask_app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{main_db_path}'
+    flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     # Examination bind DB (separate file under instance/, unless EXAMINATION_DATABASE_URL is set)
-    exam_db_name = 'test_examination.db' if app.config.get('TESTING') else 'examination.db'
-    exam_db_path = os.path.join(app.instance_path, exam_db_name)
+    exam_db_name = 'test_examination.db' if flask_app.config.get('TESTING') else 'examination.db'
+    exam_db_path = os.path.join(flask_app.instance_path, exam_db_name)
     exam_url = os.getenv('EXAMINATION_DATABASE_URL', f'sqlite:///{exam_db_path}')
-    binds = dict(app.config.get('SQLALCHEMY_BINDS') or {})
+    binds = dict(flask_app.config.get('SQLALCHEMY_BINDS') or {})
     binds['examination'] = exam_url
-    app.config['SQLALCHEMY_BINDS'] = binds
+    flask_app.config['SQLALCHEMY_BINDS'] = binds
 
     # Max 16 MB
-    app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
+    flask_app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
 
     # --- Email config ------------------------------------------------------
-    app.config.update(
-        MAIL_SERVER=app.config.get('MAIL_SERVER', 'smtp.gmail.com'),
-        MAIL_PORT=int(app.config.get('MAIL_PORT', 587)),
-        MAIL_USE_TLS=True if str(app.config.get('MAIL_USE_TLS', '1')).lower() in ('1', 'true') else False,
+    flask_app.config.update(
+        MAIL_SERVER=flask_app.config.get('MAIL_SERVER', 'smtp.gmail.com'),
+        MAIL_PORT=int(flask_app.config.get('MAIL_PORT', 587)),
+        MAIL_USE_TLS=True if str(flask_app.config.get('MAIL_USE_TLS', '1')).lower() in ('1', 'true') else False,
         MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
         MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
         MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
     )
 
     # Init extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
+    db.init_app(flask_app)
+    migrate.init_app(flask_app, db)
     # Separate migration directory for the examination bind
-    migrate_examination.init_app(app, db, directory='migrations_examination', compare_type=True, render_as_batch=True)
+    migrate_examination.init_app(flask_app, db, directory='migrations_examination', compare_type=True, render_as_batch=True)
 
-    mail.init_app(app)
-    csrf.init_app(app)
-    login_manager.init_app(app)
+    mail.init_app(flask_app)
+    csrf.init_app(flask_app)
+    login_manager.init_app(flask_app)
     login_manager.login_view = 'auth.login'
     
     from .paths import _default_case_root, _default_investigation_root, case_root, investigation_root
-    with app.app_context():
+    with flask_app.app_context():
         _ = case_root()
         _ = investigation_root()
 
     # Ensure core models are registered
     from .models import User  # noqa: F401
-    with app.app_context():
+    with flask_app.app_context():
         from app import models  # noqa: F401
 
     @login_manager.user_loader
@@ -97,26 +97,26 @@ def create_app(test_config=None):
     from .routes import main_bp
     from .investigations import investigations_bp
 
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(main_bp)
-    app.register_blueprint(investigations_bp, url_prefix='/investigations')
+    flask_app.register_blueprint(auth_bp)
+    flask_app.register_blueprint(main_bp)
+    flask_app.register_blueprint(investigations_bp, url_prefix='/investigations')
 
     # Error handlers (with template fallbacks)
     from app.error_handlers import register_error_handlers
-    register_error_handlers(app)
+    register_error_handlers(flask_app)
 
     # Return 413 explicitly if someone bypasses the manual check
-    @app.errorhandler(RequestEntityTooLarge)
+    @flask_app.errorhandler(RequestEntityTooLarge)
     def _too_large(e):
         return "File too large", 413
 
     # Optional: one-time check for essential tables in production only
     _checked_tables = False
 
-    @app.before_request
+    @flask_app.before_request
     def check_essential_tables_once():
         nonlocal _checked_tables
-        if _checked_tables or app.config.get('TESTING') or app.config.get('ENV') != 'production':
+        if _checked_tables or flask_app.config.get('TESTING') or flask_app.config.get('ENV') != 'production':
             return
         from sqlalchemy import inspect
         required_tables = ['user', 'case', 'change_log', 'uploaded_file']
@@ -127,15 +127,15 @@ def create_app(test_config=None):
         _checked_tables = True
 
     # Root check
-    @app.route("/")
+    @flask_app.route("/")
     def hello():
         return "Hello, world! Forensic Case Tracker is running."
 
     # --- Jinja filters/helpers --------------------------------------------
-    app.jinja_env.filters['datetimeformat'] = (
+    flask_app.jinja_env.filters['datetimeformat'] = (
         lambda value: value.strftime('%Y-%m-%dT%H:%M') if value else ''
     )
-    app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
+    flask_app.jinja_env.filters['getattr'] = lambda obj, name: getattr(obj, name, '')
 
     def localtime(value: datetime | None):
         if not value:
@@ -144,8 +144,8 @@ def create_app(test_config=None):
             value = value.replace(tzinfo=BUDAPEST_TZ)
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
-    app.jinja_env.filters['localtime'] = localtime
-    app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
+    flask_app.jinja_env.filters['localtime'] = localtime
+    flask_app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
 
     # --- Changelog parsing helpers ----------------------------------------
     import re
@@ -161,7 +161,7 @@ def create_app(test_config=None):
             return None
         return {"name": m.group("name"), "ts": m.group("ts"), "user": m.group("user")}
 
-    app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
+    flask_app.jinja_env.filters['parse_tox_changelog'] = parse_tox_changelog
 
     NOTE_RE = re.compile(
         r"^\[(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>[^\]]+)\]\s*(?P<text>.*)$"
@@ -175,11 +175,11 @@ def create_app(test_config=None):
             return None
         return {"ts": m.group("ts"), "user": m.group("user"), "text": m.group("text")}
 
-    app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog
+    flask_app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog
 
     # --- Logging -----------------------------------------------------------
-    if not app.debug and not app.testing:
-        log_dir = os.path.join(app.instance_path, 'logs')
+    if not flask_app.debug and not flask_app.testing:
+        log_dir = os.path.join(flask_app.instance_path, 'logs')
         os.makedirs(log_dir, exist_ok=True)
         file_handler = RotatingFileHandler(
             os.path.join(log_dir, 'app.log'), maxBytes=10240, backupCount=10
@@ -187,8 +187,8 @@ def create_app(test_config=None):
         file_handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
         file_handler.setFormatter(formatter)
-        app.logger.addHandler(file_handler)
-        app.logger.setLevel(logging.INFO)
-        app.logger.info('Logging initialized.')
+        flask_app.logger.addHandler(file_handler)
+        flask_app.logger.setLevel(logging.INFO)
+        flask_app.logger.info('Logging initialized.')
 
-    return app
+    return flask_app

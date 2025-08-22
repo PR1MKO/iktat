@@ -13,7 +13,7 @@ from flask import (
     send_from_directory,  # ✅ fix: comma + include here
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_, text
+from sqlalchemy import or_, func, text
 from werkzeug.utils import secure_filename, safe_join
 
 from app import db
@@ -96,21 +96,32 @@ def list_investigations():
     
     if search:
         like = f"%{search}%"
+        # Broad, test-aligned search across known columns
         query = query.filter(
             or_(
+                # identifiers & numbers
                 Investigation.case_number.ilike(like),
                 Investigation.external_case_number.ilike(like),
                 Investigation.other_identifier.ilike(like),
+                Investigation.taj_number.ilike(like),
+
+                # person/name-ish fields
                 Investigation.subject_name.ilike(like),
                 Investigation.maiden_name.ilike(like),
-                Investigation.investigation_type.ilike(like),
                 Investigation.mother_name.ilike(like),
+                
+                # location / demographics
                 Investigation.birth_place.ilike(like),
-                db.cast(Investigation.birth_date, db.String).like(like),
-                Investigation.taj_number.ilike(like),
                 Investigation.residence.ilike(like),
                 Investigation.citizenship.ilike(like),
+
+                # types / org
+                Investigation.investigation_type.ilike(like),
                 Investigation.institution_name.ilike(like),
+                
+                # dates — match either full date or just year like "1990"
+                func.strftime("%Y-%m-%d", Investigation.birth_date).like(like),
+                func.strftime("%Y",       Investigation.birth_date).like(like),
             )
         )
 
@@ -247,17 +258,20 @@ def view_investigation(id):
         .order_by(InvestigationAttachment.uploaded_at.desc())
         .all()
     )
-    for note in notes:
-        note.author = get_user_safe(note.author_id)
 
+    # Query notes first, then iterate over them
     notes = (
-        InvestigationNote.query.filter_by(investigation_id=id)
+        InvestigationNote.query
+        .filter_by(investigation_id=id)
         .order_by(InvestigationNote.timestamp.desc())
         .all()
     )
+    for note in notes:
+        note.author = get_user_safe(note.author_id)
 
     changelog_entries = (
-        InvestigationChangeLog.query.filter_by(investigation_id=id)
+        InvestigationChangeLog.query
+        .filter_by(investigation_id=id)
         .order_by(InvestigationChangeLog.timestamp.desc())
         .all()
     )
