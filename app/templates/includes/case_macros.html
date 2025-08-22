@@ -1,5 +1,21 @@
 {# templates/includes/case_macros.html #}
 
+{% if caps is not defined %}
+  {% set caps = {
+    'can_view_cases': False,
+    'can_view_investigations': False,
+    'can_edit_case': False,
+    'can_upload_case': False,
+    'can_assign': False,
+    'can_change_status': False,
+    'can_post_notes': False,
+    'can_download_files': False,
+    'can_edit_investigation': False,
+    'can_upload_investigation': False,
+    'can_post_investigation_notes': False,
+  } %}
+{% endif %}
+
 {% macro alapadatok(case) %}
 <!-- Adatok (merged Alapadatok + További adatok) -->
 <div class="card">
@@ -106,7 +122,9 @@
               rows="2"
               aria-label="Új megjegyzés"
               placeholder="Új megjegyzés..."></textarea>
+    {% if caps['can_post_notes'] %}
     <button type="button" id="add_note_btn" class="btn btn-primary">Hozzáadás</button>
+    {% endif %}
   </div>
 </div>
 {% endmacro %}
@@ -183,7 +201,9 @@
       {% endif %}
     {% endfor %}
   </select>
+  {% if caps['can_upload_case'] %}
   <button type="submit" class="btn btn-outline-success upload-btn" disabled>{{ btn_label }}</button>
+  {% endif %}
   <span class="text-danger small ms-2 category-warning d-none">Kategória megadása kötelező</span>
 </form>
 {% endmacro %}
@@ -235,7 +255,7 @@
 </div>
 
 <script>
-  document.getElementById('add_note_btn').addEventListener('click', function() {
+  document.getElementById('add_note_btn')?.addEventListener('click', function() {
     const txt = document.getElementById('new_note');
     if (!txt.value.trim()) {
       txt.classList.add('is-invalid');
@@ -403,8 +423,7 @@
         <td>{{ users_map[case.describer].screen_name if case.describer in users_map else case.describer or '–' }}</td>
         {% if show_actions %}
         <td>
-          {# Only office staff can edit cases; everyone else only views them #}
-          {% if current_user.role == 'iroda' %}
+          {% if caps['can_edit_case'] %}
             <a href="{{ url_for('auth.edit_case', case_id=case.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
           {% else %}
             <a href="{{ url_for('auth.view_case', case_id=case.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>

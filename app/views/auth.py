@@ -430,6 +430,7 @@ def view_case(case_id):
     return render_template(
         'case_detail.html',
         case=case,
+        caps=capabilities_for(current_user),
         **ctx
     )
 
@@ -455,6 +456,11 @@ def create_case():
         # Add more default fields as needed
 
     form = CaseIdentifierForm(request.form if request.method == 'POST' else None)
+    
+    caps = capabilities_for(current_user)
+    if not caps.get("can_edit_case"):
+        flash("Nincs jogosultság", "danger")
+        return redirect(url_for('auth.list_cases'))
 
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
@@ -485,7 +491,8 @@ def create_case():
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
                 case=case,
-                form=form
+                form=form,
+                caps=caps
             )
         birth_date = None
         if request.form.get('birth_date'):
@@ -545,7 +552,8 @@ def create_case():
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
                 case=case,
-                form=form
+                form=form,
+                caps=caps
             )
 
         # Log case creation in ChangeLog
@@ -570,7 +578,8 @@ def create_case():
         szakerto_choices=szakerto_choices,
         leiro_choices=leiro_choices,
         case=case,
-        form=form
+        form=form,
+        caps=caps
     )
 
 
@@ -856,6 +865,10 @@ def szignal_cases():
 @roles_required('szignáló')
 def assign_pathologist(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    caps = capabilities_for(current_user)
+    if not caps.get("can_assign"):
+        flash("Nincs jogosultság", "danger")
+        return redirect(url_for('auth.case_detail', case_id=case_id))
     uploads = UploadedFile.query.filter_by(case_id=case.id).all()
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
 
@@ -944,7 +957,8 @@ def assign_pathologist(case_id):
         szakerto_choices=szakerto_choices,
         szakerto_choices_2=szakerto_choices_2,
         changelog_entries=changelog_entries,
-        uploads=uploads
+        uploads=uploads,
+        caps=caps
     )
 
 
@@ -1144,6 +1158,9 @@ def delete_case(case_id):
 @auth_bp.route('/cases/<int:case_id>/add_note', methods=['POST'])
 @login_required
 def add_note_universal(case_id):
+    caps = capabilities_for(current_user)
+    if not caps.get("can_post_notes"):
+        return jsonify({'error': 'Nincs jogosultság'}), 403
     data = request.get_json() or {}
     note_text = data.get('new_note', '').strip()
 

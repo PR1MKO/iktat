@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% import 'includes/case_macros.html' as cm %}
+{% import 'includes/case_macros.html' as cm with context %}
 
 {% block title %}Ügy részletei – {{ case.case_number }}{% endblock %}
 
@@ -13,7 +13,7 @@
     </div>
   </div>
 
-  {% if current_user.role != 'szakértő' %}
+  {% if caps['can_upload_case'] %}
   <div class="row mb-4">
     <div class="col-12">
       <div class="mb-3">

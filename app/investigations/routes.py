@@ -339,6 +339,7 @@ def detail_investigation(id):
         attachments=attachments,
         changelog=changelog,
         user_display_name=user_display_name,
+        caps=capabilities_for(current_user),
     )
 
 
@@ -370,7 +371,10 @@ def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    if not _can_note_or_upload(inv, current_user):
+    caps = capabilities_for(current_user)
+    if not caps.get("can_post_investigation_notes"):
+        abort(403)
+    if current_user.role not in {"admin", "iroda"} and current_user.id not in {inv.expert1_id, inv.expert2_id, inv.describer_id}:
         abort(403)
 
     form = InvestigationNoteForm()
@@ -407,7 +411,10 @@ def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    if not _can_note_or_upload(inv, current_user):
+    caps = capabilities_for(current_user)
+    if not caps.get("can_upload_investigation"):
+        abort(403)
+    if current_user.role not in {"admin", "iroda"} and current_user.id not in {inv.expert1_id, inv.expert2_id, inv.describer_id}:
         abort(403)
 
     form = FileUploadForm()

@@ -5,6 +5,7 @@
 <a class="btn btn-outline-primary" href="{{ url_for('investigations.documents', id=investigation.id) }}">
   Dokumentumok
 </a>
+{% if caps['can_edit_investigation'] %}
 <form method="post" action="{{ url_for('investigations.edit_investigation', id=investigation.id) }}" class="mb-4">
   {{ form.hidden_tag() }}
   <div class="mb-2">{{ form.subject_name.label }} {{ form.subject_name(class='form-control') }}</div>
@@ -22,14 +23,17 @@
   <p><strong>Határidő:</strong> {{ investigation.deadline_str }}</p>
   <button type="submit" class="btn btn-primary">Mentés</button>
 </form>
+{% endif %}
 
 <h2>Fájlok</h2>
+{% if caps['can_upload_investigation'] %}
 <form id="upload-form" class="mb-3" enctype="multipart/form-data" action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {{ upload_form.category(class='form-select d-inline w-auto') }}
   {{ upload_form.file(class='form-control d-inline w-auto') }}
   <button type="button" id="upload-btn" class="btn btn-secondary">Feltöltés</button>
 </form>
+{% endif %}
 <ul id="attachments-list">
   {% for a in attachments %}
   <li data-id="{{ a.id }}">{{ a.filename }} – {{ a.category }} – {{ a.uploaded_at_str }}</li>
@@ -37,10 +41,12 @@
 </ul>
 
 <h2>Jegyzetek</h2>
+{% if caps['can_post_investigation_notes'] %}
 <div class="mb-3">
   <textarea id="note-text" class="form-control" rows="3"></textarea>
   <button type="button" id="add-note-btn" class="btn btn-secondary mt-2">Hozzáad</button>
 </div>
+{% endif %}
 <div id="notes">
     {% for note in notes %}
       {% include 'investigations/_note.html' with note=note, author=note.author %}
