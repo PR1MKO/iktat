@@ -13,7 +13,7 @@ class AdminUserForm(FlaskForm):
     full_name = StringField('Teljes név', validators=[Optional(), Length(max=128)])
     password = PasswordField('Jelszó', validators=[Optional()])
     role = SelectField('Szerepkör', choices=[
-        ('admin','admin'),('iroda','iroda'),('szignáló','szignáló'),
+        ('admin','admin'),('iroda','iroda'),('pénzügy','pénzügy'),('szignáló','szignáló'),
         ('szakértő','szakértő'),('leíró','leíró'),('toxi','toxi')
     ])
     default_leiro_id = SelectField('Default leíró', coerce=int, validators=[Optional()], choices=[], render_kw={'disabled': True})
