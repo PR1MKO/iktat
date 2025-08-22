@@ -134,7 +134,11 @@ def list_investigations():
         inv.expert1_name = user_display_name(get_user_safe(inv.expert1_id))
         inv.expert2_name = user_display_name(get_user_safe(inv.expert2_id))
         inv.describer_name = user_display_name(get_user_safe(inv.describer_id))
-        
+
+    has_edit_investigation = (
+        "investigations.edit_investigation" in current_app.view_functions
+    )
+       
     return render_template(
         "investigations/list.html",
         investigations=investigations,
@@ -144,6 +148,7 @@ def list_investigations():
         case_type_filter=case_type,
         search_query=search,
         query_params=request.args.to_dict(),
+        has_edit_investigation=has_edit_investigation,
     )
 
 

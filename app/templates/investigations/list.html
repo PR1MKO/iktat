@@ -76,13 +76,10 @@
           <td>{{ inv.expert2_name }}</td>
           <td>{{ inv.describer_name }}</td>
           <td class="text-end">
-            {% if current_user.role == 'iroda' %}
-              {# If an edit route exists, use it; else fall back to detail #}
-              {% if 'investigations.edit_investigation' in current_app.view_functions %}
-                <a href="{{ url_for('investigations.edit_investigation', id=inv.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
-              {% else %}
-                <a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
-              {% endif %}
+            {% if current_user.role == 'iroda' and has_edit_investigation %}
+              <a href="{{ url_for('investigations.edit_investigation', id=inv.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
+            {% elif current_user.role == 'iroda' %}
+              <a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}" class="btn btn-sm btn-primary">Szerkeszt</a>
             {% else %}
               <a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}" class="btn btn-sm btn-secondary">Megtekintés</a>
             {% endif %}
