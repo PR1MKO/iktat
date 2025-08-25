@@ -16,7 +16,8 @@ from app.paths import ensure_case_folder, file_safe_case_number
 from app import db
 from app.utils.time_utils import now_local
 from app.utils.roles import roles_required
-from app.utils.case_helpers import build_case_context
+from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
+from app.utils.case_status import CASE_STATUS_FINAL, is_final_status
 
 # CSRF exempt (new Flask-WTF or fallback)
 try:
@@ -206,8 +207,13 @@ def _enforce_global_upload_cap():
 @roles_required('szakértő')
 def mark_tox_viewed(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
     if not is_expert_for_case(current_user, case):
         abort(403)
+    if not case.tox_ordered:
+        flash('Nincs toxikológiai vizsgálat elrendelve.', 'warning')
+        return redirect(url_for('auth.case_detail', case_id=case.id))
 
     case.tox_viewed_by_expert = True
 
@@ -580,9 +586,14 @@ def elvegzem_toxi(case_id):
 @roles_required('leíró')
 def leiro_elvegzem(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
     if not is_describer_for_case(current_user, case):
         flash('Nincs jogosultságod az ügy elvégzéséhez.', 'danger')
         return redirect(url_for('main.leiro_ugyeim'))
+    if case.status != 'boncolva-leírónál':
+        flash('Az ügy nincs a leírónál.', 'warning')
+        return redirect(url_for('auth.case_detail', case_id=case.id))
 
     if request.method == 'POST':
         # 1) Handle file upload
@@ -633,7 +644,14 @@ def leiro_elvegzem(case_id):
 def assign_describer(case_id):
     data = request.get_json() or {}
     case = db.session.get(Case, case_id) or abort(404)
-    case.describer = data.get('describer')
+    if is_final_status(case.status):
+        return jsonify({'error': 'Az ügy lezárva'}), 409
+    if not case.started_by_expert:
+        return jsonify({'error': 'Szakértői munka nem indult'}), 409
+    describer = data.get('describer')
+    if describer == case.describer:
+        return jsonify({'message': 'nincs változás'}), 200
+    case.describer = describer
     try:
         db.session.commit()
     except Exception as e:
@@ -676,6 +694,8 @@ def leiro_upload_file(case_id):
 def generate_certificate(case_id):
     """Generate death certificate text file in the exact format tests expect."""
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
 
     # Only assigned experts may generate the certificate
     if not is_expert_for_case(current_user, case):

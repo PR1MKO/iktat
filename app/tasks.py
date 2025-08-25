@@ -1,6 +1,7 @@
 from datetime import timedelta
 from app.models import db, Case, User
 from app.utils.time_utils import BUDAPEST_TZ, now_local
+from app.utils.case_status import CASE_STATUS_FINAL
 from app.audit import log_action
 from app.email_utils import send_email
 
@@ -11,7 +12,7 @@ def send_deadline_warning_email():
     cases_due = Case.query.filter(
         Case.deadline >= today,
         Case.deadline <= upcoming,
-        Case.status != 'lezárva'
+        Case.status != CASE_STATUS_FINAL
     ).order_by(Case.deadline).all()
 
     if not cases_due:

@@ -14,3 +14,4 @@
 
 ## Change Log
 - 2025-08-22 – Removed "Auto-close overdue cases" from plan; documented routing & template contracts.
+- 2025-08-25 – Normalize final status to `lezárt`; add locked-case guards, workflow checks, idempotent tox doc, and tests.

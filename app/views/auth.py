@@ -27,7 +27,8 @@ from app.forms import CaseIdentifierForm, AdminUserForm
 from app import db
 from app.email_utils import send_email
 from app.audit import log_action
-from ..utils.case_helpers import build_case_context
+from ..utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
+from ..utils.case_status import CASE_STATUS_FINAL, is_final_status
 from ..utils.roles import roles_required
 from app.routes import handle_file_upload
 from app.paths import case_root, ensure_case_folder, file_safe_case_number
@@ -160,18 +161,18 @@ def dashboard():
     week_start = today_start - timedelta(days=now.weekday())
     month_start = datetime(now.year, now.month, 1, tzinfo=BUDAPEST_TZ)
 
-    total_open = Case.query.filter(Case.status != 'lezárva').count()
+    total_open = Case.query.filter(Case.status != CASE_STATUS_FINAL).count()
     new_today = Case.query.filter(Case.registration_time >= today_start).count()
     new_this_week = Case.query.filter(Case.registration_time >= week_start).count()
     new_this_month = Case.query.filter(Case.registration_time >= month_start).count()
-    closed_cases = Case.query.filter(Case.status == 'lezárt').count()
+    closed_cases = Case.query.filter(Case.status == CASE_STATUS_FINAL).count()
     status_counts = dict(db.session.query(Case.status, func.count()).group_by(Case.status).all())
     status_counts_list = list(status_counts.items())
 
     missing_fields = Case.query.filter(
         or_(Case.expert_1.is_(None), Case.expert_1 == ''),
         or_(Case.describer.is_(None), Case.describer == '')
-    ).filter(Case.status != 'lezárva').all()
+    ).filter(Case.status != CASE_STATUS_FINAL).all()
 
     today = date.today()
     threshold = today + timedelta(days=14)
@@ -179,7 +180,7 @@ def dashboard():
         Case.query
             .filter(
                 Case.deadline.isnot(None),
-                Case.status != 'lezárva',
+                Case.status != CASE_STATUS_FINAL,
                 Case.deadline <= threshold
             )
             .order_by(Case.deadline.asc())
@@ -367,7 +368,7 @@ def view_case(case_id):
 @auth_bp.route('/cases/closed')
 @login_required
 def closed_cases():
-    closed = Case.query.filter(Case.status.in_(['lejárt','lezárva']))\
+    closed = Case.query.filter(Case.status == CASE_STATUS_FINAL)\
              .order_by(Case.deadline.desc()).all()
     return render_template('closed_cases.html', cases=closed)
 
@@ -521,6 +522,8 @@ def create_case():
 @roles_required('admin', 'iroda')
 def edit_case(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
     leiro_users    = User.query.filter_by(role='leíró').order_by(User.username).all()
     changelog_entries = (
@@ -581,6 +584,8 @@ def edit_case_basic(case_id):
     if current_user.role != 'iroda':
         abort(403)
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
 
     if request.method == 'POST':
         case.deceased_name = request.form.get('deceased_name') or None
@@ -633,6 +638,8 @@ def edit_case_basic(case_id):
 @roles_required('admin', 'iroda')
 def case_documents(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
     if request.method == 'POST':
         case.tox_ordered = bool(request.form.get('tox_ordered'))
         try:
@@ -657,7 +664,7 @@ def upload_file(case_id):
     if not caps.get("can_upload_case"):
         flash("Nincs jogosultság", "danger")
         return redirect(url_for('auth.case_detail', case_id=case_id))
-    if case.status == 'lezárva':
+    if is_final_status(case.status):
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
 
@@ -1090,8 +1097,9 @@ def manage_cases():
 @login_required
 @roles_required('admin')
 def delete_case(case_id):
-
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
 
     ChangeLog.query.filter_by(case_id=case.id).delete()
 
@@ -1153,6 +1161,19 @@ def tox_doc_form(case_id):
 @roles_required('admin', 'iroda', 'toxi')
 def generate_tox_doc(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
+        return resp
+    ident = current_user.screen_name or current_user.username
+    if case.tox_doc_generated and case.tox_doc_generated_by == ident and case.tox_doc_generated_at:
+        last = case.tox_doc_generated_at
+        now = now_local()
+        if last.tzinfo is not None:
+            last = last.replace(tzinfo=None)
+        if now.tzinfo is not None:
+            now = now.replace(tzinfo=None)
+        if (now - last) <= timedelta(minutes=5):
+            flash("Az ügyhöz már nemrég készült dokumentum.", "warning")
+            return redirect(url_for('auth.case_detail', case_id=case.id))
 
     template_path = os.path.join(
         str(case_root()),

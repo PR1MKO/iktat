@@ -1,6 +1,9 @@
 # utils/case_helpers.py
+from flask import flash, redirect, url_for
+
 from app.models import ChangeLog
 from .time_utils import BUDAPEST_TZ
+from .case_status import CASE_STATUS_FINAL, is_final_status
 
 def build_case_context(case):
     grouped_orders = []
@@ -36,4 +39,11 @@ def build_case_context(case):
         'formatted_certificate_timestamp': formatted_ts,
         'show_certificate_message': bool(case.certificate_generated)
     }
+
+
+def ensure_unlocked_or_redirect(case, redirect_endpoint="auth.case_detail", **endpoint_kwargs):
+    if is_final_status(case.status):
+        flash("Az ügy lezárva; módosítás nem engedélyezett.", "warning")
+        return redirect(url_for(redirect_endpoint, **endpoint_kwargs))
+    return None
 

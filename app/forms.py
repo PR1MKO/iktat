@@ -43,7 +43,7 @@ class EditCaseForm(FlaskForm):
         choices=[('', '-- Válasszon --')] + [
             (v, v) for v in [
                 'beérkezett','boncolva-leírónál','boncolva-orvosnál',
-                'leiktatva','szignálva','lezárva','lejárt',
+                'leiktatva','szignálva','lezárt',
                 'rendőrségre küldve','számla megérkezett','postafakkba'
             ]
         ],

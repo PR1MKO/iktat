@@ -148,7 +148,7 @@ def test_upload_requires_auth(client, app):
 def test_upload_blocked_for_finalized_case(client, app):
     with app.app_context():
         create_user()
-        case = Case(case_number='TEST3', status='lezárva')
+        case = Case(case_number='TEST3', status='lezárt')
         db.session.add(case)
         db.session.commit()
         case_id = case.id
