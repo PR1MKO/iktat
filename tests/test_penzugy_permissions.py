@@ -2,7 +2,8 @@ from datetime import date
 
 import pytest
 
-from app.models import Case, db
+from app import db
+from app.models import Case
 from app.investigations.models import Investigation
 from tests.helpers import create_user, login, create_investigation
 from app.utils.time_utils import now_local
@@ -44,8 +45,8 @@ def test_penzugy_read_only_views_and_posts(client, app):
         resp = client.post(f'/investigations/{iid}/edit', data={'subject_name': 'Változtat'})
         assert resp.status_code in (302, 403)
     with app.app_context():
-        assert Case.query.get(cid).deceased_name == orig_name
-        assert Investigation.query.get(iid).subject_name == orig_subj
+        assert db.session.get(Case, cid).deceased_name == orig_name
+        assert db.session.get(Investigation, iid).subject_name == orig_subj
 
 
 @pytest.mark.parametrize(
