@@ -1,3 +1,9 @@
+﻿# --- Hard guard for Codex Flask-WTF<=1.1.x (runs before anything else) ---
+import flask as _fl
+from markupsafe import Markup as _MSM
+_fl.Markup = _MSM  # ensure any "from flask import Markup" resolves safely
+import tests.compat_flaskwtf  # noqa: F401  # soft patch (no-op on >=1.2.x)
+# -------------------------------------------------------------------------
 # tests/conftest.py
 # --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
 import tests.compat_flaskwtf  # noqa: F401
