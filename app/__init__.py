@@ -5,7 +5,7 @@ from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -176,6 +176,15 @@ def create_app(test_config=None):
         return {"ts": m.group("ts"), "user": m.group("user"), "text": m.group("text")}
 
     flask_app.jinja_env.filters['parse_note_changelog'] = parse_note_changelog
+    
+    @flask_app.after_request
+    def add_no_store_headers(response):
+        if flask_app.config.get('NO_STORE_HEADERS_ENABLED', True):
+            if not (request.endpoint or '').startswith('static'):
+                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, private'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Expires'] = '0'
+        return response
 
     # --- Logging -----------------------------------------------------------
     if not flask_app.debug and not flask_app.testing:

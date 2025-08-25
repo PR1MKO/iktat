@@ -12,8 +12,8 @@ def test_add_expert_requires_default_leiro(client, app):
         login(client, 'admin', 'secret')
         resp = client.post('/admin/users/add', data={
             'username': 'docx', 'password': 'pw', 'role': 'szakértő',
-        }, follow_redirects=False)
-        assert resp.status_code == 200
+        }, follow_redirects=True)
+        assert any(r.status_code == 302 for r in resp.history)
         assert b'k\xc3\xb6telez' in resp.data.lower() or b'kotelez' in resp.data.lower()
 
 

@@ -216,6 +216,12 @@ def new_investigation():
         flash("Vizsgálat létrehozva.", "success")
         # Go straight to the Investigations Documents page
         return redirect(url_for("investigations.documents", id=inv.id))
+    elif request.method == "POST":
+        for errs in form.errors.values():
+            for err in errs:
+                flash(err)
+        if current_app.config.get('STRICT_PRG_ENABLED', True):
+            return redirect(url_for('investigations.new_investigation'))
 
     return render_template("investigations/new.html", form=form)
 

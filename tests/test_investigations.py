@@ -261,7 +261,8 @@ def test_post_szakertoi_requires_expert(client, app):
     login(client, 'admin', 'secret')
     data = _base_form_data()
     data.update({'external_case_number': 'EXT1', 'assignment_type': 'SZAKÉRTŐI', 'assigned_expert_id': 0})
-    resp = client.post('/investigations/new', data=data)
+    resp = client.post('/investigations/new', data=data, follow_redirects=True)
+    assert any(r.status_code == 302 for r in resp.history)
     assert 'Szakértő kiválasztása kötelező.' in resp.get_data(as_text=True)
     with app.app_context():
         assert Investigation.query.count() == 0

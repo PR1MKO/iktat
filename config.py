@@ -22,7 +22,10 @@ class Config:
     }
 
     TRACK_USER_ACTIVITY = True
-
+    
+    NO_STORE_HEADERS_ENABLED = True
+    BFCACHE_RELOAD_ENABLED = True
+    STRICT_PRG_ENABLED = True
 
 class TestingConfig(Config):
     TESTING = True

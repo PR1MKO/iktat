@@ -139,6 +139,8 @@ def login():
             flash('Logged in successfully.')
             return redirect(url_for('auth.dashboard'))
         flash('Invalid username or password.')
+        if current_app.config.get('STRICT_PRG_ENABLED', True):
+            return redirect(url_for('auth.login'))
     return render_template('login.html')
 
 
@@ -411,6 +413,8 @@ def create_case():
             for err in form.external_id.errors:
                 flash(err)
         if missing or form.errors:
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.create_case'))
             return render_template(
                 'create_case.html',
                 szakerto_users=szakerto_users,
@@ -472,6 +476,8 @@ def create_case():
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash("Valami hiba történt. Próbáld újra.", "danger")
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.create_case'))
             return render_template(
                 'create_case.html',
                 szakerto_users=szakerto_users,
@@ -555,6 +561,8 @@ def edit_case(case_id):
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash("Valami hiba történt. Próbáld újra.", "danger")
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.edit_case', case_id=case.id))
             return render_template('edit_case.html', case=case, szakerto_users=szakerto_users, leiro_users=leiro_users, changelog_entries=changelog_entries)
         flash('Az ügy módosításai elmentve.', 'success')
         return redirect(url_for('auth.case_detail', case_id=case.id))
@@ -611,6 +619,8 @@ def edit_case_basic(case_id):
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash('Valami hiba történt. Próbáld újra.', 'danger')
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.edit_case_basic', case_id=case.id))
             return render_template('edit_case_basic.html', case=case)
         flash('Az alapadatok módosításai elmentve.', 'success')
         return redirect(url_for('auth.list_cases'))
@@ -631,6 +641,8 @@ def case_documents(case_id):
             db.session.rollback()
             current_app.logger.error(f"Database error: {e}")
             flash('Valami hiba történt. Próbáld újra.', 'danger')
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.case_documents', case_id=case_id))
             return render_template('case_documents.html', case=case)
         return redirect(url_for('auth.edit_case', case_id=case_id))
     return render_template('case_documents.html', case=case)
@@ -926,7 +938,8 @@ def add_user():
         elif User.query.filter_by(username=username).first():
             flash("Felhasználónév már foglalt.", 'warning')
         elif form.default_leiro_id.errors:
-            pass
+            for err in form.default_leiro_id.errors:
+                flash(err, 'warning')
         else:
             user = User(
                 username=username,
@@ -943,10 +956,14 @@ def add_user():
                 db.session.rollback()
                 current_app.logger.error(f"Database error: {e}")
                 flash("Valami hiba történt. Próbáld újra.", "danger")
+                if current_app.config.get('STRICT_PRG_ENABLED', True):
+                    return redirect(url_for('auth.add_user'))               
                 return render_template('add_user.html', form=form, leiro_users=leiro_users)
             log_action("User created", f"{username} ({role})")
             flash("Felhasználó létrehozva.", 'success')
             return redirect(url_for('auth.admin_users'))
+        if current_app.config.get('STRICT_PRG_ENABLED', True):
+            return redirect(url_for('auth.add_user'))
     return render_template('add_user.html', form=form, leiro_users=leiro_users)
 
 @auth_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -1005,10 +1022,20 @@ def edit_user(user_id):
                 db.session.rollback()
                 current_app.logger.error(f"Database error: {e}")
                 flash("Valami hiba történt. Próbáld újra.", "danger")
+                if current_app.config.get('STRICT_PRG_ENABLED', True):
+                    return redirect(url_for('auth.edit_user', user_id=user.id))
                 return render_template('edit_user.html', form=form, user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
             log_action("User edited", f"{old_data} → {(user.username, user.role, user.screen_name)}")
             flash("Felhasználó adatai frissítve.", 'success')
             return redirect(url_for('auth.admin_users'))
+        else:
+            for errs in form.errors.values():
+                for err in errs:
+                    flash(err, 'warning')
+            for err in form.default_leiro_id.errors:
+                flash(err, 'warning')
+            if current_app.config.get('STRICT_PRG_ENABLED', True):
+                return redirect(url_for('auth.edit_user', user_id=user.id))
 
     return render_template('edit_user.html', form=form, user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
 
