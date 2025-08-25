@@ -1,5 +1,7 @@
 # tests/conftest.py
-
+# --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
+import tests.compat_flaskwtf  # noqa: F401
+# --------------------------------------------------------
 import os
 import sys
 
