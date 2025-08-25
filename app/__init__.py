@@ -71,7 +71,9 @@ def create_app(test_config=None):
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
     # Separate migration directory for the examination bind
-    migrate_examination.init_app(flask_app, db, directory='migrations_examination', compare_type=True, render_as_batch=True)
+    migrate_examination.init_app(
+        flask_app, db, directory='migrations_examination', compare_type=True, render_as_batch=True
+    )
 
     mail.init_app(flask_app)
     csrf.init_app(flask_app)
@@ -180,23 +182,39 @@ def create_app(test_config=None):
     @flask_app.after_request
     def add_no_store_headers(response):
         if flask_app.config.get('NO_STORE_HEADERS_ENABLED', True):
-            if not (request.endpoint or '').startswith('static'):
+            ep = (request.endpoint or '')
+            if not (ep.startswith('static') or request.path.startswith('/static/')):
                 response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, private'
                 response.headers['Pragma'] = 'no-cache'
                 response.headers['Expires'] = '0'
         return response
 
     # --- Logging -----------------------------------------------------------
-    if not flask_app.debug and not flask_app.testing:
+    # On Windows, RotatingFileHandler can fail to rotate if a previous process still holds a lock.
+    # Use delay=True and fall back to console if renaming fails.
+    if not flask_app.debug and not flask_app.testing and not os.getenv('DISABLE_FILE_LOGGING'):
         log_dir = os.path.join(flask_app.instance_path, 'logs')
         os.makedirs(log_dir, exist_ok=True)
-        file_handler = RotatingFileHandler(
-            os.path.join(log_dir, 'app.log'), maxBytes=10240, backupCount=10
-        )
-        file_handler.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-        file_handler.setFormatter(formatter)
-        flask_app.logger.addHandler(file_handler)
+
+        try:
+            file_handler = RotatingFileHandler(
+                os.path.join(log_dir, 'app.log'),
+                maxBytes=10240,
+                backupCount=10,
+                delay=True,           # <— don’t open until first use; helps with CLI/migrations
+                encoding='utf-8',
+            )
+            file_handler.setLevel(logging.INFO)
+            file_handler.setFormatter(formatter)
+            flask_app.logger.addHandler(file_handler)
+        except PermissionError:
+            # If rotation/rename is blocked by another process, just log to stderr.
+            stream = logging.StreamHandler()
+            stream.setLevel(logging.INFO)
+            stream.setFormatter(formatter)
+            flask_app.logger.addHandler(stream)
+
         flask_app.logger.setLevel(logging.INFO)
         flask_app.logger.info('Logging initialized.')
 

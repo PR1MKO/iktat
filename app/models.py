@@ -1,13 +1,13 @@
 # app/models.py
 
 from flask_login import UserMixin, current_user
-from app import db                # ← your single SQLAlchemy instance
+from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-import pytz
 from datetime import datetime
-from app.utils.time_utils import BUDAPEST_TZ, now_local
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import synonym
+
+from app.utils.time_utils import BUDAPEST_TZ, now_local
 
 class User(db.Model, UserMixin):
     id            = db.Column(db.Integer, primary_key=True)
@@ -25,7 +25,10 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 class Case(db.Model):
+    __tablename__ = 'case'  # be explicit
+
     id                   = db.Column(db.Integer, primary_key=True)
     case_number          = db.Column(db.String(32), unique=True, nullable=False)
     deceased_name        = db.Column(db.String(128))
@@ -33,24 +36,32 @@ class Case(db.Model):
     status               = db.Column(db.String(32), nullable=False, default='new')
     institution_name     = db.Column(db.String(128))
     external_case_number = db.Column(db.String(64))
-    temp_id             = db.Column(db.String(64))
-    birth_date           = db.Column(db.Date)
-    registration_time    = db.Column(
-        db.DateTime(timezone=True),
-        default=now_local
-    )
+    temp_id              = db.Column(db.String(64))
+
+    # Personal data used by templates/docs
+    birth_date           = db.Column(db.Date, nullable=True)
+    anyja_neve           = db.Column(db.String(128))
+    mother_name          = synonym('anyja_neve')
+    szul_hely            = db.Column(db.String(128))
+    residence            = db.Column(db.String(255), nullable=True)
+    citizenship          = db.Column(db.String(255), nullable=True)
+
+    registration_time    = db.Column(db.DateTime(timezone=True), default=now_local)
+
+    # Auto-maintained last-change timestamp (added by migration 1e8b2f0d4b1c)
     updated_at           = db.Column(
         db.DateTime(timezone=True),
         default=now_local,
         onupdate=now_local,
         nullable=False,
     )
+
     deadline             = db.Column(db.DateTime(timezone=True))
     expert_1             = db.Column(db.String(128))
     expert_2             = db.Column(db.String(128))
     describer            = db.Column(db.String(128))
-    tox_expert          = db.Column(db.String(128))
-    tox_completed       = db.Column(db.Boolean, default=False)
+    tox_expert           = db.Column(db.String(128))
+    tox_completed        = db.Column(db.Boolean, default=False)
     assigned_office      = db.Column(db.String(64))
     assigned_signatory   = db.Column(db.String(64))
     assigned_pathologist = db.Column(db.String(64))
@@ -59,22 +70,16 @@ class Case(db.Model):
     tox_orders           = db.Column(db.Text)
     tox_ordered          = db.Column(db.Boolean, default=False)
     tox_viewed_by_expert = db.Column(db.Boolean, default=False)
-    tox_viewed_at       = db.Column(db.DateTime(timezone=True))
-    started_by_expert   = db.Column(db.Boolean, default=False)
+    tox_viewed_at        = db.Column(db.DateTime(timezone=True))
+    started_by_expert    = db.Column(db.Boolean, default=False)
 
     # --- TOVÁBBI ADATOK ---
-    beerk_modja = db.Column(db.String(32))   # Beérkezés módja
-    poszeidon      = db.Column(db.String(64))    # Poszeidon
-    lanykori_nev   = db.Column(db.String(128))   # Elhunyt lánykori neve
-    anyja_neve     = db.Column(db.String(128))   # Anyja neve
-    mother_name    = synonym('anyja_neve')
-    szul_hely      = db.Column(db.String(128))   # Szuletési hely
-    taj_szam       = db.Column(db.String(16))    # TAJ szám
-    residence      = db.Column(db.String(255), nullable=True)
-    citizenship    = db.Column(db.String(255), nullable=True)
+    beerk_modja   = db.Column(db.String(32))
+    poszeidon     = db.Column(db.String(64))
+    lanykori_nev  = db.Column(db.String(128))
+    taj_szam      = db.Column(db.String(16))
 
     # --- TOX + SZERVVIZSGÁLATOK ---
-
     alkohol_ver              = db.Column(db.String(128))
     alkohol_ver_ordered      = db.Column(db.Boolean, default=False)
     alkohol_vizelet          = db.Column(db.String(128))
@@ -84,28 +89,28 @@ class Case(db.Model):
     egyeb_alkohol            = db.Column(db.Text)
     egyeb_alkohol_ordered    = db.Column(db.Boolean, default=False)
 
-    tox_gyogyszer_ver        = db.Column(db.String(128))
-    tox_gyogyszer_ver_ordered = db.Column(db.Boolean, default=False)
-    tox_gyogyszer_vizelet     = db.Column(db.String(128))
+    tox_gyogyszer_ver             = db.Column(db.String(128))
+    tox_gyogyszer_ver_ordered     = db.Column(db.Boolean, default=False)
+    tox_gyogyszer_vizelet         = db.Column(db.String(128))
     tox_gyogyszer_vizelet_ordered = db.Column(db.Boolean, default=False)
-    tox_gyogyszer_gyomor      = db.Column(db.String(128))
-    tox_gyogyszer_gyomor_ordered = db.Column(db.Boolean, default=False)
-    tox_gyogyszer_maj         = db.Column(db.String(128))
-    tox_gyogyszer_maj_ordered = db.Column(db.Boolean, default=False)
+    tox_gyogyszer_gyomor          = db.Column(db.String(128))
+    tox_gyogyszer_gyomor_ordered  = db.Column(db.Boolean, default=False)
+    tox_gyogyszer_maj             = db.Column(db.String(128))
+    tox_gyogyszer_maj_ordered     = db.Column(db.Boolean, default=False)
 
-    tox_kabitoszer_ver        = db.Column(db.String(128))
-    tox_kabitoszer_ver_ordered = db.Column(db.Boolean, default=False)
-    tox_kabitoszer_vizelet     = db.Column(db.String(128))
+    tox_kabitoszer_ver            = db.Column(db.String(128))
+    tox_kabitoszer_ver_ordered    = db.Column(db.Boolean, default=False)
+    tox_kabitoszer_vizelet        = db.Column(db.String(128))
     tox_kabitoszer_vizelet_ordered = db.Column(db.Boolean, default=False)
 
-    tox_cpk            = db.Column(db.String(128))
-    tox_cpk_ordered    = db.Column(db.Boolean, default=False)
-    tox_szarazanyag    = db.Column(db.String(128))
-    tox_szarazanyag_ordered = db.Column(db.Boolean, default=False)
-    tox_diatoma        = db.Column(db.String(128))
-    tox_diatoma_ordered = db.Column(db.Boolean, default=False)
-    tox_co             = db.Column(db.String(128))
-    tox_co_ordered     = db.Column(db.Boolean, default=False)
+    tox_cpk                   = db.Column(db.String(128))
+    tox_cpk_ordered           = db.Column(db.Boolean, default=False)
+    tox_szarazanyag           = db.Column(db.String(128))
+    tox_szarazanyag_ordered   = db.Column(db.Boolean, default=False)
+    tox_diatoma               = db.Column(db.String(128))
+    tox_diatoma_ordered       = db.Column(db.Boolean, default=False)
+    tox_co                    = db.Column(db.String(128))
+    tox_co_ordered            = db.Column(db.Boolean, default=False)
 
     egyeb_tox          = db.Column(db.Text)
     egyeb_tox_ordered  = db.Column(db.Boolean, default=False)
@@ -133,25 +138,25 @@ class Case(db.Model):
     egyeb_szerv_immun = db.Column(db.Boolean, default=False)
 
     # --- Halotti bizonyítvány adatok ---
-    halalt_megallap_pathologus = db.Column(db.Boolean, default=False)
+    halalt_megallap_pathologus  = db.Column(db.Boolean, default=False)
     halalt_megallap_kezeloorvos = db.Column(db.Boolean, default=False)
-    halalt_megallap_mas_orvos = db.Column(db.Boolean, default=False)
-    boncolas_tortent = db.Column(db.Boolean, default=False)
-    varhato_tovabbi_vizsgalat = db.Column(db.Boolean, default=False)
-    kozvetlen_halalok = db.Column(db.String(256))
-    kozvetlen_halalok_ido = db.Column(db.String(64))
-    alapbetegseg_szovodmenyei = db.Column(db.String(256))
+    halalt_megallap_mas_orvos   = db.Column(db.Boolean, default=False)
+    boncolas_tortent            = db.Column(db.Boolean, default=False)
+    varhato_tovabbi_vizsgalat   = db.Column(db.Boolean, default=False)
+    kozvetlen_halalok           = db.Column(db.String(256))
+    kozvetlen_halalok_ido       = db.Column(db.String(64))
+    alapbetegseg_szovodmenyei   = db.Column(db.String(256))
     alapbetegseg_szovodmenyei_ido = db.Column(db.String(64))
-    alapbetegseg = db.Column(db.String(256))
-    alapbetegseg_ido = db.Column(db.String(64))
-    kiserobetegsegek = db.Column(db.Text)
+    alapbetegseg                = db.Column(db.String(256))
+    alapbetegseg_ido            = db.Column(db.String(64))
+    kiserobetegsegek            = db.Column(db.Text)
     
-    certificate_generated = db.Column(db.Boolean, default=False)
+    certificate_generated    = db.Column(db.Boolean, default=False)
     certificate_generated_at = db.Column(db.DateTime(timezone=True))
 
-    tox_doc_generated = db.Column(db.Boolean, default=False)
-    tox_doc_generated_at = db.Column(db.DateTime(timezone=True))
-    tox_doc_generated_by = db.Column(db.String)
+    tox_doc_generated     = db.Column(db.Boolean, default=False)
+    tox_doc_generated_at  = db.Column(db.DateTime(timezone=True))
+    tox_doc_generated_by  = db.Column(db.String)
 
     uploaded_file_records = db.relationship(
         'UploadedFile',
@@ -167,20 +172,17 @@ class Case(db.Model):
             return ''
         dt = self.deadline
         if dt.tzinfo is None:
+            from app.utils.time_utils import BUDAPEST_TZ
             dt = dt.replace(tzinfo=BUDAPEST_TZ)
         return dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d')
         
     def __repr__(self):
         return f'<Case {self.case_number} - {self.deceased_name}>'
 
+
 class AuditLog(db.Model):
     id        = db.Column(db.Integer, primary_key=True)
-    timestamp = db.Column(
-        db.DateTime(timezone=True),
-        default=now_local,
-        index=True,
-        nullable=False,
-    )
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_local, index=True, nullable=False)
     user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     username  = db.Column(db.String(64), nullable=False)
     role      = db.Column(db.String(20), nullable=False)
@@ -192,6 +194,7 @@ class AuditLog(db.Model):
     def __repr__(self):
         return f'<AuditLog {self.timestamp} {self.username} {self.action}>'
 
+
 class ChangeLog(db.Model):
     id         = db.Column(db.Integer, primary_key=True)
     case_id    = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
@@ -199,15 +202,13 @@ class ChangeLog(db.Model):
     old_value  = db.Column(db.Text)
     new_value  = db.Column(db.Text)
     edited_by  = db.Column(db.String(64), nullable=False)
-    timestamp  = db.Column(
-        db.DateTime(timezone=True),
-        default=now_local
-    )
+    timestamp  = db.Column(db.DateTime(timezone=True), default=now_local)
 
     case = db.relationship('Case', backref=db.backref('change_logs', lazy='dynamic'))
 
     def __repr__(self):
         return f'<ChangeLog {self.field_name}: {self.old_value} → {self.new_value}>'
+
 
 _TRACKED_FIELDS = [
     'deceased_name', 'case_type', 'status', 'institution_name',
@@ -220,7 +221,8 @@ _TRACKED_FIELDS = [
 
 @event.listens_for(Case, 'before_update')
 def _audit_case_changes(mapper, connection, target):
-    """Record changes to Case fields in ChangeLog without using Session.add."""    
+    """Record changes to Case fields in ChangeLog without using Session.add."""
+    from app.utils.time_utils import now_local  # ensure function is available
     state = inspect(target)
     log_entries = []
     
@@ -257,25 +259,22 @@ def _audit_case_changes(mapper, connection, target):
                 "old_value": str(old) if old is not None else None,
                 "new_value": str(new) if new is not None else None,
                 "edited_by": (
-                    getattr(current_user, "screen_name", None)
-                    or getattr(current_user, "username", "system")
+                        getattr(current_user, "screen_name", None)
+                        or getattr(current_user, "username", "system")
                 ),
                 "timestamp": now_local(),
             })
 
     if log_entries:
-        connection.execute(ChangeLog.__table__.insert(), log_entries)           
+        connection.execute(ChangeLog.__table__.insert(), log_entries)
+
 
 class UploadedFile(db.Model):
     __tablename__ = 'uploaded_file'
     id          = db.Column(db.Integer, primary_key=True)
     case_id     = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     filename    = db.Column(db.String(256), nullable=False)
-    upload_time = db.Column(
-        db.DateTime(timezone=True),
-        default=now_local,
-        nullable=False,
-    )
+    upload_time = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
     uploader    = db.Column(db.String(64), nullable=False)
     category    = db.Column(db.String(50), nullable=False)
 
@@ -284,40 +283,38 @@ class UploadedFile(db.Model):
     def __repr__(self):
         return f'<UploadedFile {self.filename} by {self.uploader} on {self.upload_time}>'
 
+
 class TaskMessage(db.Model):
     """Persistent notification for assigned tasks."""
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient = db.Column(db.String(128))
-    case_id = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(
-        db.DateTime(timezone=True),
-        default=now_local
-    )
-    seen = db.Column(db.Boolean, default=False)
+    case_id   = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
+    message   = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_local)
+    seen      = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', backref='task_messages')
     case = db.relationship('Case')
-    
+
+
 class UserSessionLog(db.Model):
     __tablename__ = 'user_session_log'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    path = db.Column(db.String(255))
+    id        = db.Column(db.Integer, primary_key=True)
+    user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    path      = db.Column(db.String(255))
     event_type = db.Column(db.String(64))
-    element = db.Column(db.String(128))
-    value = db.Column(db.Text)
+    element   = db.Column(db.String(128))
+    value     = db.Column(db.Text)
     timestamp = db.Column(db.DateTime(timezone=True))
-    extra = db.Column(db.JSON)
+    extra     = db.Column(db.JSON)
 
 
 class IdempotencyToken(db.Model):
     """Tracks recently processed POST operations to prevent rapid duplicates."""
-    id = db.Column(db.Integer, primary_key=True)
-    key = db.Column(db.String(64), unique=True, nullable=False)
-    route = db.Column(db.String(255), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    case_id = db.Column(db.Integer, db.ForeignKey('case.id'))
+    id         = db.Column(db.Integer, primary_key=True)
+    key        = db.Column(db.String(64), unique=True, nullable=False)
+    route      = db.Column(db.String(255), nullable=False)
+    user_id    = db.Column(db.Integer, db.ForeignKey('user.id'))
+    case_id    = db.Column(db.Integer, db.ForeignKey('case.id'))
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    
