@@ -4,6 +4,7 @@ import os
 import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, date
+import hashlib
 
 from app.utils.time_utils import now_local, BUDAPEST_TZ, fmt_date
 from app.utils.permissions import capabilities_for
@@ -30,6 +31,7 @@ from app.audit import log_action
 from ..utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from ..utils.case_status import CASE_STATUS_FINAL, is_final_status
 from ..utils.roles import roles_required
+from app.utils.idempotency import claim_idempotency, make_default_key
 from app.routes import handle_file_upload
 from app.paths import case_root, ensure_case_folder, file_safe_case_number
 from app.utils.case_number import generate_case_number_for_year
@@ -426,6 +428,15 @@ def create_case():
                 form=form,
                 caps=caps
             )
+        ext_id = form.external_id.data or ''
+        key = make_default_key(request, extra=ext_id)
+        if not claim_idempotency(key, route=request.endpoint, user_id=current_user.id, case_id=None):
+            flash("Művelet már feldolgozva.")
+            if ext_id:
+                existing = Case.query.filter_by(external_case_number=ext_id).first()
+                if existing:
+                    return redirect(url_for('auth.case_documents', case_id=existing.id))
+            return redirect(url_for('auth.create_case'))
         birth_date = None
         if request.form.get('birth_date'):
             birth_date = datetime.strptime(request.form['birth_date'], '%Y-%m-%d')
@@ -534,6 +545,10 @@ def edit_case(case_id):
                  .all()
     )
     if request.method == 'POST':
+        form_version = request.form.get('form_version')
+        if form_version and case.updated_at and form_version != case.updated_at.isoformat():
+            flash("Az űrlap időközben frissült. Kérjük, töltse be újra.")
+            return redirect(url_for('auth.edit_case', case_id=case.id))
         case.deceased_name = request.form.get('deceased_name') or None
         case.lanykori_nev = request.form.get('lanykori_nev') or None
         case.mother_name = request.form.get('mother_name') or None
@@ -588,6 +603,10 @@ def edit_case_basic(case_id):
         return resp
 
     if request.method == 'POST':
+        form_version = request.form.get('form_version')
+        if form_version and case.updated_at and form_version != case.updated_at.isoformat():
+            flash("Az űrlap időközben frissült. Kérjük, töltse be újra.")
+            return redirect(url_for('auth.edit_case_basic', case_id=case.id))
         case.deceased_name = request.form.get('deceased_name') or None
         case.lanykori_nev = request.form.get('lanykori_nev') or None
         case.mother_name = request.form.get('mother_name') or None
@@ -853,6 +872,15 @@ def assign_pathologist(case_id):
         expert_2 = request.form.get('expert_2') or None
         if not expert_1:
             flash("Szakértő 1 kitöltése kötelező.", 'warning')
+            return redirect(url_for('auth.assign_pathologist', case_id=case.id))
+        form_version = request.form.get('form_version')
+        if form_version and case.updated_at and form_version != case.updated_at.isoformat():
+            flash("Az űrlap időközben frissült. Kérjük, töltse be újra.")
+            return redirect(url_for('auth.assign_pathologist', case_id=case.id))
+        raw = f"{request.endpoint}|{current_user.id}|{case.id}|{expert_1}|{expert_2 or ''}"
+        key = hashlib.sha256(raw.encode('utf-8')).hexdigest()
+        if not claim_idempotency(key, route=request.endpoint, user_id=current_user.id, case_id=case.id):
+            flash("Nincs változás.")
             return redirect(url_for('auth.assign_pathologist', case_id=case.id))
         case.expert_1 = expert_1
         case.expert_2 = expert_2
@@ -1163,17 +1191,10 @@ def generate_tox_doc(case_id):
     case = db.session.get(Case, case_id) or abort(404)
     if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
         return resp
-    ident = current_user.screen_name or current_user.username
-    if case.tox_doc_generated and case.tox_doc_generated_by == ident and case.tox_doc_generated_at:
-        last = case.tox_doc_generated_at
-        now = now_local()
-        if last.tzinfo is not None:
-            last = last.replace(tzinfo=None)
-        if now.tzinfo is not None:
-            now = now.replace(tzinfo=None)
-        if (now - last) <= timedelta(minutes=5):
-            flash("Az ügyhöz már nemrég készült dokumentum.", "warning")
-            return redirect(url_for('auth.case_detail', case_id=case.id))
+    key = make_default_key(request)
+    if not claim_idempotency(key, route=request.endpoint, user_id=current_user.id, case_id=case.id):
+        flash("Művelet már feldolgozva.")
+        return redirect(url_for('auth.case_detail', case_id=case.id))
 
     template_path = os.path.join(
         str(case_root()),

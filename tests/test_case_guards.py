@@ -1,6 +1,6 @@
 import io
 import pytest
-from app.models import Case, db, UploadedFile
+from app.models import Case, db, UploadedFile, AuditLog
 from app.utils.time_utils import now_local
 from tests.helpers import create_user, login
 from docx import Document
@@ -68,7 +68,7 @@ def test_prg_login_failure_redirects_with_flash(client):
     assert any(r.status_code == 302 for r in resp.history)
 
 
-def test_idempotent_tox_doc_double_post_ignored(client, app, monkeypatch, tmp_path):
+def test_idempotency_tox_doc_double_post_ignored(client, app, monkeypatch, tmp_path):
     with app.app_context():
         create_user('admin', 'pw', 'admin')
         case_id = _create_case(status='beérkezett')
@@ -83,10 +83,12 @@ def test_idempotent_tox_doc_double_post_ignored(client, app, monkeypatch, tmp_pa
     resp1 = client.post(f'/cases/{case_id}/generate_tox_doc', data=form, follow_redirects=True)
     assert resp1.status_code == 200
     resp2 = client.post(f'/cases/{case_id}/generate_tox_doc', data=form, follow_redirects=True)
-    assert 'már nemrég készült' in resp2.get_data(as_text=True)
+    assert 'Művelet már feldolgozva.' in resp2.get_data(as_text=True)
     with app.app_context():
         files = UploadedFile.query.filter_by(case_id=case_id, category='Toxikológiai kirendelő').all()
         assert len(files) == 1
+        logs = AuditLog.query.filter_by(action='Toxikológiai kirendelő generálva').all()
+        assert len(logs) == 1
 
 
 def test_admin_delete_blocked_on_finalized_case(client, app):

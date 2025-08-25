@@ -72,6 +72,7 @@
   <form method="post" class="row g-3 needs-validation" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="assign">
+    <input type="hidden" name="form_version" value="{{ case.updated_at.isoformat() if case.updated_at else '' }}">
 	
     <!-- Expert assignment fields using macros -->
     <div class="col-md-6">

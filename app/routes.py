@@ -18,6 +18,7 @@ from app.utils.time_utils import now_local
 from app.utils.roles import roles_required
 from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from app.utils.case_status import CASE_STATUS_FINAL, is_final_status
+from app.utils.idempotency import claim_idempotency, make_default_key
 
 # CSRF exempt (new Flask-WTF or fallback)
 try:
@@ -649,6 +650,9 @@ def assign_describer(case_id):
     if not case.started_by_expert:
         return jsonify({'error': 'Szakértői munka nem indult'}), 409
     describer = data.get('describer')
+    key = make_default_key(request)
+    if not claim_idempotency(key, route=request.endpoint, user_id=current_user.id, case_id=case.id):
+        return jsonify({'error': 'Művelet már feldolgozva'}), 409
     if describer == case.describer:
         return jsonify({'message': 'nincs változás'}), 200
     case.describer = describer
@@ -700,6 +704,11 @@ def generate_certificate(case_id):
     # Only assigned experts may generate the certificate
     if not is_expert_for_case(current_user, case):
         abort(403)
+        
+    key = make_default_key(request)
+    if not claim_idempotency(key, route=request.endpoint, user_id=current_user.id, case_id=case.id):
+        flash("Művelet már feldolgozva.")
+        return redirect(url_for("main.elvegzem", case_id=case.id))
 
     # Ensure output directory: <case_root>/<case_number>/
     case_dir = str(ensure_case_folder(case.case_number))

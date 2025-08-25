@@ -4,6 +4,7 @@ from flask_login import UserMixin, current_user
 from app import db                # ← your single SQLAlchemy instance
 from werkzeug.security import generate_password_hash, check_password_hash
 import pytz
+from datetime import datetime
 from app.utils.time_utils import BUDAPEST_TZ, now_local
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import synonym
@@ -37,6 +38,12 @@ class Case(db.Model):
     registration_time    = db.Column(
         db.DateTime(timezone=True),
         default=now_local
+    )
+    updated_at           = db.Column(
+        db.DateTime(timezone=True),
+        default=now_local,
+        onupdate=now_local,
+        nullable=False,
     )
     deadline             = db.Column(db.DateTime(timezone=True))
     expert_1             = db.Column(db.String(128))
@@ -303,3 +310,14 @@ class UserSessionLog(db.Model):
     value = db.Column(db.Text)
     timestamp = db.Column(db.DateTime(timezone=True))
     extra = db.Column(db.JSON)
+
+
+class IdempotencyToken(db.Model):
+    """Tracks recently processed POST operations to prevent rapid duplicates."""
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(64), unique=True, nullable=False)
+    route = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    case_id = db.Column(db.Integer, db.ForeignKey('case.id'))
+    created_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    
