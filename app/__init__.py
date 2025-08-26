@@ -128,10 +128,18 @@ def create_app(test_config=None):
             raise RuntimeError(f"Missing tables: {missing}")
         _checked_tables = True
 
-    # Root check
-    @flask_app.route("/")
-    def hello():
-        return "Hello, world! Forensic Case Tracker is running."
+    # Health check endpoint
+    @flask_app.route("/healthz")
+    def healthz():
+        return "ok", 200
+
+    # Root path served by investigations index
+    from .investigations.routes import list_investigations as _list_investigations
+    flask_app.add_url_rule(
+        "/",
+        endpoint="investigations.list_investigations",
+        view_func=_list_investigations,
+    )
 
     # --- Jinja filters/helpers --------------------------------------------
     flask_app.jinja_env.filters['datetimeformat'] = (
