@@ -3,6 +3,8 @@ import pytest
 from app.models import Case, db, UploadedFile, AuditLog
 from app.utils.time_utils import now_local
 from tests.helpers import create_user, login
+import pytest
+docx = pytest.importorskip("docx")
 from docx import Document
 
 

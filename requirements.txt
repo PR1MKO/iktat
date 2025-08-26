@@ -27,6 +27,7 @@ pytest==7.4.2
 pytest-xdist==3.5.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
+python-docx==0.8.11
 pytz==2025.2
 six==1.17.0
 SQLAlchemy==2.0.23
