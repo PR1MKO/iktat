@@ -1,6 +1,5 @@
 # app/routes.py
 import os
-import json
 from datetime import datetime
 
 from flask import (
@@ -20,15 +19,8 @@ from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redire
 from app.utils.case_status import CASE_STATUS_FINAL, is_final_status
 from app.utils.idempotency import claim_idempotency, make_default_key
 
-# CSRF exempt (new Flask-WTF or fallback)
-try:
-    from flask_wtf.csrf import csrf_exempt
-except ImportError:  # Flask-WTF < 1.2
-    from app import csrf as _csrf
-    csrf_exempt = _csrf.exempt
-
 # Models used in this module
-from app.models import User, Case, ChangeLog, UploadedFile, UserSessionLog
+from app.models import User, Case, ChangeLog, UploadedFile
 # Investigation models belong to the investigations blueprint module:
 # from app.investigations.models import Investigation, InvestigationNote, ...
 
@@ -102,39 +94,6 @@ def enforce_upload_size_limit():
 
 # --- Routes ---
 
-@main_bp.route('/track', methods=['POST'])
-@csrf_exempt
-@login_required
-def track_user_activity():
-    if not current_app.config.get("TRACK_USER_ACTIVITY", False):
-        return '', 204
-
-    data = request.get_json()
-    if not data:
-        return '', 400
-
-    value = data.get("value")
-    extra = data.get("extra") or {}
-
-    log = UserSessionLog(
-        user_id=current_user.id,
-        path=request.path,
-        event_type=data.get("event_type"),
-        element=data.get("element"),
-        value=json.dumps(value) if value is not None else None,
-        timestamp=now_local(),
-        extra=json.dumps(extra),
-    )
-    db.session.add(log)
-    db.session.commit()
-    return '', 204
-
-@main_bp.route('/cases')
-@login_required
-def case_list():
-    """Simple passthrough to the main cases listing."""
-    return redirect(url_for('auth.list_cases'))
-
 @main_bp.route('/ugyeim')
 @login_required
 @roles_required('szakértő')
@@ -149,28 +108,6 @@ def ugyeim():
     return render_template('ugyeim.html',
                            pending_cases=pending,
                            completed_cases=completed)
-
-# AJAX add-note
-@main_bp.route('/ugyeim/<int:case_id>/add_note', methods=['POST'])
-@login_required
-@roles_required('szakértő')
-def add_note(case_id):
-    data = request.get_json() or {}
-    note_text = data.get('new_note','').strip()
-    if not note_text:
-        return jsonify({'error':'Empty note'}), 400
-
-    case = db.session.get(Case, case_id) or abort(404)
-    entry = append_note(case, note_text)
-    try:
-        db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Database error: {e}")
-        return jsonify({'error': 'DB error'}), 500
-
-    html = f'<div class="alert alert-secondary py-2">{entry}</div>'
-    return jsonify({'html': html})
 
 @main_bp.before_app_request
 def _enforce_global_upload_cap():
@@ -766,7 +703,4 @@ def complete_expert(case_id):
 
     flash("Szakértői vizsgálat elvégezve.")
     return redirect(url_for('main.ugyeim'))
-
-@main_bp.route('/create-examination', methods=['GET', 'POST'])
-def create_examination():
-    return redirect(url_for('investigations.new_investigation'))
+ 

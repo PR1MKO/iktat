@@ -8,8 +8,7 @@ auth.case_detail                          GET        /cases/<int:case_id>
 auth.case_documents                       GET, POST  /cases/<int:case_id>/documents             
 auth.closed_cases                         GET        /cases/closed                              
 auth.create_case                          GET, POST  /cases/new                                 
-auth.dashboard                            GET        /dashboard                                 
-auth.delete_case                          POST       /admin/cases/<int:case_id>/delete          
+auth.dashboard                            GET        /dashboard                                         
 auth.delete_user                          POST       /admin/users/<int:user_id>/delete          
 auth.download_file                        GET        /cases/<int:case_id>/files/<path:filename> 
 auth.edit_case                            GET, POST  /cases/<int:case_id>/edit                  
@@ -31,10 +30,8 @@ investigations.detail_investigation       GET        /investigations/<int:id>
 investigations.edit_investigation         POST       /investigations/<int:id>/edit              
 investigations.list_investigations        GET        /investigations/                           
 investigations.new_investigation          GET, POST  /investigations/new                        
-investigations.upload_investigation_file  POST       /investigations/<int:id>/upload            
-main.add_note                             POST       /ugyeim/<int:case_id>/add_note             
-main.assign_describer                     POST       /ugyeim/<int:case_id>/assign_describer     
-main.case_list                            GET        /cases                                     
+investigations.upload_investigation_file  POST       /investigations/<int:id>/upload                 
+main.assign_describer                     POST       /ugyeim/<int:case_id>/assign_describer                                       
 main.complete_expert                      POST       /cases/<int:case_id>/complete_expert       
 main.elvegzem                             GET, POST  /ugyeim/<int:case_id>/elvegzem             
 main.elvegzem_toxi                        GET, POST  /elvegzem_toxi/<int:case_id>               
@@ -43,8 +40,7 @@ main.leiro_elvegzem                       GET, POST  /leiro/ugyeim/<int:case_id>
 main.leiro_ugyeim                         GET        /leiro/ugyeim                              
 main.leiro_upload_file                    POST       /leiro/ugyeim/<int:case_id>/upload_file    
 main.mark_tox_viewed                      GET        /cases/<int:case_id>/mark_tox_viewed       
-main.toxi_ugyeim                          GET        /ugyeim/toxi                               
-main.track_user_activity                  POST       /track                                     
+main.toxi_ugyeim                          GET        /ugyeim/toxi                                                                   
 main.ugyeim                               GET        /ugyeim                                    
 main.upload_elvegzes_files                POST       /ugyeim/<int:case_id>/upload_elvegzes_files
 main.vizsgalat_elrendelese                GET, POST  /ugyeim/<int:case_id>/vizsgalat_elrendelese

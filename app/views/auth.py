@@ -783,16 +783,6 @@ def download_file(case_id, filename):
     log_action("File downloaded", f"{filename} from case {case.case_number}")
     return send_from_directory(base_dir, filename, as_attachment=True)
 
-@auth_bp.route('/ugyeim/<int:case_id>/generate_certificate', methods=['POST'])
-@login_required
-@roles_required('szakértő', 'admin', 'iroda')  # permissive for tests
-def generate_certificate_proxy(case_id):
-    # Call the main blueprint’s implementation without importing it
-    view = current_app.view_functions.get('main.generate_certificate')
-    if view is None:
-        abort(500)  # safety: route not registered
-    return view(case_id)
-
 @auth_bp.route('/szignal_cases')
 @login_required
 @roles_required('szignáló')
@@ -1073,27 +1063,6 @@ def edit_user(user_id):
                 return redirect(url_for('auth.edit_user', user_id=user.id))
 
     return render_template('edit_user.html', form=form, user=user, assigned_cases=assigned_cases, leiro_users=leiro_users)
-
-@auth_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
-@login_required
-@roles_required('admin')
-def delete_user(user_id):
-    user = db.session.get(User, user_id) or abort(404)
-    if user.id == current_user.id:
-        flash("Saját magad nem törölheted.", 'warning')
-    else:
-        log_action("User deleted", f"{user.username}")
-        db.session.delete(user)
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Database error: {e}")
-            flash("Valami hiba történt. Próbáld újra.", "danger")
-            return redirect(url_for('auth.admin_users'))
-        flash("Felhasználó törölve.", 'success')
-    return redirect(url_for('auth.admin_users'))
-
 
 @auth_bp.route('/admin/cases')
 @login_required
