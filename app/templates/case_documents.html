@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% import 'includes/case_macros.html' as cm %}
+{% import "includes/utils.html" as utils %}
 
 {% block title %}Dokumentumok – {{ case.case_number }}{% endblock %}
 
@@ -34,7 +35,7 @@
   </div>
 
   <form method="post">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {{ utils.csrf_hidden(form if form is defined else None) }}
     <label class="form-check mb-3">
       <input class="form-check-input" type="checkbox" name="tox_ordered" id="tox_ordered" {% if case.tox_ordered %}checked{% endif %}>
       Végzés tartalmaz toxikológiai vizsgálatot?

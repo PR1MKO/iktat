@@ -354,7 +354,7 @@
   {%- endif -%}
 {% endmacro %}
 
-{% macro cases_table(cases, users_map, sort_by='', sort_order='', query_params={}, show_actions=True) %}
+{% macro cases_table(cases, users_map=None, sort_by='', sort_order='', query_params={}, show_actions=True) %}
 {% set _users_map = users_map or {} %}
 <div class="card shadow-sm mb-4">
   <table class="table table-bordered align-middle mb-0">
