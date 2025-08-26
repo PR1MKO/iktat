@@ -1,5 +1,4 @@
 from datetime import timedelta
-import os
 
 from flask import (
     abort,
@@ -10,17 +9,18 @@ from flask import (
     render_template,
     request,
     url_for,
-    send_from_directory,  # ✅ fix: comma + include here
 )
 from flask_login import current_user, login_required
 from sqlalchemy import or_, func, text
-from werkzeug.utils import secure_filename, safe_join
+from pathlib import Path
+from werkzeug import exceptions
+from app.utils.uploads import save_upload, send_safe
 
 from app import db
 from app.utils.roles import roles_required
 from app.utils.time_utils import fmt_date, now_local
 from app.utils.permissions import capabilities_for
-from app.paths import ensure_investigation_folder
+from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
 from app.services.core_user_read import get_user_safe
 from . import investigations_bp
 from .forms import InvestigationForm, FileUploadForm, InvestigationNoteForm
@@ -428,37 +428,19 @@ def upload_investigation_file(id):
         return jsonify({"error": "invalid"}), 400
 
     upfile = form.file.data
-    filename = secure_filename(upfile.filename)
-    if not filename:
-        return jsonify({"error": "empty-filename"}), 400
-
-    case_dir = str(ensure_investigation_folder(inv.case_number))
-
-    # Safe size guard (no int(None))
-    max_len = current_app.config.get("MAX_CONTENT_LENGTH") or (16 * 1024 * 1024)
-    size = getattr(upfile, "content_length", None)
-    if size is None:
-        try:
-            pos = upfile.stream.tell()
-            upfile.stream.seek(0, os.SEEK_END)
-            end = upfile.stream.tell()
-            upfile.stream.seek(pos)
-            size = end - pos
-        except Exception:
-            size = None
-    if size is not None and size > max_len:
-        abort(413)
-
-    dest = os.path.join(case_dir, filename)
+    root = Path(current_app.config["UPLOAD_INVESTIGATIONS_ROOT"])
+    subdir = investigation_subdir_from_case_number(inv.case_number)
     try:
-        upfile.save(dest)
+        dest = save_upload(upfile, root, "investigations", subdir)
+    except exceptions.BadRequest:
+        return jsonify({"error": "forbidden"}), 400
     except Exception as e:
         current_app.logger.error(f"Investigation file save failed: {e}")
         return jsonify({"error": "save-failed"}), 500
 
     attachment = InvestigationAttachment(
         investigation_id=inv.id,
-        filename=filename,
+        filename=dest.name,
         category=form.category.data,
         uploaded_by=current_user.id,
         uploaded_at=now_local(),
@@ -482,9 +464,10 @@ def download_investigation_file(id, filename):
     if not _can_note_or_upload(inv, current_user):
         abort(403)
 
-    folder = str(ensure_investigation_folder(inv.case_number))
-    full_path = safe_join(folder, filename)
-    if not full_path or not os.path.isfile(full_path):
+    subdir = investigation_subdir_from_case_number(inv.case_number)
+    root = Path(current_app.config["UPLOAD_INVESTIGATIONS_ROOT"]) / subdir
+    try:
+        return send_safe(root, filename, as_attachment=True)
+    except (exceptions.BadRequest, FileNotFoundError):
         abort(404)
 
-    return send_from_directory(folder, os.path.basename(full_path), as_attachment=True)

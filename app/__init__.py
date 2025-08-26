@@ -54,8 +54,28 @@ def create_app(test_config=None):
     binds['examination'] = exam_url
     flask_app.config['SQLALCHEMY_BINDS'] = binds
 
-    # Max 16 MB
+    from pathlib import Path
+
+    # Max 16 MB and upload roots
     flask_app.config.setdefault('MAX_CONTENT_LENGTH', 16 * 1024 * 1024)
+    flask_app.config.setdefault(
+        'UPLOAD_CASES_ROOT', Path(flask_app.instance_path) / 'uploads_cases'
+    )
+    flask_app.config.setdefault(
+        'UPLOAD_INVESTIGATIONS_ROOT',
+        Path(flask_app.instance_path) / 'uploads_investigations',
+    )
+    flask_app.config.setdefault(
+        'CASE_UPLOAD_FOLDER', str(flask_app.config['UPLOAD_CASES_ROOT'])
+    )
+    flask_app.config.setdefault(
+        'INVESTIGATION_UPLOAD_FOLDER',
+        str(flask_app.config['UPLOAD_INVESTIGATIONS_ROOT']),
+    )
+    Path(flask_app.config['UPLOAD_CASES_ROOT']).mkdir(parents=True, exist_ok=True)
+    Path(flask_app.config['UPLOAD_INVESTIGATIONS_ROOT']).mkdir(
+        parents=True, exist_ok=True
+    )
 
     # --- Email config ------------------------------------------------------
     flask_app.config.update(

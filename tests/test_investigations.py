@@ -137,7 +137,7 @@ def test_upload_endpoint_stores_file(client, app):
     login(client, username, 'secret')
     data = {
         'category': 'option1',
-        'file': (io.BytesIO(b'hello'), 'file.txt'),
+        'file': (io.BytesIO(b'hello'), 'file.pdf'),
     }
     resp = client.post(
         f'/investigations/{inv_id}/upload',
@@ -147,7 +147,7 @@ def test_upload_endpoint_stores_file(client, app):
     assert resp.status_code == 200
     from app.paths import ensure_investigation_folder
     inv_dir = ensure_investigation_folder(case_number)
-    upload_path = os.path.join(inv_dir, 'file.txt')
+    upload_path = os.path.join(inv_dir, 'file.pdf')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
     shutil.rmtree(inv_dir)
@@ -202,13 +202,13 @@ def test_permissions(client, app):
     assert resp.status_code == 200
     resp = client.post(
         f'/investigations/{inv_id}/upload',
-        data={'category': 'option1', 'file': (io.BytesIO(b'x'), 'x.txt')},
+        data={'category': 'option1', 'file': (io.BytesIO(b'x'), 'x.pdf')},
         content_type='multipart/form-data',
     )
     assert resp.status_code == 200
     from app.paths import ensure_investigation_folder
     inv_dir = ensure_investigation_folder(case_number)
-    upload_path = os.path.join(inv_dir, 'x.txt')
+    upload_path = os.path.join(inv_dir, 'x.pdf')
     assert os.path.exists(upload_path)
     os.remove(upload_path)
     shutil.rmtree(inv_dir)

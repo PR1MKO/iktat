@@ -9,7 +9,9 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from sqlalchemy import or_
-from werkzeug.utils import secure_filename, safe_join
+from pathlib import Path
+from app.utils.uploads import save_upload
+from werkzeug import exceptions
 from app.paths import ensure_case_folder, file_safe_case_number
 
 from app import db
@@ -42,23 +44,25 @@ def handle_file_upload(case, file, category='egyéb'):
     """Handles file upload and database record creation. Returns filename if uploaded, None otherwise."""
     if not file or not file.filename:
         return None
-    fn = secure_filename(file.filename)
-    upload_dir = str(ensure_case_folder(case.case_number))
+    root = Path(current_app.config["UPLOAD_CASES_ROOT"])
+    subdir = file_safe_case_number(case.case_number)
     try:
-        file.save(os.path.join(upload_dir, fn))
+        dest = save_upload(file, root, "cases", subdir)
+    except exceptions.BadRequest:
+        raise
     except Exception as e:
         current_app.logger.error(f"File save failed: {e}")
         flash("A fájl mentése nem sikerült.", "danger")
         return None
     rec = UploadedFile(
         case_id=case.id,
-        filename=fn,
+        filename=dest.name,
         uploader=current_user.screen_name or current_user.username,
         upload_time=now_local(),
         category=category
     )
     db.session.add(rec)
-    return fn
+    return dest.name
 
 def is_expert_for_case(user, case):
     ident = user.screen_name or user.username

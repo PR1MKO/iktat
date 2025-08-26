@@ -11,13 +11,14 @@ from app.utils.permissions import capabilities_for
 from app.utils.query_helpers import build_cases_and_users_map, apply_case_filters
 from flask import (
     Blueprint, render_template, redirect, url_for, request,
-    flash, current_app, send_from_directory, jsonify, Response, abort
+    flash, current_app, jsonify, Response, abort
 )
 from flask_login import (
     login_user, logout_user,
     login_required, current_user
 )
-from werkzeug.utils import secure_filename, safe_join
+from werkzeug import exceptions
+from app.utils.uploads import save_upload, send_safe
 from sqlalchemy import or_, and_, func
 
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
@@ -687,54 +688,38 @@ def upload_file(case_id):
         flash('Case is finalized. Uploads are disabled.', 'danger')
         return redirect(url_for('auth.case_detail', case_id=case_id))
 
-    upload_folder = str(ensure_case_folder(case.case_number))
+    root = Path(current_app.config["UPLOAD_CASES_ROOT"])
+    subdir = file_safe_case_number(case.case_number)
     category = request.form.get('category')
     if not category:
         flash("Kérjük, válasszon fájl kategóriát.", "error")
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
-    os.makedirs(upload_folder, exist_ok=True)
 
     files = request.files.getlist('file')
     if not files:
         flash('No files selected', 'warning')
         return redirect(request.referrer or url_for('auth.case_detail', case_id=case_id))
 
-    # Robust per-file size check (avoid int(None))
-    max_len = current_app.config.get('MAX_CONTENT_LENGTH') or (16 * 1024 * 1024)
-
     saved = []
     for f in files:
-        size = getattr(f, 'content_length', None)
-        if size is None:
-            try:
-                pos = f.stream.tell()
-                f.stream.seek(0, os.SEEK_END)
-                end = f.stream.tell()
-                f.stream.seek(pos)
-                size = end - pos
-            except Exception:
-                size = None
-        if size is not None and size > max_len:
-            abort(413)
-
-        fn = secure_filename(f.filename)
-        if fn:
-            try:
-                f.save(os.path.join(upload_folder, fn))
-            except Exception as e:
-                current_app.logger.error(f"File save failed: {e}")
-                flash("A fájl mentése nem sikerült.", "danger")
-                continue
-            upload_rec = UploadedFile(
-                case_id=case.id,
-                filename=fn,
-                uploader=current_user.username,
-                upload_time=now_local(),
-                category=category
-            )
-            db.session.add(upload_rec)
-            saved.append(fn)
-            log_action("File uploaded", f"{fn} for case {case.case_number}")
+        try:
+            dest = save_upload(f, root, "cases", subdir)
+        except exceptions.BadRequest:
+            raise
+        except Exception as e:
+            current_app.logger.error(f"File save failed: {e}")
+            flash("A fájl mentése nem sikerült.", "danger")
+            continue
+        upload_rec = UploadedFile(
+            case_id=case.id,
+            filename=dest.name,
+            uploader=current_user.username,
+            upload_time=now_local(),
+            category=category
+        )
+        db.session.add(upload_rec)
+        saved.append(dest.name)
+        log_action("File uploaded", f"{dest.name} for case {case.case_number}")
 
     if saved:
         case.uploaded_files = ','.join(filter(None, (case.uploaded_files or '').split(',') + saved))
@@ -761,27 +746,23 @@ def upload_file(case_id):
 @roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def download_file(case_id, filename):
     case = db.session.get(Case, case_id) or abort(404)
-    base_dir = str(ensure_case_folder(case.case_number))
+    subdir = file_safe_case_number(case.case_number)
+    root = Path(current_app.config["UPLOAD_CASES_ROOT"]) / subdir
 
     try:
-        full_path = safe_join(base_dir, filename)
-        if full_path is None:
-            raise ValueError("unsafe path")
-    except Exception:
+        resp = send_safe(root, filename, as_attachment=True)
+    except exceptions.BadRequest:
         current_app.logger.warning(
             f"Path traversal attempt for case {case_id}: {filename}"
         )
-        abort(403)
-
-    if not os.path.isfile(full_path):
+        abort(400)
+    except FileNotFoundError:
         current_app.logger.warning(
-            f"File not found for case {case_id}: {full_path}"
+            f"File not found for case {case_id}: {filename}"
         )
         abort(404)
-
-    current_app.logger.info(f"Sending file: {full_path}")
     log_action("File downloaded", f"{filename} from case {case.case_number}")
-    return send_from_directory(base_dir, filename, as_attachment=True)
+    return resp
 
 @auth_bp.route('/szignal_cases')
 @login_required

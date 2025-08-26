@@ -232,7 +232,7 @@ def test_file_download_traversal_blocked(client, app):
     with client:
         login(client, 'admin', 'secret')
         resp = client.get(f'/cases/{case_id}/files/../secret.txt')
-        assert resp.status_code == 403
+        assert resp.status_code == 400
 
 
 def test_elvegzem_does_not_auto_assign_describer_anymore(client, app):
