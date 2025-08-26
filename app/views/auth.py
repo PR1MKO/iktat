@@ -1,6 +1,5 @@
 # app/views/auth.py
 
-import os
 import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, date
@@ -18,7 +17,7 @@ from flask_login import (
     login_required, current_user
 )
 from werkzeug import exceptions
-from app.utils.uploads import save_upload, send_safe
+from app.utils.uploads import save_upload, send_safe, resolve_safe
 from sqlalchemy import or_, and_, func
 
 from app.models import UploadedFile, User, Case, AuditLog, ChangeLog, TaskMessage
@@ -1146,13 +1145,20 @@ def generate_tox_doc(case_id):
         flash("Művelet már feldolgozva.")
         return redirect(url_for('auth.case_detail', case_id=case.id))
 
-    template_path = os.path.join(
-        str(case_root()),
+    root = Path(current_app.config["UPLOAD_CASES_ROOT"])
+    template_path = resolve_safe(
+        root,
         'autofill-word-do-not-edit',
         'Toxikológiai-kirendelő.docx'
     )
-    output_folder = str(ensure_case_folder(str(case.case_number)))
-    output_path = os.path.join(output_folder, 'Toxikológiai-kirendelő-kitöltött.docx')
+    # Save under per-case folder named by SAFE case number (matches tests)
+    subdir = file_safe_case_number(case.case_number)
+    output_path = resolve_safe(
+        root,
+        subdir,
+        'Toxikológiai-kirendelő-kitöltött.docx'
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     def safe_int(v):
         try: return int(v)
@@ -1211,13 +1217,13 @@ def generate_tox_doc(case_id):
         try:
             # Preferred: docxtpl
             from docxtpl import DocxTemplate
-            tpl = DocxTemplate(template_path)
+            tpl = DocxTemplate(str(template_path))
             tpl.render(context)
-            tpl.save(output_path)
+            tpl.save(str(output_path))
         except ModuleNotFoundError:
             # Fallback: plain python-docx tag replace for tests
             from docx import Document
-            doc = Document(template_path)
+            doc = Document(str(template_path))
             # VERY simple {{...}} replacements used by the tests
             replacements = {
                 "{{case.case_number}}": context["case"]["case_number"],
@@ -1227,7 +1233,7 @@ def generate_tox_doc(case_id):
                 for k, v in replacements.items():
                     if k in p.text:
                         p.text = p.text.replace(k, str(v))
-            doc.save(output_path)
+            doc.save(str(output_path))
 
         case.tox_doc_generated = True
         case.tox_doc_generated_at = now_local()
@@ -1235,7 +1241,7 @@ def generate_tox_doc(case_id):
 
         db.session.add(UploadedFile(
             case_id=case.id,
-            filename=os.path.basename(output_path),
+            filename=output_path.name,
             uploader=current_user.username,
             upload_time=now_local(),
             category='Toxikológiai kirendelő'

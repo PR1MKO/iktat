@@ -10,9 +10,9 @@ from flask import (
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from pathlib import Path
-from app.utils.uploads import save_upload
+from app.utils.uploads import save_upload, resolve_safe
 from werkzeug import exceptions
-from app.paths import ensure_case_folder, file_safe_case_number
+from app.paths import file_safe_case_number
 
 from app import db
 from app.utils.time_utils import now_local
@@ -651,8 +651,7 @@ def generate_certificate(case_id):
         flash("Művelet már feldolgozva.")
         return redirect(url_for("main.elvegzem", case_id=case.id))
 
-    # Ensure output directory: <case_root>/<case_number>/
-    case_dir = str(ensure_case_folder(case.case_number))
+    root = Path(current_app.config["UPLOAD_CASES_ROOT"])
 
     f = request.form
     get = lambda k: (f.get(k) or "").strip()
@@ -677,10 +676,13 @@ def generate_certificate(case_id):
         f"Kísérő betegségek vagy állapotok: {get('kiserobetegsegek')}",
     ]
 
-    out_path = os.path.join(
-        case_dir, f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt"
+    dest = resolve_safe(
+        root,
+        file_safe_case_number(case.case_number),
+        f"halottvizsgalati_bizonyitvany-{file_safe_case_number(case.case_number)}.txt",
     )
-    with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with open(dest, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
 
     case.certificate_generated = True
