@@ -58,7 +58,8 @@ def run_migrations_online() -> None:
     engines = {"default": db.engine}
     binds = dict(current_app.config.get("SQLALCHEMY_BINDS") or {})
     for bind_key in binds:
-        engines[bind_key] = db.get_engine(current_app, bind=bind_key)
+        engine = db.engines.get(bind_key) or db.get_engine(bind=bind_key)
+        engines[bind_key] = engine
 
     for bind_key, engine in engines.items():
         with engine.connect() as connection:
