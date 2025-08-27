@@ -175,6 +175,24 @@ def create_app(test_config=None):
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     flask_app.jinja_env.filters['localtime'] = localtime
+    
+    
+    def local_dt(value: datetime | None, fmt: str = '%Y-%m-%d %H:%M'):
+        if not value:
+            return ''
+        if getattr(value, 'tzinfo', None) is None:
+            value = value.replace(tzinfo=BUDAPEST_TZ)
+        return value.astimezone(BUDAPEST_TZ).strftime(fmt)
+
+    def iso_dt(value: datetime | None):
+        if not value:
+            return ''
+        if getattr(value, 'tzinfo', None) is None:
+            value = value.replace(tzinfo=BUDAPEST_TZ)
+        return value.astimezone(BUDAPEST_TZ).isoformat()
+
+    flask_app.jinja_env.filters['local_dt'] = local_dt
+    flask_app.jinja_env.filters['iso_dt'] = iso_dt
     flask_app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
 
     # --- Changelog parsing helpers ----------------------------------------

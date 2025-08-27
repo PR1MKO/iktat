@@ -23,10 +23,10 @@
       Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez
     </div>
   {% elif case.tox_viewed_by_expert %}
-    <div class="alert alert-success w-100">
-      Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at.strftime('%Y-%m-%d %H:%M') }}
-    </div>
-  {% endif %}
+      <div class="alert alert-success w-100">
+        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at|local_dt('%Y-%m-%d %H:%M') }}
+      </div>
+    {% endif %}
   
   <!-- Row #1: Order button & File‐picker side by side -->
   <div class="row">

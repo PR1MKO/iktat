@@ -1,6 +1,5 @@
 # app/routes.py
 import os
-from datetime import datetime
 
 from flask import (
     Blueprint, render_template, request,
@@ -159,10 +158,8 @@ def mark_tox_viewed(case_id):
 
     case.tox_viewed_by_expert = True
 
-    # Tests monkeypatch app.routes.datetime, so call utcnow() from THIS module's import
-    ts = datetime.utcnow()
-    if getattr(ts, "tzinfo", None) is not None:
-        ts = ts.replace(tzinfo=None)
+    # Tests may monkeypatch app.routes.now_local; use the helper directly.
+    ts = now_local()
     case.tox_viewed_at = ts
 
     log = ChangeLog(

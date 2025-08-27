@@ -3,7 +3,6 @@
 from flask_login import UserMixin, current_user
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
 from sqlalchemy import event, inspect
 from sqlalchemy.orm import synonym
 
@@ -317,4 +316,4 @@ class IdempotencyToken(db.Model):
     route      = db.Column(db.String(255), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('user.id'))
     case_id    = db.Column(db.Integer, db.ForeignKey('case.id'))
-    created_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)

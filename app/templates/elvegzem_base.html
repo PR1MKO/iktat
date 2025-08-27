@@ -37,25 +37,25 @@
               <tr>
                 <th>Regisztrálva:</th>
                 <td>
-                  {% if case.registration_time %}
-                    {{ case.registration_time.strftime('%Y-%m-%d') }}
-                    <span class="text-muted" style="display: none;">{{ case.registration_time.strftime(' %H:%M') }}</span>
-                  {% else %}
-                    –
-                  {% endif %}
-                </td>
-              </tr>
-              <tr>
-                <th>Határidő:</th>
-                <td>
-                  {% if case.deadline %}
-                    {{ case.deadline.strftime('%Y-%m-%d') }}
-                    <span class="text-muted" style="display: none;">{{ case.deadline.strftime(' %H:%M') }}</span>
-                  {% else %}
-                    –
-                  {% endif %}
-                </td>
-              </tr>
+                    {% if case.registration_time %}
+                      {{ case.registration_time|local_dt('%Y-%m-%d') }}
+                      <span class="text-muted" style="display: none;">{{ case.registration_time|local_dt(' %H:%M') }}</span>
+                    {% else %}
+                      –
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Határidő:</th>
+                  <td>
+                    {% if case.deadline %}
+                      {{ case.deadline|local_dt('%Y-%m-%d') }}
+                      <span class="text-muted" style="display: none;">{{ case.deadline|local_dt(' %H:%M') }}</span>
+                    {% else %}
+                      –
+                    {% endif %}
+                  </td>
+                </tr>
               <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
               <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
               <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>

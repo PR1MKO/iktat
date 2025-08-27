@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from app.models import Case, UploadedFile, ChangeLog, db
-from app.utils.time_utils import BUDAPEST_TZ
+from app.utils.time_utils import BUDAPEST_TZ, to_local
 from tests.helpers import create_user, login
 
 
@@ -23,11 +23,7 @@ def test_tox_view_unlocks_editing(client, app, monkeypatch):
         assert 'Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez' in html
 
         t1 = datetime(2025, 1, 1, 12, 0, tzinfo=BUDAPEST_TZ)
-        class DummyDT:
-            @classmethod
-            def utcnow(cls):
-                return t1.replace(tzinfo=None)
-        monkeypatch.setattr('app.routes.datetime', DummyDT)
+        monkeypatch.setattr('app.routes.now_local', lambda: t1)
         r2 = client.get(f'/cases/{cid}/mark_tox_viewed')
         assert r2.status_code == 302
 
@@ -38,6 +34,7 @@ def test_tox_view_unlocks_editing(client, app, monkeypatch):
     with app.app_context():
         case = db.session.get(Case, cid)
         assert case.tox_viewed_by_expert is True
-        assert case.tox_viewed_at == t1.replace(tzinfo=None)
+        assert to_local(case.tox_viewed_at) == t1
         log = ChangeLog.query.filter_by(case_id=cid, new_value='Toxi végzés megtekintve').first()
         assert log is not None
+        assert to_local(log.timestamp) == t1

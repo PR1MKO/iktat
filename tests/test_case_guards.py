@@ -74,7 +74,7 @@ def test_idempotency_tox_doc_double_post_ignored(client, app, monkeypatch, tmp_p
     with app.app_context():
         create_user('admin', 'pw', 'admin')
         case_id = _create_case(status='beérkezett')
-        monkeypatch.setattr('app.views.auth.case_root', lambda: tmp_path)
+        monkeypatch.setitem(app.config, 'UPLOAD_CASES_ROOT', str(tmp_path))
         tpl_dir = tmp_path / 'autofill-word-do-not-edit'
         tpl_dir.mkdir(parents=True)
         doc = Document()
