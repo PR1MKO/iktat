@@ -32,15 +32,16 @@ def upgrade():
 
 
 def downgrade():
+    # Preserve tz-aware columns on downgrade per project policy
     with op.batch_alter_table('case') as batch_op:
-        batch_op.alter_column('registration_time', type_=sa.DateTime())
-        batch_op.alter_column('deadline', type_=sa.DateTime())
+        batch_op.alter_column('registration_time', type_=sa.DateTime(timezone=True))
+        batch_op.alter_column('deadline', type_=sa.DateTime(timezone=True))
 
     with op.batch_alter_table('audit_log') as batch_op:
-        batch_op.alter_column('timestamp', type_=sa.DateTime())
+        batch_op.alter_column('timestamp', type_=sa.DateTime(timezone=True))
 
     with op.batch_alter_table('change_log') as batch_op:
-        batch_op.alter_column('timestamp', type_=sa.DateTime())
+        batch_op.alter_column('timestamp', type_=sa.DateTime(timezone=True))
 
     with op.batch_alter_table('uploaded_file') as batch_op:
-        batch_op.alter_column('upload_time', type_=sa.DateTime())
+        batch_op.alter_column('upload_time', type_=sa.DateTime(timezone=True))
