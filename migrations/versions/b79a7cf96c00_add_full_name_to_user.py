@@ -13,7 +13,8 @@ def upgrade():
     insp = inspect(bind)
     cols = {c["name"] for c in insp.get_columns("user")}
     if "full_name" not in cols:
-        op.add_column("user", sa.Column("full_name", sa.String(length=128), nullable=True))
+        with op.batch_alter_table("user", schema=None) as batch_op:
+            batch_op.add_column(sa.Column("full_name", sa.String(length=128), nullable=True))
     # else: column already present; no-op
 
 def downgrade():
@@ -22,4 +23,5 @@ def downgrade():
     insp = inspect(bind)
     cols = {c["name"] for c in insp.get_columns("user")}
     if "full_name" in cols:
-        op.drop_column("user", "full_name")
+        with op.batch_alter_table("user", schema=None) as batch_op:
+            batch_op.drop_column("full_name")

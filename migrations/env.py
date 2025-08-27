@@ -4,6 +4,8 @@ from logging.config import fileConfig
 from flask import current_app
 
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import Connection
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -37,14 +39,28 @@ def get_engine_url():
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 config.set_main_option('sqlalchemy.url', get_engine_url())
-db = current_app.extensions['migrate'].db
-target_metadata = db.metadata
+db_ext = current_app.extensions.get('migrate')
+db = getattr(db_ext, 'db', None)
+target_metadata = getattr(db, 'metadata', None)
 
 def include_object(object, name, type_, reflected, compare_to):
-    # core repo: exclude examination tables
-    if type_ == "table" and name.startswith(("investigation",)):
-        return False
+    """
+    Filter objects for multi-bind runs: only migrate tables that match the current bind.
+    Uses Table.info['bind_key'] or model __bind_key__ to decide.
+    """
+    cur_bind = context.config.attributes.get("current_bind_key")
+    if cur_bind:
+        info_bind = None
+        try:
+            info_bind = getattr(object, "info", {}).get("bind_key")
+        except Exception:
+            info_bind = None
+        if info_bind is not None:
+            return info_bind == cur_bind
     return True
+    
+def _is_sqlite_url(url: str) -> bool:
+    return (url or "").strip().lower().startswith("sqlite")
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -59,11 +75,13 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
+    render_as_batch = _is_sqlite_url(url)
     context.configure(
         url=url,
         target_metadata=target_metadata,
         include_object=include_object,
         literal_binds=True,
+        render_as_batch=render_as_batch,
     )
 
     with context.begin_transaction():
@@ -92,19 +110,36 @@ def run_migrations_online():
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
 
-    connectable = get_engine()
+    default_engine = get_engine()
+    binds = dict(current_app.config.get("SQLALCHEMY_BINDS") or {})
 
-    with connectable.connect() as connection:
+    def _configure_and_run(connection: Connection, bind_key: str | None):
+        context.config.attributes["current_bind_key"] = bind_key
+        render_as_batch = (connection.dialect.name == "sqlite")
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             include_object=include_object,
+            render_as_batch=render_as_batch,
             **conf_args
         )
-
         with context.begin_transaction():
             context.run_migrations()
 
+    with default_engine.connect() as connection:
+        _configure_and_run(connection, bind_key=None)
+
+    for bind_key, url in binds.items():
+        section = f"{config.config_ini_section}.{bind_key}"
+        config.set_section_option(section, "sqlalchemy.url", url)
+        engine = engine_from_config(
+            config.get_section(config.config_ini_section),
+            url=url,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+        with engine.connect() as connection:
+            _configure_and_run(connection, bind_key=bind_key)
 
 if context.is_offline_mode():
     run_migrations_offline()
