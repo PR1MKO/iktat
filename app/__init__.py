@@ -17,7 +17,7 @@ from werkzeug.exceptions import RequestEntityTooLarge  # ⬅ add
 load_dotenv()
 
 from config import Config  # noqa: E402
-from app.utils.time_utils import BUDAPEST_TZ  # noqa: E402
+from app.utils.time_utils import BUDAPEST_TZ, fmt_date  # noqa: E402
 
 # Instantiate extensions
 db = SQLAlchemy()
@@ -193,6 +193,8 @@ def create_app(test_config=None):
 
     flask_app.jinja_env.filters['local_dt'] = local_dt
     flask_app.jinja_env.filters['iso_dt'] = iso_dt
+    flask_app.jinja_env.filters['fmt_date'] = fmt_date
+    flask_app.jinja_env.globals['fmt_date'] = fmt_date
     flask_app.jinja_env.globals['BUDAPEST_TZ'] = BUDAPEST_TZ
 
     # --- Changelog parsing helpers ----------------------------------------

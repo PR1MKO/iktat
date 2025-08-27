@@ -31,7 +31,7 @@
       <tr>
         <td><strong>Anyja neve:</strong> {{ case.mother_name or '–' }}</td>
         <td><strong>Születési hely:</strong> {{ case.szul_hely or '–' }}</td>
-        <td><strong>Születési idő:</strong> {{ case.birth_date.strftime('%Y-%m-%d') if case.birth_date else '–' }}</td>
+        <td><strong>Születési idő:</strong> {{ fmt_date(case.birth_date) if case.birth_date else '–' }}</td>
         <td><strong>TAJ szám:</strong> {{ case.taj_szam or '–' }}</td>
       </tr>
       <tr>
