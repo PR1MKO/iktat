@@ -108,13 +108,13 @@ def _maybe_delete(model, label: str, dry_run: bool = False):
 
 def _vacuum_sqlite(bind_name, dry_run: bool = False):
     try:
-        engine = db.get_engine(bind=bind_name)
+        engine = db.engines.get(bind_name) or db.get_engine(bind=bind_name)
         which = bind_name or "default"
         if dry_run:
             print(f"[INFO] (dry-run) Would VACUUM SQLite database ({which})")
             return
-        with engine.connect() as conn:
-            conn.execution_options(isolation_level="AUTOCOMMIT").execute(text("VACUUM"))
+        with engine.begin() as conn:
+            conn.execute(text("VACUUM"))
         print(f"[INFO] VACUUM completed for SQLite database ({which})")
     except Exception as e:
         which = bind_name or "default"

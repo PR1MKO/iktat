@@ -43,7 +43,7 @@ def include_object(obj, name, type_, reflected, compare_to):
     return False
 
 def run_migrations_offline() -> None:
-    engine = db.get_engine(current_app, bind="examination")
+    engine = db.engines.get("examination") or db.get_engine(bind="examination")
     # Escape % for Alembic config parsing
     exam_url = engine.url.render_as_string(hide_password=False).replace("%", "%%")
 
@@ -61,7 +61,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
-    engine = db.get_engine(current_app, bind="examination")
+    engine = db.engines.get("examination") or db.get_engine(bind="examination")
     with engine.connect() as connection:
         context.configure(
             connection=connection,
