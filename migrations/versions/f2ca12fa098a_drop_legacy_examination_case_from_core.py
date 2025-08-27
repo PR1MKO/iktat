@@ -6,7 +6,7 @@ Create Date: 2025-08-18 10:23:07.000000
 
 """
 
-from alembic import op
+from alembic import op, context
 import sqlalchemy as sa
 
 
@@ -18,10 +18,14 @@ depends_on = None
 
 
 def upgrade():
+    if context.get_tag_argument() != "examination":
+        return
     op.drop_table("examination_case")
 
 
 def downgrade():
+    if context.get_tag_argument() != "examination":
+        return
     op.create_table(
         "examination_case",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -34,3 +38,4 @@ def downgrade():
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.UniqueConstraint("investigation_number"),
     )
+
