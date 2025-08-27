@@ -86,10 +86,10 @@ def run_migrations_online():
     raw_conf_args = current_app.extensions["migrate"].configure_args or {}
     conf_args = dict(raw_conf_args)  # shallow copy
 
-    # Ensure we provide process_revision_directives if not present
+    # Provide PRD if missing
     conf_args.setdefault("process_revision_directives", process_revision_directives)
 
-    # Remove keys we set explicitly below to prevent:
+    # Strip any keys we set explicitly to prevent:
     # TypeError: context.configure() got multiple values for keyword argument '...'
     for k in (
         "connection",
@@ -97,6 +97,14 @@ def run_migrations_online():
         "target_metadata",
         "include_object",
         "render_as_batch",
+        "compare_type",
+        "compare_server_default",
+        # extras that sometimes appear; safe to pop
+        "version_table",
+        "literal_binds",
+        "include_schemas",
+        "dialect_opts",
+        "transaction_per_migration",
     ):
         conf_args.pop(k, None)
 
@@ -114,7 +122,7 @@ def run_migrations_online():
             compare_type=True,
             compare_server_default=True,
             render_as_batch=is_sqlite,  # specified exactly once
-            **conf_args,  # safe: sanitized above
+            **conf_args,  # sanitized above
         )
         with context.begin_transaction():
             context.run_migrations()
