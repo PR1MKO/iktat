@@ -15,7 +15,7 @@ from app.paths import file_safe_case_number
 
 from app import db
 from app.utils.time_utils import now_local
-from app.utils.roles import roles_required
+from app.utils.rbac import require_roles as roles_required
 from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from app.utils.case_status import CASE_STATUS_FINAL, is_final_status
 from app.utils.idempotency import claim_idempotency, make_default_key
