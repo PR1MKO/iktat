@@ -30,7 +30,7 @@ from app.email_utils import send_email
 from app.audit import log_action
 from ..utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from ..utils.case_status import CASE_STATUS_FINAL, is_final_status
-from ..utils.roles import roles_required
+from app.utils.rbac import require_roles as roles_required
 from app.utils.idempotency import claim_idempotency, make_default_key
 from app.routes import handle_file_upload
 from app.paths import case_root, ensure_case_folder, file_safe_case_number
@@ -304,6 +304,7 @@ def dashboard_penzugy():
 
 @auth_bp.route('/cases')
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi', 'pénzügy')
 def list_cases():
     status_filter = request.args.get('status', '')
     case_type_filter = request.args.get('case_type', '')
@@ -332,6 +333,7 @@ def list_cases():
 
 @auth_bp.route('/cases/<int:case_id>')
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi', 'pénzügy')
 def case_detail(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
@@ -350,6 +352,7 @@ def case_detail(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/view')
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi', 'pénzügy')
 def view_case(case_id):
     """Read-only view for case details."""
     case = db.session.get(Case, case_id) or abort(404)
@@ -369,6 +372,7 @@ def view_case(case_id):
 
 @auth_bp.route('/cases/closed')
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi', 'pénzügy')
 def closed_cases():
     closed = Case.query.filter(Case.status == CASE_STATUS_FINAL)\
              .order_by(Case.deadline.desc()).all()
@@ -595,9 +599,8 @@ def edit_case(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/edit_basic', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin', 'iroda')
 def edit_case_basic(case_id):
-    if current_user.role != 'iroda':
-        abort(403)
     case = db.session.get(Case, case_id) or abort(404)
     if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
         return resp
@@ -1096,6 +1099,7 @@ def delete_case(case_id):
 
 @auth_bp.route('/cases/<int:case_id>/add_note', methods=['POST'])
 @login_required
+@roles_required('admin', 'iroda', 'szakértő', 'leíró', 'szignáló', 'toxi')
 def add_note_universal(case_id):
     caps = capabilities_for(current_user)
     if not caps.get("can_post_notes"):

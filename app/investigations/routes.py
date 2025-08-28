@@ -1,3 +1,5 @@
+# app/investigations/routes.py
+
 from datetime import timedelta
 
 from flask import (
@@ -17,7 +19,7 @@ from werkzeug import exceptions
 from app.utils.uploads import save_upload, send_safe
 
 from app import db
-from app.utils.roles import roles_required
+from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import fmt_date, now_local
 from app.utils.permissions import capabilities_for
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
@@ -85,6 +87,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 
 @investigations_bp.route("/")
 @login_required
+@roles_required("admin", "iroda", "szakértő", "pénzügy")
 def list_investigations():
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     case_type = request.args.get("case_type", "").strip()
@@ -97,30 +100,20 @@ def list_investigations():
     
     if search:
         like = f"%{search}%"
-        # Broad, test-aligned search across known columns
         query = query.filter(
             or_(
-                # identifiers & numbers
                 Investigation.case_number.ilike(like),
                 Investigation.external_case_number.ilike(like),
                 Investigation.other_identifier.ilike(like),
                 Investigation.taj_number.ilike(like),
-
-                # person/name-ish fields
                 Investigation.subject_name.ilike(like),
                 Investigation.maiden_name.ilike(like),
                 Investigation.mother_name.ilike(like),
-                
-                # location / demographics
                 Investigation.birth_place.ilike(like),
                 Investigation.residence.ilike(like),
                 Investigation.citizenship.ilike(like),
-
-                # types / org
                 Investigation.investigation_type.ilike(like),
                 Investigation.institution_name.ilike(like),
-                
-                # dates — match either full date or just year like "1990"
                 func.strftime("%Y-%m-%d", Investigation.birth_date).like(like),
                 func.strftime("%Y",       Investigation.birth_date).like(like),
             )
@@ -139,7 +132,6 @@ def list_investigations():
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     investigations = pagination.items
 
-    # Precompute display strings only (no new logic)   
     for inv in investigations:
         inv.registration_time_str = fmt_date(inv.registration_time)
         inv.deadline_str = fmt_date(inv.deadline)
@@ -163,7 +155,6 @@ def list_investigations():
         has_edit_investigation=has_edit_investigation,
         caps=capabilities_for(current_user),
     )
-
 
 @investigations_bp.route("/new", methods=["GET", "POST"])
 @login_required
@@ -204,7 +195,7 @@ def new_investigation():
         )
         inv.case_number = generate_case_number(db.session)  # V-####-YYYY
         inv.registration_time = now_local()
-        inv.deadline = inv.registration_time + timedelta(days=30)  # ✅ fix: closing parenthesis
+        inv.deadline = inv.registration_time + timedelta(days=30)
 
         db.session.add(inv)
         db.session.commit()
@@ -228,6 +219,7 @@ def new_investigation():
 
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
+@roles_required("admin", "iroda", "szakértő")
 def documents(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -255,6 +247,7 @@ def documents(id):
 
 @investigations_bp.route("/<int:id>/view")
 @login_required
+@roles_required("admin", "iroda", "szakértő", "pénzügy")
 def view_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -267,7 +260,6 @@ def view_investigation(id):
         .all()
     )
 
-    # Query notes first, then iterate over them
     notes = (
         InvestigationNote.query
         .filter_by(investigation_id=id)
@@ -299,9 +291,9 @@ def view_investigation(id):
         caps=capabilities_for(current_user),
     )
 
-
 @investigations_bp.route("/<int:id>")
 @login_required
+@roles_required("admin", "iroda", "szakértő", "pénzügy")
 def detail_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -348,7 +340,6 @@ def detail_investigation(id):
         caps=capabilities_for(current_user),
     )
 
-
 @investigations_bp.route("/<int:id>/edit", methods=["POST"])
 @login_required
 @roles_required("admin", "iroda")
@@ -373,6 +364,7 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
+@roles_required('admin', 'iroda', 'szakértő')
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -413,6 +405,7 @@ def add_investigation_note(id):
 
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
+@roles_required('admin', 'iroda', 'szakértő')
 def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -457,6 +450,7 @@ def upload_investigation_file(id):
 
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required
+@roles_required("admin", "iroda", "szakértő")
 def download_investigation_file(id, filename):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -470,4 +464,3 @@ def download_investigation_file(id, filename):
         return send_safe(root, filename, as_attachment=True)
     except (exceptions.BadRequest, FileNotFoundError):
         abort(404)
-
