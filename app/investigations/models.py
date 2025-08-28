@@ -6,7 +6,7 @@ class Investigation(db.Model):
     __bind_key__ = 'examination'
     __tablename__ = 'investigation'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     case_number = db.Column(db.String(16), unique=True, nullable=False)
     external_case_number = db.Column(db.String(64))
     other_identifier = db.Column(db.String(64))
@@ -64,7 +64,7 @@ class InvestigationNote(db.Model):
     __bind_key__ = 'examination'
     __tablename__ = 'investigation_note'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     investigation_id = db.Column(db.Integer, db.ForeignKey('investigation.id'), nullable=False)
     author_id = db.Column(db.Integer, index=True, nullable=False)  # plain int
     text = db.Column(db.Text, nullable=False)
@@ -76,7 +76,7 @@ class InvestigationAttachment(db.Model):
     __bind_key__ = 'examination'
     __tablename__ = 'investigation_attachment'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     investigation_id = db.Column(db.Integer, db.ForeignKey('investigation.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     category = db.Column(db.String(64), nullable=False)
@@ -89,7 +89,7 @@ class InvestigationChangeLog(db.Model):
     __bind_key__ = 'examination'
     __tablename__ = 'investigation_change_log'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
     investigation_id = db.Column(db.Integer, db.ForeignKey('investigation.id'), nullable=False)
     field_name = db.Column(db.String(64), nullable=False)
     old_value = db.Column(db.Text)

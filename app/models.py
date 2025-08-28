@@ -3,13 +3,13 @@
 from flask_login import UserMixin, current_user
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import event, inspect
+from sqlalchemy import event, inspect, text as sa_text
 from sqlalchemy.orm import synonym
 
 from app.utils.time_utils import BUDAPEST_TZ, now_local
 
 class User(db.Model, UserMixin):
-    id            = db.Column(db.Integer, primary_key=True)
+    id            = db.Column(db.Integer, primary_key=True, nullable=False)
     username      = db.Column(db.String(64), unique=True, nullable=False)
     screen_name   = db.Column(db.String(128), nullable=True)
     full_name     = db.Column(db.String(128), nullable=True)
@@ -28,11 +28,16 @@ class User(db.Model, UserMixin):
 class Case(db.Model):
     __tablename__ = 'case'  # be explicit
 
-    id                   = db.Column(db.Integer, primary_key=True)
+    id                   = db.Column(db.Integer, primary_key=True, nullable=False)
     case_number          = db.Column(db.String(32), unique=True, nullable=False)
     deceased_name        = db.Column(db.String(128))
     case_type            = db.Column(db.String(64))
-    status               = db.Column(db.String(32), nullable=False, default='new')
+    status               = db.Column(
+        db.String(32),
+        nullable=False,
+        default='new',                          # neutral ORM default
+        server_default=sa_text("'new'"),        # neutral DB default
+    )
     institution_name     = db.Column(db.String(128))
     external_case_number = db.Column(db.String(64))
     temp_id              = db.Column(db.String(64))
@@ -180,7 +185,7 @@ class Case(db.Model):
 
 
 class AuditLog(db.Model):
-    id        = db.Column(db.Integer, primary_key=True)
+    id        = db.Column(db.Integer, primary_key=True, nullable=False)
     timestamp = db.Column(db.DateTime(timezone=True), default=now_local, index=True, nullable=False)
     user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     username  = db.Column(db.String(64), nullable=False)
@@ -195,7 +200,7 @@ class AuditLog(db.Model):
 
 
 class ChangeLog(db.Model):
-    id         = db.Column(db.Integer, primary_key=True)
+    id         = db.Column(db.Integer, primary_key=True, nullable=False)
     case_id    = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     field_name = db.Column(db.String(64), nullable=False)
     old_value  = db.Column(db.Text)
@@ -268,9 +273,32 @@ def _audit_case_changes(mapper, connection, target):
         connection.execute(ChangeLog.__table__.insert(), log_entries)
 
 
+# ---------- CONDITIONAL DEFAULT FOR Case.status ON INSERT ----------
+@event.listens_for(Case, 'before_insert')
+def _set_case_status_default_on_insert(mapper, connection, target: "Case"):
+    """
+    Conditional default at INSERT time:
+      - If no explicit status provided, or it was set by ORM default to 'new':
+          * case_number starting with 'T-PK' -> 'beérkezett'
+          * otherwise -> 'new'
+      - If user explicitly set a non-'new' status, respect it.
+    """
+    cn = (getattr(target, "case_number", "") or "").strip()
+    current_status = getattr(target, "status", None)
+
+    if cn.startswith("T-PK"):
+        # override neutral default 'new' for PK cases
+        if current_status in (None, '', 'new'):
+            target.status = "beérkezett"
+    else:
+        # ensure at least 'new' for non-PK when missing
+        if current_status in (None, ''):
+            target.status = "new"
+
+
 class UploadedFile(db.Model):
     __tablename__ = 'uploaded_file'
-    id          = db.Column(db.Integer, primary_key=True)
+    id          = db.Column(db.Integer, primary_key=True, nullable=False)
     case_id     = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
     filename    = db.Column(db.String(256), nullable=False)
     upload_time = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
@@ -285,7 +313,7 @@ class UploadedFile(db.Model):
 
 class TaskMessage(db.Model):
     """Persistent notification for assigned tasks."""
-    id        = db.Column(db.Integer, primary_key=True)
+    id        = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     recipient = db.Column(db.String(128))
     case_id   = db.Column(db.Integer, db.ForeignKey('case.id'), nullable=False)
@@ -299,7 +327,7 @@ class TaskMessage(db.Model):
 
 class UserSessionLog(db.Model):
     __tablename__ = 'user_session_log'
-    id        = db.Column(db.Integer, primary_key=True)
+    id        = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id   = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     path      = db.Column(db.String(255))
     event_type = db.Column(db.String(64))
@@ -311,7 +339,7 @@ class UserSessionLog(db.Model):
 
 class IdempotencyToken(db.Model):
     """Tracks recently processed POST operations to prevent rapid duplicates."""
-    id         = db.Column(db.Integer, primary_key=True)
+    id         = db.Column(db.Integer, primary_key=True, nullable=False)
     key        = db.Column(db.String(64), unique=True, nullable=False)
     route      = db.Column(db.String(255), nullable=False)
     user_id    = db.Column(db.Integer, db.ForeignKey('user.id'))
