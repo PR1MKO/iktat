@@ -35,8 +35,8 @@ class Case(db.Model):
     status               = db.Column(
         db.String(32),
         nullable=False,
-        default='new',                          # neutral ORM default
-        server_default=sa_text("'new'"),        # neutral DB default
+        default='new',                   # universal ORM default
+        server_default=sa_text("'new'")  # universal DB default
     )
     institution_name     = db.Column(db.String(128))
     external_case_number = db.Column(db.String(64))
@@ -271,29 +271,6 @@ def _audit_case_changes(mapper, connection, target):
 
     if log_entries:
         connection.execute(ChangeLog.__table__.insert(), log_entries)
-
-
-# ---------- CONDITIONAL DEFAULT FOR Case.status ON INSERT ----------
-@event.listens_for(Case, 'before_insert')
-def _set_case_status_default_on_insert(mapper, connection, target: "Case"):
-    """
-    Conditional default at INSERT time:
-      - If no explicit status provided, or it was set by ORM default to 'new':
-          * case_number starting with 'T-PK' -> 'beérkezett'
-          * otherwise -> 'new'
-      - If user explicitly set a non-'new' status, respect it.
-    """
-    cn = (getattr(target, "case_number", "") or "").strip()
-    current_status = getattr(target, "status", None)
-
-    if cn.startswith("T-PK"):
-        # override neutral default 'new' for PK cases
-        if current_status in (None, '', 'new'):
-            target.status = "beérkezett"
-    else:
-        # ensure at least 'new' for non-PK when missing
-        if current_status in (None, ''):
-            target.status = "new"
 
 
 class UploadedFile(db.Model):

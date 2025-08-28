@@ -11,7 +11,7 @@ def test_case_status_default(app):
         c = Case(case_number="T-PK-1")
         db.session.add(c)
         db.session.commit()
-        assert c.status == 'beérkezett'
+        assert c.status == 'new'
 
 
 def test_case_pk_autoincrement(app):
