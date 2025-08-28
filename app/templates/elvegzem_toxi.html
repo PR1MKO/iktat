@@ -35,7 +35,7 @@
   {% if case.tox_doc_generated %}
   <div class="alert alert-success mt-4">
     ✅ Toxikológiai kirendelő dokumentum generálva.<br>
-    {{ case.tox_doc_generated_at|localtime }} – {{ case.tox_doc_generated_by }}
+    {{ case.tox_doc_generated_at_str }} – {{ case.tox_doc_generated_by }}
   </div>
   {% else %}
   <div class="mt-4">

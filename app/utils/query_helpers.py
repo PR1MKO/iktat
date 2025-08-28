@@ -2,6 +2,7 @@ from sqlalchemy import or_, and_, func
 from app.utils.time_utils import now_local
 from app.models import Case, User
 from app import db
+from .dates import attach_case_dates
 
 
 def apply_case_filters(query, request_args):
@@ -56,6 +57,8 @@ def build_cases_and_users_map(request_args, base_query=None):
     expired_cases = q.filter(Case.deadline < now).order_by(*ordering).all()
     active_cases = q.filter(or_(Case.deadline >= now, Case.deadline.is_(None))).order_by(*ordering).all()
     cases = expired_cases + active_cases
+    for case in cases:
+        attach_case_dates(case)
 
     # users map
     users = User.query.all()

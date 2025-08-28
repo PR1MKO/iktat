@@ -1,7 +1,7 @@
 <li class="list-group-item" data-id="{{ note.id }}">
   <div>
     <strong>{{ user_display_name(author) }}</strong>
-    <small class="text-muted">{{ note.timestamp_str or (note.timestamp|localtime) }}</small>
+    <small class="text-muted">{{ note.timestamp_str }}</small>
   </div>
   <div>{{ note.text }}</div>
 </li>

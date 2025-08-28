@@ -50,21 +50,11 @@
           <td><strong>Állapot:</strong> {{ case.status }}</td>
           <td>
             <strong>Regisztrálva:</strong>
-              {% if case.registration_time %}
-                {{ case.registration_time|local_dt('%Y-%m-%d') }}
-                <span class="text-muted" style="display: none;">{{ case.registration_time|local_dt(' %H:%M') }}</span>
-              {% else %}
-                –
-              {% endif %}
+              {{ case.registration_time_str or '–' }}
             </td>
             <td colspan="2">
               <strong>Határidő:</strong>
-              {% if case.deadline %}
-                {{ case.deadline|local_dt('%Y-%m-%d') }}
-                <span class="text-muted" style="display: none;">{{ case.deadline|local_dt(' %H:%M') }}</span>
-              {% else %}
-                –
-              {% endif %}
+              {{ case.deadline_str or '–' }}
             </td>
           </tr>
       <tr>
@@ -92,7 +82,7 @@
               <span class="badge bg-secondary ms-2">{{ rec.category }}</span>
             </div>
             <small class="text-muted">
-              {{ rec.upload_time|localtime }} &mdash; {{ rec.uploader }}
+              {{ rec.upload_time_str }} &mdash; {{ rec.uploader }}
             </small>
           </li>
         {% endfor %}
@@ -142,7 +132,7 @@
               {% if parsed %}
                 <span class="text-muted small">[{{ parsed.ts }} &ndash; {{ parsed.user }}]</span> {{ parsed.name }} rendelve
               {% else %}
-                <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+                <span class="text-muted small">[{{ entry.timestamp_str }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
               {% endif %}
 			{% elif entry.field_name == 'notes' %}
             {% set parsed = entry.new_value | parse_note_changelog %}
@@ -152,7 +142,7 @@
                 {{ entry.new_value or '–' }}
               {% endif %}
             {% else %}
-              <span class="text-muted small">[{{ entry.timestamp|localtime }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+              <span class="text-muted small">[{{ entry.timestamp_str }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
             {% endif %}
           </li>
         {% endfor %}
@@ -416,7 +406,7 @@
           {{ case.status }}
         </td>
         <td>{{ case.institution_name }}</td>
-        <td>{{ case.registration_time|localtime if case.registration_time else '' }}</td>
+        <td>{{ case.registration_time_str }}</td>
         <td>{{ case.formatted_deadline }}</td>
         <td>{{ _users_map[case.expert_1].screen_name if case.expert_1 in _users_map else case.expert_1 or '–' }}</td>
         <td>{{ _users_map[case.expert_2].screen_name if case.expert_2 in _users_map else case.expert_2 or '–' }}</td>

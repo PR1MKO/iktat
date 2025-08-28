@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, date
 import hashlib
 
 from app.utils.time_utils import now_local, BUDAPEST_TZ, fmt_date
+from app.utils.dates import attach_case_dates, safe_fmt
 from app.utils.permissions import capabilities_for
 from app.utils.query_helpers import build_cases_and_users_map, apply_case_filters
 from flask import (
@@ -220,6 +221,8 @@ def dashboard():
             .order_by(Investigation.registration_time.desc())
             .all()
         )
+        for inv in assigned_investigations:
+            attach_case_dates(inv)
         template_ctx['assigned_investigations'] = assigned_investigations
 
     if current_user.role == 'szakértő':
@@ -235,12 +238,17 @@ def dashboard():
             .order_by(TaskMessage.timestamp.desc())
             .all()
         )
+        for msg in task_messages:
+            msg.timestamp_str = safe_fmt(msg.timestamp)
         template_ctx['task_messages'] = task_messages
 
     if current_user.role == 'admin':
+        recent_logins = AuditLog.query.filter_by(action='User logged in')\
+            .order_by(AuditLog.timestamp.desc()).limit(5).all()
+        for entry in recent_logins:
+            entry.timestamp_str = safe_fmt(entry.timestamp)
         template_ctx.update({
-            "recent_logins": AuditLog.query.filter_by(action='User logged in')
-                .order_by(AuditLog.timestamp.desc()).limit(5).all(),
+            "recent_logins": recent_logins,
             "most_active_users": db.session.query(
                 ChangeLog.edited_by, func.count(ChangeLog.id)
             )
@@ -376,6 +384,8 @@ def view_case(case_id):
 def closed_cases():
     closed = Case.query.filter(Case.status == CASE_STATUS_FINAL)\
              .order_by(Case.deadline.desc()).all()
+    for case in closed:
+        attach_case_dates(case)
     return render_template('closed_cases.html', cases=closed)
 
 
@@ -537,6 +547,7 @@ def create_case():
 @roles_required('admin', 'iroda')
 def edit_case(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    attach_case_dates(case)
     if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
         return resp
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
@@ -548,6 +559,8 @@ def edit_case(case_id):
                  .limit(5)
                  .all()
     )
+    for entry in changelog_entries:
+        entry.timestamp_str = safe_fmt(entry.timestamp)
     if request.method == 'POST':
         form_version = request.form.get('form_version')
         if form_version and case.updated_at and form_version != case.updated_at.isoformat():
@@ -602,6 +615,7 @@ def edit_case(case_id):
 @roles_required('admin', 'iroda')
 def edit_case_basic(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    attach_case_dates(case)
     if (resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)) is not None:
         return resp
 
@@ -808,6 +822,9 @@ def assign_pathologist(case_id):
         flash("Nincs jogosultság", "danger")
         return redirect(url_for('auth.case_detail', case_id=case_id))
     uploads = UploadedFile.query.filter_by(case_id=case.id).all()
+    attach_case_dates(case)
+    for rec in uploads:
+        rec.upload_time_str = safe_fmt(rec.upload_time)
     szakerto_users = User.query.filter_by(role='szakértő').order_by(User.username).all()
 
     # First expert: only "-- Válasszon --" as empty
@@ -897,6 +914,8 @@ def assign_pathologist(case_id):
                  .limit(5)
                  .all()
     )
+    for entry in changelog_entries:
+        entry.timestamp_str = safe_fmt(entry.timestamp)
     return render_template(
         'assign_pathologist.html',
         case=case,
@@ -914,6 +933,8 @@ def assign_pathologist(case_id):
 @roles_required('admin')
 def admin_users():
     users = User.query.order_by(User.username).all()
+    for u in users:
+        u.last_login_str = safe_fmt(getattr(u, 'last_login', None))
     return render_template('admin_users.html', users=users)
 
 
@@ -1066,6 +1087,8 @@ def manage_cases():
         col = Case.deadline
         col = col.asc() if sort_order == 'asc' else col.desc()
         cases = Case.query.order_by(col).all()
+    for case in cases:
+        attach_case_dates(case)
 
     return render_template('admin_manage_cases.html',
                            cases=cases,

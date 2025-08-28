@@ -27,8 +27,8 @@
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
         <td>{{ case.status }}</td>
-        <td>{{ case.registration_time|localtime }}</td>
-        <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
+        <td>{{ case.registration_time_str }}</td>
+        <td>{{ case.deadline_str }}</td>
         <td>
           <a class="btn btn-outline-success" href="{{ url_for('main.elvegzem_toxi', case_id=case.id) }}">Elvégzem</a>
         </td>
@@ -59,8 +59,8 @@
         <td>{{ case.case_number }}</td>
         <td>{{ case.deceased_name }}</td>
         <td>{{ case.status }}</td>
-        <td>{{ case.registration_time|localtime }}</td>
-        <td>{{ case.deadline|localtime if case.deadline else '' }}</td>
+        <td>{{ case.registration_time_str }}</td>
+        <td>{{ case.deadline_str }}</td>
         <td>
           <a href="{{ url_for('main.elvegzem_toxi', case_id=case.id) }}" class="btn btn-outline-secondary btn-sm">Szerkeszt</a>
         </td>

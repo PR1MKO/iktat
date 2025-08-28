@@ -83,7 +83,7 @@
           {% if recent_logins %}
             {% for entry in recent_logins %}
               <li class="list-group-item">
-                {{ entry.timestamp|localtime }} – {{ entry.username }}
+                {{ entry.timestamp_str }} – {{ entry.username }}
               </li>
             {% endfor %}
           {% else %}

@@ -20,8 +20,8 @@
       <tr><th scope="row">Residence</th><td>{{ investigation.residence }}</td></tr>
       <tr><th scope="row">Citizenship</th><td>{{ investigation.citizenship }}</td></tr>
       <tr><th scope="row">Institution</th><td>{{ investigation.institution_name }}</td></tr>
-      <tr><th scope="row">Registration time</th><td>{{ investigation.registration_time|localtime }}</td></tr>
-      <tr><th scope="row">Deadline</th><td>{{ investigation.deadline|localtime if investigation.deadline else '–' }}</td></tr>
+      <tr><th scope="row">Registration time</th><td>{{ investigation.registration_time_str }}</td></tr>
+      <tr><th scope="row">Deadline</th><td>{{ investigation.deadline_str or '–' }}</td></tr>
       <tr><th scope="row">Assignment type</th><td>{{ investigation.assignment_type }}</td></tr>
         <tr><th scope="row">Assigned expert</th><td>{{ user_display_name(assigned_expert) }}</td></tr>
     </table>
@@ -37,7 +37,7 @@
           <a href="{{ url_for('investigations.download_investigation_file', id=investigation.id, filename=a.filename) }}">{{ a.filename }}</a>
           <small class="text-muted">({{ a.category }})</small>
         </span>
-        <small class="text-muted">{{ a.uploaded_at|localtime }}</small>
+        <small class="text-muted">{{ a.uploaded_at_str }}</small>
       </li>
     {% else %}
       <li class="list-group-item text-muted">No files uploaded.</li>

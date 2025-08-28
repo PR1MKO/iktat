@@ -4,13 +4,16 @@ from markupsafe import Markup as _MSM
 _fl.Markup = _MSM  # ensure any "from flask import Markup" resolves safely
 import tests.compat_flaskwtf  # noqa: F401  # soft patch (no-op on >=1.2.x)
 # -------------------------------------------------------------------------
+
 # tests/conftest.py
+
 # --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
 import tests.compat_flaskwtf  # noqa: F401
 # --------------------------------------------------------
+
 import os
 import sys
-
+import pathlib
 import pytest
 from sqlalchemy.pool import StaticPool
 
@@ -24,6 +27,23 @@ from config import TestingConfig  # noqa: E402
 # Single import that aggregates every model module.
 from app import models_all  # noqa: F401  # pylint: disable=unused-import
 # --------------------------------------------------------------
+
+
+# ---------- Force UTF-8 for Path.read_text() during tests ----------
+_ORIG_READ_TEXT = pathlib.Path.read_text
+
+def _read_text_utf8(self, *args, **kwargs):
+    kwargs.setdefault("encoding", "utf-8")
+    return _ORIG_READ_TEXT(self, *args, **kwargs)
+
+def pytest_sessionstart(session):
+    # Monkeypatch globally at session start so template reads don't blow up on Windows locales
+    pathlib.Path.read_text = _read_text_utf8
+
+def pytest_sessionfinish(session, exitstatus):
+    # Restore original to avoid side-effects outside pytest
+    pathlib.Path.read_text = _ORIG_READ_TEXT
+# ------------------------------------------------------------------
 
 
 @pytest.fixture

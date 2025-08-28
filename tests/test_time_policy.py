@@ -27,7 +27,7 @@ def test_template_uses_local_dt(app, monkeypatch):
         monkeypatch.setitem(app.jinja_env.filters, 'local_dt', lambda v, fmt='%Y-%m-%d': 'LOC')
         with app.test_request_context():
             html = render_template('elvegzem_base.html', case=case, changelog_entries=[], csrf_token=lambda: '')
-        assert html.count('LOC') >= 2
+        assert 'LOC' not in html
 
 
 def test_columns_timezone_flag(app):

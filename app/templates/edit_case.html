@@ -19,7 +19,7 @@
       <div class="card-body">
 <form method="post" class="row g-3 needs-validation" novalidate>
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <input type="hidden" name="form_version" value="{{ case.updated_at.isoformat() if case.updated_at else '' }}">
+  <input type="hidden" name="form_version" value="{{ case.updated_at_iso }}">
 
   <!-- Case type -->
   <div class="col-md-6">
@@ -170,13 +170,13 @@
   <!-- Regisztrálva -->
   <div class="col-md-6">
     <label for="registration_time" class="form-label">Regisztrálva</label>
-    <input type="datetime-local" id="registration_time" name="registration_time" class="form-control" value="{{ case.registration_time|datetimeformat }}" disabled>
+    <input type="datetime-local" id="registration_time" name="registration_time" class="form-control" value="{{ case.registration_time_str }}" disabled>
   </div>
 
   <!-- Határidő -->
   <div class="col-md-6">
     <label for="deadline" class="form-label">Határidő</label>
-    <input type="datetime-local" id="deadline" name="deadline" class="form-control" value="{{ case.deadline|datetimeformat }}" disabled>
+    <input type="datetime-local" id="deadline" name="deadline" class="form-control" value="{{ case.deadline_str }}" disabled>
   </div>
 
   <!-- Állapot -->

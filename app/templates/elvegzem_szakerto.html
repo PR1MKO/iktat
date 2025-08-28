@@ -24,7 +24,7 @@
     </div>
   {% elif case.tox_viewed_by_expert %}
       <div class="alert alert-success w-100">
-        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at|local_dt('%Y-%m-%d %H:%M') }}
+        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at_str }}
       </div>
     {% endif %}
   

@@ -21,6 +21,7 @@ from app.utils.uploads import save_upload, send_safe
 from app import db
 from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import fmt_date, now_local
+from app.utils.dates import safe_fmt
 from app.utils.permissions import capabilities_for
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
 from app.services.core_user_read import get_user_safe
@@ -233,6 +234,8 @@ def documents(id):
         .all()
     )
     for att in attachments:
+        att.uploaded_at_str = safe_fmt(att.uploaded_at)
+    for att in attachments:
         att.uploaded_at_str = att.uploaded_at.strftime("%Y.%m.%d %H:%M")
 
     upload_form = FileUploadForm()
@@ -268,6 +271,7 @@ def view_investigation(id):
     )
     for note in notes:
         note.author = get_user_safe(note.author_id)
+        note.timestamp_str = safe_fmt(note.timestamp)
 
     changelog_entries = (
         InvestigationChangeLog.query
@@ -277,8 +281,11 @@ def view_investigation(id):
     )
     for entry in changelog_entries:
         entry.edited_by = user_display_name(get_user_safe(entry.edited_by))
+        entry.timestamp_str = safe_fmt(entry.timestamp)
 
     assigned_expert = get_user_safe(inv.assigned_expert_id)
+    inv.registration_time_str = safe_fmt(inv.registration_time)
+    inv.deadline_str = safe_fmt(inv.deadline)
 
     return render_template(
         "investigations/view.html",

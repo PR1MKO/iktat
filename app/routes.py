@@ -15,6 +15,7 @@ from app.paths import file_safe_case_number
 
 from app import db
 from app.utils.time_utils import now_local
+from app.utils.dates import attach_case_dates, safe_fmt
 from app.utils.rbac import require_roles as roles_required
 from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from app.utils.case_status import CASE_STATUS_FINAL, is_final_status
@@ -108,6 +109,8 @@ def ugyeim():
     ))
     pending   = base_q.filter(Case.status != 'boncolva-leírónál').all()
     completed = base_q.filter(Case.status == 'boncolva-leírónál').all()
+    for case in pending + completed:
+        attach_case_dates(case)
     return render_template('ugyeim.html',
                            pending_cases=pending,
                            completed_cases=completed)
@@ -187,6 +190,7 @@ def mark_tox_viewed(case_id):
 @roles_required('szakértő', 'leíró')
 def elvegzem(case_id):
     case = db.session.get(Case, case_id) or abort(404)
+    attach_case_dates(case)
 
     # Authorization
     if current_user.role == 'szakértő':
@@ -276,6 +280,8 @@ def elvegzem(case_id):
 
     ctx = build_case_context(case)
     ctx['case'] = case
+    for entry in ctx.get('changelog_entries', []):
+        entry.timestamp_str = safe_fmt(entry.timestamp)
     vegzes_file = next(
         (f for f in case.uploaded_file_records if f.category == "végzés"),
         None
@@ -466,6 +472,8 @@ def leiro_ugyeim():
     base_q = Case.query.filter_by(describer=ident)
     pending   = base_q.filter(Case.status=='boncolva-leírónál').all()
     completed = base_q.filter(Case.status=='leiktatva').all()
+    for case in pending + completed:
+        attach_case_dates(case)
     return render_template('leiro_ugyeim.html',
                            pending_cases=pending,
                            completed_cases=completed)
@@ -485,6 +493,8 @@ def toxi_ugyeim():
 
     assigned_cases = Case.query.filter(pending_filter, vegzes_exists).all()
     done_cases = Case.query.filter(Case.tox_completed.is_(True), vegzes_exists).all()
+    for case in assigned_cases + done_cases:
+        attach_case_dates(case)
 
     return render_template(
         'toxi_ugyeim.html',
@@ -518,6 +528,7 @@ def elvegzem_toxi(case_id):
         flash('✔️ Toxikológiai vizsgálat elvégezve.', 'success')
         return redirect(url_for('main.toxi_ugyeim'))
 
+    attach_case_dates(case)
     return render_template('elvegzem_toxi.html', case=case)
 
 @main_bp.route('/leiro/ugyeim/<int:case_id>/elvegzem', methods=['GET','POST'])

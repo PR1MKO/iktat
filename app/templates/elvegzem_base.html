@@ -38,8 +38,7 @@
                 <th>Regisztrálva:</th>
                 <td>
                     {% if case.registration_time %}
-                      {{ case.registration_time|local_dt('%Y-%m-%d') }}
-                      <span class="text-muted" style="display: none;">{{ case.registration_time|local_dt(' %H:%M') }}</span>
+                      {{ case.registration_time_str }}
                     {% else %}
                       –
                     {% endif %}
@@ -49,8 +48,7 @@
                   <th>Határidő:</th>
                   <td>
                     {% if case.deadline %}
-                      {{ case.deadline|local_dt('%Y-%m-%d') }}
-                      <span class="text-muted" style="display: none;">{{ case.deadline|local_dt(' %H:%M') }}</span>
+                      {{ case.deadline_str }}
                     {% else %}
                       –
                     {% endif %}
@@ -83,7 +81,7 @@
               {% for rec in case.uploaded_file_records %}
                 <li class="list-group-item d-flex justify-content-between align-items-center">
                   <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
-                  <small class="text-muted">{{ rec.upload_time|localtime }} — {{ rec.uploader }}</small>
+                  <small class="text-muted">{{ rec.upload_time_str }} — {{ rec.uploader }}</small>
                 </li>
               {% endfor %}
             </ul>
@@ -117,7 +115,7 @@
           <div class="list-group list-group-flush">
             {% for entry in changelog_entries %}
               <div class="list-group-item py-2">
-                [{{ entry.timestamp|localtime }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+                [{{ entry.timestamp_str }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
               </div>
             {% endfor %}
             {% if not changelog_entries %}
