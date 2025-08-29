@@ -1,10 +1,24 @@
 # config.py
 import os
 
+# Try to load optional instance config for secrets (not tracked in VCS)
+instance_cfg = None
+try:
+    import instance.config as instance_cfg  # type: ignore
+except Exception:  # pragma: no cover - instance config is optional
+    pass
+
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key")
+    SECRET_KEY = os.environ.get("SECRET_KEY") or getattr(instance_cfg, "SECRET_KEY", None)
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587

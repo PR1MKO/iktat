@@ -19,6 +19,7 @@ from sqlalchemy.pool import StaticPool
 
 # Ensure app package is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+os.environ.setdefault("SECRET_KEY", "test-secret")
 
 from app import create_app, db  # noqa: E402
 from config import TestingConfig  # noqa: E402
