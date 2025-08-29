@@ -1,7 +1,13 @@
 import pytest
 from tests.helpers import create_user, login, login_follow
 
-CSP = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'"
+CSP = (
+    "default-src 'self'; "
+    "img-src 'self' data:; "
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
+    "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+    "font-src 'self' data: https://fonts.gstatic.com;"
+)
 
 
 def test_security_headers_present(client):
