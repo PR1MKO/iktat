@@ -114,3 +114,9 @@ Install and enable pre-commit locally:
 Run all hooks on the repo anytime:
 
     pre-commit run --all-files
+
+## Dev Doc
+
+`python -m tools.devdoc --heads "rbac: revision abc" --risks "merge pending" --next "add negative tests"`
+
+Set `DEV_DOC_PATH` to override the target path.
