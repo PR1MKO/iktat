@@ -1,0 +1,40 @@
+import ast
+import re
+from pathlib import Path
+
+
+FILES = ["run.py", "run_tasks.py", "run_scheduler.py"]
+
+
+def read(p: str) -> str:
+    return Path(p).read_text(encoding="utf-8")
+
+
+def imports_create_app_from_app(src: str) -> bool:
+    t = ast.parse(src)
+    for node in ast.walk(t):
+        if isinstance(node, ast.ImportFrom) and node.module == "app":
+            if any(getattr(n, "name", "") == "create_app" for n in node.names):
+                return True
+    return False
+
+
+def test_same_factory_import():
+    for f in FILES:
+        assert imports_create_app_from_app(read(f)), f"{f} must import create_app from app"
+
+
+def test_run_exposes_wsgi_app():
+    src = read("run.py")
+    assert re.search(r"^app\s*=\s*create_app\(\)", src, re.M), "run.py must define module-level app"
+
+
+def test_main_guards_exist():
+    for f in FILES:
+        assert '__name__ == "__main__"' in read(f), f"{f} missing __main__ guard"
+
+
+def test_tasks_and_scheduler_use_app_context():
+    for f in ["run_tasks.py", "run_scheduler.py"]:
+        assert "with app.app_context()" in read(f), f"{f} must wrap work in app.app_context()"
+		
