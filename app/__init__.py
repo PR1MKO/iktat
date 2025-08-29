@@ -39,6 +39,15 @@ def create_app(test_config=None):
         else:
             flask_app.config.from_object(test_config)
 
+    # --- Secrets & CSRF base (must exist for sessions/flash/csrf_token) ---
+    # Order of precedence: ENV -> existing config -> safe dev fallback
+    flask_app.config['SECRET_KEY'] = (
+        os.environ.get('SECRET_KEY')
+        or flask_app.config.get('SECRET_KEY')
+        or 'dev-secret-key-123'
+    )
+    flask_app.config.setdefault('WTF_CSRF_ENABLED', True)
+
     # --- Databases ---------------------------------------------------------
     # Main DB (under instance/)
     main_db_name = 'test.db' if flask_app.config.get('TESTING') else 'forensic_cases.db'
@@ -87,7 +96,7 @@ def create_app(test_config=None):
         MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
     )
 
-    # Init extensions
+    # Init extensions (after SECRET_KEY is ensured)
     db.init_app(flask_app)
     migrate.init_app(flask_app, db)
     # Separate migration directory for the examination bind
@@ -175,7 +184,6 @@ def create_app(test_config=None):
         return value.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
 
     flask_app.jinja_env.filters['localtime'] = localtime
-    
     
     def local_dt(value: datetime | None, fmt: str = '%Y-%m-%d %H:%M'):
         if not value:
