@@ -105,3 +105,12 @@ Exit codes:
 - `0` – all attachments are present
 - `1` – one or more files are missing
 - `2` – investigation not found
+
+### Dev Linting & Hooks
+Install and enable pre-commit locally:
+
+    pip install pre-commit && pre-commit install
+
+Run all hooks on the repo anytime:
+
+    pre-commit run --all-files
