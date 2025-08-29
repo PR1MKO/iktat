@@ -235,6 +235,23 @@ def create_app(test_config=None):
                 response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0, private'
                 response.headers['Pragma'] = 'no-cache'
                 response.headers['Expires'] = '0'
+                
+        # Security headers
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'",
+        )
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
+        if flask_app.config.get("PREFERRED_URL_SCHEME", "").lower() == "https" or flask_app.config.get("ENABLE_HSTS", False):
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=15552000; includeSubDomains"
+            )
+                
         return response
 
     # --- Logging -----------------------------------------------------------

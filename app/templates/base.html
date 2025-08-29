@@ -46,6 +46,13 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
+  {% if current_user.is_authenticated and not current_user.cookie_notice_ack_at %}
+    <div id="cookie-banner" class="alert alert-info text-center mb-0">
+      Ez a webhely sütiket használ a működéshez.
+      <button id="ack-cookie" class="btn btn-sm btn-primary ms-2">Rendben</button>
+    </div>
+  {% endif %}
+
   {% if caps is not defined %}
     {% set caps = {
       'can_view_cases': False,
@@ -180,6 +187,22 @@
     <script>
       window.addEventListener('pageshow', function (e) {
         if (e.persisted) location.reload();
+      });
+    </script>
+    {% endif %}
+    {% if current_user.is_authenticated and not current_user.cookie_notice_ack_at %}
+    <script>
+      document.getElementById('ack-cookie')?.addEventListener('click', function () {
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+        fetch('{{ url_for('auth.ack_cookie_notice') }}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': token }
+        }).then(resp => {
+          if (resp.status === 204) {
+            const banner = document.getElementById('cookie-banner');
+            if (banner) banner.style.display = 'none';
+          }
+        });
       });
     </script>
     {% endif %}

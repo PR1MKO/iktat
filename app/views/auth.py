@@ -155,6 +155,12 @@ def logout():
     flash('Logged out.')
     return redirect(url_for('auth.login'))
 
+@auth_bp.route('/ack_cookie_notice', methods=['POST'])
+@login_required
+def ack_cookie_notice():
+    current_user.cookie_notice_ack_at = now_local()
+    db.session.commit()
+    return "", 204
 
 @auth_bp.route('/dashboard')
 @login_required
