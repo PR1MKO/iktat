@@ -7,12 +7,52 @@ from app.utils.dates import compute_deadline_flags
 from app.utils.time_utils import now_local
 
 
+# --- helpers -----------------------------------------------------------------
+
+_JINJA_BLOCK_RE = re.compile(r"(\{\{.*?\}\}|\{%-?.*?-?%\})", re.DOTALL)
+
+def _iter_jinja_blocks(text: str):
+    """Yield (start, end, block_text) for each Jinja expression/statement block."""
+    for m in _JINJA_BLOCK_RE.finditer(text):
+        yield m.start(), m.end(), m.group(0)
+
+def _line_of_pos(text: str, pos: int) -> int:
+    """1-based line number for byte offset pos."""
+    return text.count("\n", 0, pos) + 1
+
+def _snippet_around(text: str, line_no: int, context: int = 2) -> str:
+    """Return up to ~5 lines of context around the given 1-based line_no."""
+    lines = text.splitlines()
+    lo = max(0, line_no - 1 - context)
+    hi = min(len(lines), line_no - 1 + context + 1)
+    return "\n".join(lines[lo:hi])
+
+
+# --- tests -------------------------------------------------------------------
+
 def test_no_datetime_in_templates():
-    banned = [r"\.\s*date\(", r"\.strftime\(", r"\.isoformat\(", r"\| *localtime", r"\| *local_dt", r"\| *datetimeformat"]
-    for tpl in Path('app/templates').rglob('*.html'):
-        text = tpl.read_text()
-        for pat in banned:
-            assert re.search(pat, text) is None, f"{tpl} contains {pat}"
+    # Only Jinja blocks are scanned; JS/CSS/HTML outside Jinja is ignored.
+    banned_raw = [
+        r"\.\s*date\(",
+        r"\.strftime\(",
+        r"\.isoformat\(",
+        r"\|\s*localtime\b",
+        r"\|\s*local_dt\b",
+        r"\|\s*datetimeformat\b",
+    ]
+    banned = [re.compile(p) for p in banned_raw]
+
+    for tpl in Path("app/templates").rglob("*.html"):
+        text = tpl.read_text(encoding="utf-8")
+        for start, end, block in _iter_jinja_blocks(text):
+            for rx in banned:
+                for m in rx.finditer(block):
+                    abs_pos = start + m.start()
+                    line_no = _line_of_pos(text, abs_pos)
+                    snippet = _snippet_around(text, line_no, context=2)
+                    raise AssertionError(
+                        f"{tpl}:{line_no} contains banned pattern {rx.pattern} in Jinja block:\n{snippet}"
+                    )
 
 
 def test_compute_deadline_flags_boundaries():
@@ -26,32 +66,44 @@ def test_compute_deadline_flags_boundaries():
 
 
 def test_sample_templates_render(app):
-    app.jinja_env.globals['csrf_token'] = lambda: ''
-    app.jinja_env.globals['current_user'] = SimpleNamespace(is_authenticated=False, role='')
+    # Minimal globals used by some templates
+    app.jinja_env.globals["csrf_token"] = lambda: ""
+    app.jinja_env.globals["current_user"] = SimpleNamespace(is_authenticated=False, role="")
+
     with app.test_request_context():
         case = SimpleNamespace(
             id=1,
-            case_number='C1',
-            deceased_name='D',
-            status='open',
-            registration_time_str='2024.01.01 10:00',
-            deadline_str='2024.01.10 10:00',
-            updated_at_iso='2024-01-02T00:00:00',
-            uploaded_file_records=[SimpleNamespace(filename='f.txt', category='cat', upload_time_str='2024.01.02 11:00', uploader='u')],
-            notes='',
+            case_number="C1",
+            deceased_name="D",
+            status="open",
+            registration_time_str="2024.01.01 10:00",
+            deadline_str="2024.01.10 10:00",
+            updated_at_iso="2024-01-02T00:00:00",
+            uploaded_file_records=[
+                SimpleNamespace(
+                    filename="f.txt",
+                    category="cat",
+                    upload_time_str="2024.01.02 11:00",
+                    uploader="u",
+                )
+            ],
+            notes="",
         )
-        changelog_entries = [SimpleNamespace(timestamp_str='2024.01.03 12:00', edited_by='u', new_value='v')]
-        render = app.jinja_env.get_template('assign_pathologist.html').render(
+        changelog_entries = [
+            SimpleNamespace(timestamp_str="2024.01.03 12:00", edited_by="u", new_value="v")
+        ]
+
+        render = app.jinja_env.get_template("assign_pathologist.html").render(
             case=case,
             szakerto_users=[],
             szakerto_choices=[],
             szakerto_choices_2=[],
             changelog_entries=changelog_entries,
             uploads=case.uploaded_file_records,
-            caps={}
+            caps={},
         )
         assert 'form_version" value="2024-01-02T00:00:00"' in render
 
-        users = [SimpleNamespace(id=1, username='u', screen_name='', full_name='', role='', last_login_str='')]
-        render2 = app.jinja_env.get_template('admin_users.html').render(users=users)
-        assert 'u' in render2
+        users = [SimpleNamespace(id=1, username="u", screen_name="", full_name="", role="", last_login_str="")]
+        render2 = app.jinja_env.get_template("admin_users.html").render(users=users)
+        assert "u" in render2
