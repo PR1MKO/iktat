@@ -1,6 +1,7 @@
 import io
 import os
 from datetime import timedelta
+from pathlib import Path
 
 from app.models import Case, UploadedFile, ChangeLog, db
 from tests.helpers import create_user, login
@@ -196,8 +197,8 @@ def test_file_download_success(client, app):
         case_id = case.id
         from app.paths import ensure_case_folder
         upload_dir = ensure_case_folder(case.case_number)
-        with open(os.path.join(upload_dir, 'file.txt'), 'wb') as f:
-            f.write(b'data')
+        file_path = Path(upload_dir) / 'file.txt'
+        file_path.write_bytes(b'data')
         db.session.add(
             UploadedFile(case_id=case_id, filename='file.txt', uploader='admin', category='egyéb')
         )

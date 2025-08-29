@@ -63,7 +63,7 @@ def test_certificate_generation_success(client, app):
         )
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
-        lines = [line.rstrip('\n') for line in f]
+        lines = f.read().splitlines()
     assert lines[0] == 'Ügy: B:0001/2025'
     assert lines[2] == 'A halál okát megállapította: pathologus'
     assert lines[4] == 'Történt-e boncolás: igen'
@@ -113,7 +113,7 @@ def test_certificate_generation_optional_fields_blank(client, app):
         )
         assert os.path.exists(path)
     with open(path, encoding='utf-8') as f:
-        lines = [line.rstrip('\n') for line in f]
+        lines = f.read().splitlines()
     assert lines[10] == 'Alapbetegség szövődményei: '
     assert lines[11] == 'Esemény kezdete és halál között eltelt idő: '
     assert lines[13] == 'Alapbetegség: '

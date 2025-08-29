@@ -21,6 +21,6 @@ def test_append_note_uses_local_time(monkeypatch, app):
 def test_localtime_filter(app):
     with app.app_context():
         filt = app.jinja_env.filters['localtime']
-        dt = datetime(2021, 1, 1, 12, 0)
-        expected = dt.strftime('%Y-%m-%d %H:%M')
+        dt = BUDAPEST_TZ.localize(datetime(2021, 1, 1, 12, 0))
+        expected = dt.astimezone(BUDAPEST_TZ).strftime('%Y-%m-%d %H:%M')
         assert filt(dt) == expected

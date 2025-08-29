@@ -14,6 +14,11 @@ import tests.compat_flaskwtf  # noqa: F401
 import os
 import sys
 import pathlib
+import random
+import uuid
+import itertools
+from datetime import datetime, timezone
+
 import pytest
 from sqlalchemy.pool import StaticPool
 
@@ -23,6 +28,8 @@ os.environ.setdefault("SECRET_KEY", "test-secret")
 
 from app import create_app, db  # noqa: E402
 from config import TestingConfig  # noqa: E402
+from app.utils import time_utils
+from app.utils import dates as dates_util
 
 # --- Ensure *all* models are registered before create_all() ---
 # Single import that aggregates every model module.
@@ -30,25 +37,52 @@ from app import models_all  # noqa: F401  # pylint: disable=unused-import
 # --------------------------------------------------------------
 
 
-# ---------- Force UTF-8 for Path.read_text() during tests ----------
-_ORIG_READ_TEXT = pathlib.Path.read_text
+@pytest.fixture(autouse=True, scope="session")
+def _force_utf8_read_text():
+    """Ensure Path.read_text defaults to UTF-8 and restore after tests."""
+    orig = pathlib.Path.read_text
 
-def _read_text_utf8(self, *args, **kwargs):
-    kwargs.setdefault("encoding", "utf-8")
-    return _ORIG_READ_TEXT(self, *args, **kwargs)
+    def _read_text_utf8(self, *args, **kwargs):
+        kwargs.setdefault("encoding", "utf-8")
+        return orig(self, *args, **kwargs)
 
-def pytest_sessionstart(session):
-    # Monkeypatch globally at session start so template reads don't blow up on Windows locales
     pathlib.Path.read_text = _read_text_utf8
+    try:
+        yield
+    finally:
+        pathlib.Path.read_text = orig
 
-def pytest_sessionfinish(session, exitstatus):
-    # Restore original to avoid side-effects outside pytest
-    pathlib.Path.read_text = _ORIG_READ_TEXT
-# ------------------------------------------------------------------
 
+@pytest.fixture(autouse=True)
+def _seed_random(monkeypatch):
+    random.seed(1337)
+    counter = itertools.count()
+    monkeypatch.setattr(uuid, "uuid4", lambda: uuid.UUID(int=next(counter)))
+
+
+@pytest.fixture(autouse=True)
+def _fixed_now(monkeypatch):
+    fixed = time_utils.BUDAPEST_TZ.localize(datetime(2020, 1, 1, 12, 0))
+    monkeypatch.setattr(time_utils, "now_local", lambda: fixed)
+    monkeypatch.setattr(
+        dates_util, "now_utc", lambda: fixed.astimezone(timezone.utc)
+    )
+    for name, mod in list(sys.modules.items()):
+        if name.startswith("tests.") and hasattr(mod, "now_local"):
+            monkeypatch.setattr(mod, "now_local", lambda: fixed, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _tmp_upload_dirs(tmp_path, monkeypatch):
+    cases = tmp_path / "uploads_cases"
+    investigations = tmp_path / "uploads_investigations"
+    cases.mkdir()
+    investigations.mkdir()
+    monkeypatch.setenv("UPLOAD_CASES_ROOT", str(cases))
+    monkeypatch.setenv("UPLOAD_INVESTIGATIONS_ROOT", str(investigations))
 
 @pytest.fixture
-def app():
+def app(_tmp_upload_dirs):
     app = create_app(TestingConfig)
 
     # Shared in-memory DB across the process for deterministic tests
