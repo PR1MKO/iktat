@@ -29,8 +29,6 @@ from app.utils import dates as dates_util
 from app.utils import time_utils
 from config import TestingConfig
 
-# --------------------------------------------------------------
-
 
 @pytest.fixture(autouse=True, scope="session")
 def _force_utf8_read_text():
@@ -84,7 +82,7 @@ def app(_tmp_upload_dirs):
         TESTING=True,
         WTF_CSRF_ENABLED=False,  # allow login form posts in tests
         SQLALCHEMY_DATABASE_URI="sqlite://",  # shared in-memory DB
-        SQLALCHEMY_BINDS={  # second bind (example) for investigations/others
+        SQLALCHEMY_BINDS={  # second bind for 'examination' etc.
             "examination": "sqlite://",
         },
         SQLALCHEMY_ENGINE_OPTIONS={
@@ -96,7 +94,6 @@ def app(_tmp_upload_dirs):
         },
     )
 
-    # Optional guard: fail fast if someone changes this in the future
     assert app.config["SQLALCHEMY_SESSION_OPTIONS"]["expire_on_commit"] is False
 
     with app.app_context():
@@ -106,29 +103,56 @@ def app(_tmp_upload_dirs):
 @pytest.fixture(autouse=True)
 def _db(app):
     """
-    Fresh schema for all binds before each test.
+    HARD RESET schema for all binds before each test (drop -> create).
+    Prevents 'table already exists' / 'no such table' issues and clears
+    stale identity maps — using modern Flask-SQLAlchemy engine accessors.
     """
     with app.app_context():
-        # Create default bind schema
-        db.create_all()
+        # Clean up any open session first
+        try:
+            db.session.remove()
+        except Exception:
+            pass
 
-        # Create schemas for extra binds (e.g., "examination")
-        for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
-            db.create_all(bind_key=bind_key)
+        # Drop default bind
+        try:
+            db.drop_all()
+        except Exception:
+            pass
 
-        yield
-
-        # Teardown between tests
-        db.session.remove()
+        # Drop each extra bind
         for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
             try:
                 db.drop_all(bind_key=bind_key)
             except Exception:
                 pass
+
+        # Recreate default bind
+        db.create_all()
+
+        # Recreate each extra bind
+        for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
+            db.create_all(bind_key=bind_key)
+
+        # Ensure no expired attributes will reload mid-request
+        db.session.expire_all()
+
+        yield
+
+        # Post-test cleanup; next test will drop/create again
         try:
-            db.drop_all()
-        except Exception:
-            pass
+            db.session.remove()
+        finally:
+            # Dispose all engines without using deprecated get_engine
+            try:
+                db.engine.dispose()
+            except Exception:
+                pass
+            for eng in getattr(db, "engines", {}).values():
+                try:
+                    eng.dispose()
+                except Exception:
+                    pass
 
 
 @pytest.fixture

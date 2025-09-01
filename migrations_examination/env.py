@@ -12,6 +12,7 @@ if config.config_file_name is not None:
 db = current_app.extensions["migrate"].db
 target_metadata = db.metadata
 
+# Tables that belong to the "examination" bind
 EXAM_TABLES = {
     "investigation",
     "investigation_note",
@@ -32,24 +33,30 @@ def _is_sqlite_url(url: str) -> bool:
 
 
 def include_object(obj, name, type_, reflected, compare_to):
-    """
-    Include only the examination tables and their related objects.
-    """
+    """Include only the examination tables (and related objects)."""
     if type_ == "table":
         return name in EXAM_TABLES
 
-    # For indexes/constraints/etc., include only if their parent table is included
     parent = getattr(obj, "table", None)
     if parent is not None:
         return parent.name in EXAM_TABLES
 
-    # Fallback (safe default)
     return False
 
 
+def _get_exam_engine():
+    engine = db.engines.get("examination")
+    if engine is None:
+        raise RuntimeError(
+            "No engine registered for bind 'examination'. "
+            "Ensure SQLALCHEMY_BINDS['examination'] is configured and the app initialized."
+        )
+    return engine
+
+
 def run_migrations_offline() -> None:
-    engine = db.engines.get("examination") or db.get_engine(bind="examination")
-    # Escape % for Alembic config parsing
+    # Build URL from the registered examination engine (no get_engine fallback)
+    engine = _get_exam_engine()
     exam_url = engine.url.render_as_string(hide_password=False).replace("%", "%%")
 
     context.configure(
@@ -59,7 +66,7 @@ def run_migrations_offline() -> None:
         version_table="alembic_version_examination",
         compare_type=True,
         compare_server_default=True,
-        render_as_batch=_is_sqlite_url(exam_url),  # only for SQLite
+        render_as_batch=_is_sqlite_url(exam_url),
         literal_binds=True,
     )
     with context.begin_transaction():
@@ -67,7 +74,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    engine = db.engines.get("examination") or db.get_engine(bind="examination")
+    engine = _get_exam_engine()
     with engine.connect() as connection:
         context.configure(
             connection=connection,
@@ -76,7 +83,7 @@ def run_migrations_online() -> None:
             version_table="alembic_version_examination",
             compare_type=True,
             compare_server_default=True,
-            render_as_batch=_is_sqlite_connection(connection),  # only for SQLite
+            render_as_batch=_is_sqlite_connection(connection),
         )
         with context.begin_transaction():
             context.run_migrations()

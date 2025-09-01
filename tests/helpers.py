@@ -1,3 +1,4 @@
+# tests/helpers.py
 from datetime import date
 
 from app.investigations.models import Investigation
@@ -6,6 +7,7 @@ from app.models import User, db
 
 
 def create_user(username="admin", password="secret", role="admin", **kw):
+    # Idempotent user creation: update existing instead of violating UNIQUE
     with db.session.no_autoflush:
         existing = User.query.filter_by(username=username).first()
     if existing:
@@ -17,14 +19,18 @@ def create_user(username="admin", password="secret", role="admin", **kw):
             existing.set_password(password)
             changed = True
         for k, v in kw.items():
-            setattr(existing, k, v)
-            changed = True
+            if getattr(existing, k, None) != v:
+                setattr(existing, k, v)
+                changed = True
         if changed:
             db.session.commit()
         return existing
 
     user = User(
-        username=username, screen_name=kw.get("screen_name", username), role=role, **kw
+        username=username,
+        screen_name=kw.get("screen_name", username),
+        role=role,
+        **{k: v for k, v in kw.items() if k not in {"screen_name"}},
     )
     if password:
         user.set_password(password)

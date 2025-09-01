@@ -1,25 +1,25 @@
 repos:
-  # 1) Ruff first
+  # Ruff pinned
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.6
+    rev: v0.5.6   # matches ruff==0.5.6
     hooks:
       - id: ruff
         args: [--fix]
 
-  # 2) isort second
+  # isort pinned
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 5.13.2   # matches isort==5.13.2
     hooks:
       - id: isort
 
-  # 3) Black third
+  # Black pinned
   - repo: https://github.com/psf/black
-    rev: 24.8.0
+    rev: 24.8.0   # matches black==24.8.0
     hooks:
       - id: black
         language_version: python3.10
 
-  # 4) Local hooks after formatters/linters
+  # Local DB health hooks
   - repo: local
     hooks:
       - id: flask-db-check
