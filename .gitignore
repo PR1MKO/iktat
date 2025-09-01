@@ -1,13 +1,30 @@
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
 venv/
 .venv/
 .venv.tar.gz
+
+# Local instance/runtime state
 instance/
 *.db
+*.db-*
 .env
+.pre-commit-config.yaml
+
+# Uploads & generated content
 app/uploads/
 uploads_investigations/
-# Ignore generated file lists
+uploads_cases/
+uploads/
+backup/
+
+# Ignore generated file lists & test artifacts
 *list.txt
 *structure.txt
+.pytest_cache/
+coverage.xml
+htmlcov/
