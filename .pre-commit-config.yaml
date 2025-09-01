@@ -1,37 +1,41 @@
 repos:
+  # 1) Ruff first
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.2
+    rev: v0.5.6
     hooks:
       - id: ruff
-        args: ["--fix"]  # safe on staged changes; CI runs check-only
+        args: [--fix]
 
+  # 2) isort second
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
 
+  # 3) Black third
   - repo: https://github.com/psf/black
     rev: 24.8.0
     hooks:
       - id: black
+        language_version: python3.10
 
-  # --- Local hooks for Alembic migration health (multi-DB, Windows-safe) ---
+  # 4) Local hooks after formatters/linters
   - repo: local
     hooks:
       - id: flask-db-check
         name: Flask DB Check (model vs migration drift)
-        entry: flask db check
+        entry: python hooks/flask_db_check.py
         language: system
         pass_filenames: false
 
       - id: flask-db-single-head
         name: Alembic Single Head Check
-        entry: python -c "import subprocess, sys; out=subprocess.check_output(['flask','db','heads']).decode().splitlines(); sys.exit(1 if len(out)>1 else 0)"
+        entry: python hooks/flask_db_single_head.py
         language: system
         pass_filenames: false
 
-      - id: flask-db-upgrade-sql
-        name: Alembic Upgrade SQL Dry Run
-        entry: flask db upgrade --sql
+      - id: flask-db-upgrade-live
+        name: Alembic Live Upgrade (temp SQLite)
+        entry: python hooks/flask_db_upgrade_live.py
         language: system
         pass_filenames: false
