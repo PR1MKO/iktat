@@ -36,3 +36,6 @@ Werkzeug==2.3.6
 WTForms==3.2.1
 pyyaml>=6.0.1,<7
 pre-commit==3.7.1
+docxtpl>=0.16
+python-docx>=0.8.11
+pyparsing>=2.4.7,<3
