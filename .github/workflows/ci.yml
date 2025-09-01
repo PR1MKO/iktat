@@ -23,7 +23,7 @@ jobs:
           pip install ruff black isort pytest
 
       - name: Ruff (lint)
-        run: ruff check .
+        run: ruff . || ruff check .
 
       - name: Black (check)
         run: black --check .
