@@ -20,8 +20,9 @@ def upgrade():
     conn = op.get_bind()
     # Map both old forms -> canonical "lezárt"
     conn.execute(
-        text('UPDATE "case" SET status = :new WHERE status IN (:a, :b)')
-        .bindparams(new="lezárt", a="lezárva", b="lejárt")
+        text('UPDATE "case" SET status = :new WHERE status IN (:a, :b)').bindparams(
+            new="lezárt", a="lezárva", b="lejárt"
+        )
     )
 
 
@@ -29,6 +30,7 @@ def downgrade():
     # Best-effort: turn "lezárt" back to "lezárva" if it used to be either
     conn = op.get_bind()
     conn.execute(
-        text('UPDATE "case" SET status = :old WHERE status = :new')
-        .bindparams(old="lezárva", new="lezárt")
+        text('UPDATE "case" SET status = :old WHERE status = :new').bindparams(
+            old="lezárva", new="lezárt"
+        )
     )

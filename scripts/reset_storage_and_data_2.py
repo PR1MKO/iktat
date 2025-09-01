@@ -1,11 +1,13 @@
 # scripts/reset_storage_and_data_2.py
+import argparse
 import os
 import shutil
-import argparse
+
 from sqlalchemy import text
 
 from app import create_app, db
-from app.models import Case, UploadedFile, ChangeLog, TaskMessage
+from app.models import Case, ChangeLog, TaskMessage, UploadedFile
+
 # Optional models
 try:
     from app.models import EmailNotification
@@ -19,8 +21,8 @@ except Exception:
 from app.investigations.models import (
     Investigation,
     InvestigationAttachment,
-    InvestigationNote,
     InvestigationChangeLog,
+    InvestigationNote,
 )
 from app.paths import case_root, investigation_root
 
@@ -28,8 +30,12 @@ from app.paths import case_root, investigation_root
 PRESERVE_DIR_NAMES = {"autofill-word-do-not-edit"}
 PRESERVE_SUFFIXES = ("-do-not-edit",)
 
+
 def _is_preserved(name: str, preserve_names, preserve_suffixes) -> bool:
-    return (name in preserve_names) or any(name.endswith(sfx) for sfx in preserve_suffixes)
+    return (name in preserve_names) or any(
+        name.endswith(sfx) for sfx in preserve_suffixes
+    )
+
 
 def _clear_dir_preserving(
     root_path: str,
@@ -59,7 +65,8 @@ def _clear_dir_preserving(
 
             # Prune preserved subdirs from traversal
             dirnames[:] = [
-                d for d in dirnames
+                d
+                for d in dirnames
                 if not _is_preserved(d, preserve_names, preserve_suffixes)
             ]
 
@@ -91,6 +98,7 @@ def _clear_dir_preserving(
     except Exception as e:
         print(f"[WARN] Could not reset folder {root_path}: {e}")
 
+
 def _delete_all(model, label: str, dry_run: bool = False):
     count = model.query.count()
     if dry_run:
@@ -100,11 +108,13 @@ def _delete_all(model, label: str, dry_run: bool = False):
     print(f"[INFO] Deleted {deleted} rows from {label}")
     return deleted
 
+
 def _maybe_delete(model, label: str, dry_run: bool = False):
     if model is None:
         print(f"[INFO] {label} not present in this build — skipping.")
         return 0
     return _delete_all(model, label, dry_run=dry_run)
+
 
 def _vacuum_sqlite(bind_name, dry_run: bool = False):
     try:
@@ -120,6 +130,7 @@ def _vacuum_sqlite(bind_name, dry_run: bool = False):
         which = bind_name or "default"
         print(f"[WARN] VACUUM failed for ({which}): {e}")
 
+
 def parse_args():
     p = argparse.ArgumentParser(
         description=(
@@ -128,19 +139,34 @@ def parse_args():
             "Legacy app roots preserve *-do-not-edit directories."
         )
     )
-    p.add_argument("--dry-run", action="store_true", help="Show what would be deleted without actually deleting.")
-    p.add_argument("--yes", action="store_true", help="Skip interactive prompt. USE WITH CAUTION.")
-    p.add_argument("--no-vacuum", action="store_true", help="Skip VACUUM on SQLite databases after deletion.")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be deleted without actually deleting.",
+    )
+    p.add_argument(
+        "--yes", action="store_true", help="Skip interactive prompt. USE WITH CAUTION."
+    )
+    p.add_argument(
+        "--no-vacuum",
+        action="store_true",
+        help="Skip VACUUM on SQLite databases after deletion.",
+    )
     return p.parse_args()
+
 
 def main():
     args = parse_args()
 
     if not args.yes and not args.dry_run:
-        print("⚠️  This will permanently delete ALL case/investigation data and uploaded files.")
+        print(
+            "⚠️  This will permanently delete ALL case/investigation data and uploaded files."
+        )
         print("   Instance roots will be wiped with NO preserved directories.")
-        print("   Legacy app roots will preserve:", ", ".join(sorted(PRESERVE_DIR_NAMES)))
-        confirm = input('Type YES to confirm factory reset: ')
+        print(
+            "   Legacy app roots will preserve:", ", ".join(sorted(PRESERVE_DIR_NAMES))
+        )
+        confirm = input("Type YES to confirm factory reset: ")
         if confirm.strip() != "YES":
             print("Aborted.")
             return
@@ -148,8 +174,8 @@ def main():
     app = create_app()
     with app.app_context():
         # Canonical instance roots (WIPE EVERYTHING here)
-        cases_root = case_root()               # instance\uploads_cases
-        inv_root = investigation_root()        # instance\uploads_investigations
+        cases_root = case_root()  # instance\uploads_cases
+        inv_root = investigation_root()  # instance\uploads_investigations
 
         # Legacy/live app roots (preserve *-do-not-edit)
         legacy_cases_root = os.path.join(app.root_path, "uploads_boncolasok")
@@ -195,25 +221,42 @@ def main():
                 preserve_suffixes=PRESERVE_SUFFIXES,
             )
         else:
-            print(f"[INFO] {mode}Legacy investigations folder missing (ok): {legacy_invest_root}")
+            print(
+                f"[INFO] {mode}Legacy investigations folder missing (ok): {legacy_invest_root}"
+            )
 
         print(f"[INFO] {mode}Deleting investigation-related rows (examination bind)...")
-        _delete_all(InvestigationAttachment, "examination.InvestigationAttachment", dry_run=args.dry_run)
-        _delete_all(InvestigationNote,       "examination.InvestigationNote",       dry_run=args.dry_run)
-        _delete_all(InvestigationChangeLog,  "examination.InvestigationChangeLog",  dry_run=args.dry_run)
-        _delete_all(Investigation,           "examination.Investigation",           dry_run=args.dry_run)
+        _delete_all(
+            InvestigationAttachment,
+            "examination.InvestigationAttachment",
+            dry_run=args.dry_run,
+        )
+        _delete_all(
+            InvestigationNote, "examination.InvestigationNote", dry_run=args.dry_run
+        )
+        _delete_all(
+            InvestigationChangeLog,
+            "examination.InvestigationChangeLog",
+            dry_run=args.dry_run,
+        )
+        _delete_all(Investigation, "examination.Investigation", dry_run=args.dry_run)
 
         print(f"[INFO] {mode}Deleting case-related rows (default bind)...")
-        _delete_all(UploadedFile,        "default.UploadedFile",      dry_run=args.dry_run)
-        _delete_all(TaskMessage,         "default.TaskMessage",       dry_run=args.dry_run)
-        _delete_all(ChangeLog,           "default.ChangeLog",         dry_run=args.dry_run)
-        _maybe_delete(EmailNotification, "default.EmailNotification", dry_run=args.dry_run)
-        _maybe_delete(CaseSheetField,    "default.CaseSheetField",    dry_run=args.dry_run)
-        _delete_all(Case,                "default.Case",              dry_run=args.dry_run)
+        _delete_all(UploadedFile, "default.UploadedFile", dry_run=args.dry_run)
+        _delete_all(TaskMessage, "default.TaskMessage", dry_run=args.dry_run)
+        _delete_all(ChangeLog, "default.ChangeLog", dry_run=args.dry_run)
+        _maybe_delete(
+            EmailNotification, "default.EmailNotification", dry_run=args.dry_run
+        )
+        _maybe_delete(CaseSheetField, "default.CaseSheetField", dry_run=args.dry_run)
+        _delete_all(Case, "default.Case", dry_run=args.dry_run)
 
         if args.dry_run:
             print("[INFO] (dry-run) Instance roots: wiped with NO preservation.")
-            print("[INFO] (dry-run) App roots preserved dir names:", sorted(PRESERVE_DIR_NAMES))
+            print(
+                "[INFO] (dry-run) App roots preserved dir names:",
+                sorted(PRESERVE_DIR_NAMES),
+            )
             print("[DONE] (dry-run) No changes committed. Users preserved.")
             return
 
@@ -221,15 +264,18 @@ def main():
         print("[INFO] Changes committed to databases.")
 
         if not args.no_vacuum:
-            _vacuum_sqlite(bind_name=None,          dry_run=False)
+            _vacuum_sqlite(bind_name=None, dry_run=False)
             _vacuum_sqlite(bind_name="examination", dry_run=False)
 
         print("[DONE] Storage cleared and tables wiped (users preserved).")
-        print("[NOTE] Instance roots were fully cleared; re-seed do-not-edit templates from the safe source.")
+        print(
+            "[NOTE] Instance roots were fully cleared; re-seed do-not-edit templates from the safe source."
+        )
         print(
             "[NOTE] Instance roots were fully cleared; DO-NOT-EDIT scaffolds will "
             "be recreated when new investigations or cases are added."
         )
+
 
 if __name__ == "__main__":
     # Usage (Windows, repo root, venv):

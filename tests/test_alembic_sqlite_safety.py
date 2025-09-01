@@ -10,9 +10,10 @@ def test_env_has_render_as_batch():
 
 
 def test_flagged_migration_is_batched():
-    files = list(Path("migrations/versions").glob("b79a7cf96c00*_add_full_name_to_user.py"))
+    files = list(
+        Path("migrations/versions").glob("b79a7cf96c00*_add_full_name_to_user.py")
+    )
     assert files, "flagged migration file not found"
     s = files[0].read_text(encoding="utf-8")
     assert "batch_alter_table" in s
     assert "add_column" in s and "drop_column" in s
-	

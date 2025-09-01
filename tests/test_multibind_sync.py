@@ -1,5 +1,5 @@
-import re
 import pathlib
+import re
 
 
 def test_env_sets_tag_and_batch(app):

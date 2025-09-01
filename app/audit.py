@@ -1,7 +1,10 @@
-from .models import db, AuditLog
-from app.utils.time_utils import now_local
-from flask_login import current_user
 from flask import current_app, flash, has_request_context
+from flask_login import current_user
+
+from app.utils.time_utils import now_local
+
+from .models import AuditLog, db
+
 
 def log_action(action: str, details: str = None):
     if not current_user.is_authenticated:
@@ -13,7 +16,7 @@ def log_action(action: str, details: str = None):
         username=current_user.username,
         role=current_user.role,
         action=action,
-        details=details
+        details=details,
     )
     db.session.add(log_entry)
     try:
@@ -23,5 +26,3 @@ def log_action(action: str, details: str = None):
         current_app.logger.error(f"Database error: {e}")
         if has_request_context():
             flash("Valami hiba történt. Próbáld újra.", "danger")
-
- 

@@ -1,7 +1,8 @@
-from app.models import User, db
-from app.models import Case
-from app.utils.time_utils import BUDAPEST_TZ
 from datetime import datetime
+
+from app.models import Case, User, db
+from app.utils.time_utils import BUDAPEST_TZ
+
 
 def test_create_user(app):
     with app.app_context():
@@ -14,6 +15,7 @@ def test_create_user(app):
         assert loaded is not None
         assert loaded.check_password("testpass")
 
+
 def test_case_formatted_deadline_and_overdue(app):
     with app.app_context():
         past = datetime(2020, 1, 1, tzinfo=BUDAPEST_TZ)
@@ -23,4 +25,3 @@ def test_case_formatted_deadline_and_overdue(app):
 
         expected = past.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d")
         assert case.formatted_deadline == expected
-

@@ -11,6 +11,7 @@ import smtplib
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 
+
 def main() -> None:
     """Attempt to log in to the configured SMTP server."""
 

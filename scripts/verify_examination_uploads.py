@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import sys
-import os
 from pathlib import Path
 
 # Ensure project root is on sys.path when running as a script
@@ -9,8 +8,12 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Verify examination uploads vs DB attachments (read-only).")
-    parser.add_argument("--case", required=True, help="Investigation case number, e.g. 'V:0002/2025'")
+    parser = argparse.ArgumentParser(
+        description="Verify examination uploads vs DB attachments (read-only)."
+    )
+    parser.add_argument(
+        "--case", required=True, help="Investigation case number, e.g. 'V:0002/2025'"
+    )
     args = parser.parse_args()
 
     # Lazy import app to avoid heavy startup before args parse
@@ -27,6 +30,7 @@ def main():
 
         # Fetch attachments for this investigation
         from app.investigations.models import InvestigationAttachment
+
         atts = (
             db.session.query(InvestigationAttachment)
             .filter_by(investigation_id=inv.id)

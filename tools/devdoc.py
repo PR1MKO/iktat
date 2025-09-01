@@ -19,9 +19,7 @@ def _resolve_path(path: str | None) -> Path:
 
 def _compose_block(heads: str, risks: str, next_steps: str) -> str:
     utc = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    bud = (
-        datetime.now(ZoneInfo("Europe/Budapest")).replace(microsecond=0).isoformat()
-    )
+    bud = datetime.now(ZoneInfo("Europe/Budapest")).replace(microsecond=0).isoformat()
     return (
         f"### {utc} / {bud}\n"
         f"**Heads:** {heads.strip()}\n"
@@ -48,7 +46,9 @@ def _atomic_append(target: Path, text: str) -> None:
     os.replace(temp, target)
 
 
-def append_entry(heads: str, risks: str, next_steps: str, path: str | None = None) -> Path:
+def append_entry(
+    heads: str, risks: str, next_steps: str, path: str | None = None
+) -> Path:
     target = _resolve_path(path)
     block = _compose_block(heads, risks, next_steps)
     _atomic_append(target, block)

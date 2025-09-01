@@ -1,13 +1,13 @@
 """drop user foreign keys (SQLite-safe via batch recreate)"""
 
 from alembic import op
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "a1e8c3de0f9b"
 down_revision = "067b02161497"
 branch_labels = None
 depends_on = None
+
 
 def _recreate_without_cross_user_fks():
     """

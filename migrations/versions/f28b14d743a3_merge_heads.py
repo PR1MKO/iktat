@@ -5,13 +5,13 @@ Revises: 8cdac474f9fd, d4597dfc1abc
 Create Date: 2025-07-30 13:23:48.593484
 
 """
-from alembic import op  # noqa: F401
-import sqlalchemy as sa  # noqa: F401
 
+import sqlalchemy as sa  # noqa: F401
+from alembic import op  # noqa: F401
 
 # revision identifiers, used by Alembic.
-revision = 'f28b14d743a3'
-down_revision = ('8cdac474f9fd', 'd4597dfc1abc')
+revision = "f28b14d743a3"
+down_revision = ("8cdac474f9fd", "d4597dfc1abc")
 branch_labels = None
 depends_on = None
 

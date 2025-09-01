@@ -1,14 +1,16 @@
-import schedule
 import time
+
+import schedule
+
 from app import create_app
 from app.tasks import send_deadline_warning_email
 from app.utils.time_utils import now_local
 
 
-
 def main():
     app = create_app()
     with app.app_context():
+
         def job():
             now = now_local().strftime("%Y-%m-%d %H:%M")
             print(f"[{now}] Running deadline warning task...")

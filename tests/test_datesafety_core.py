@@ -28,7 +28,9 @@ def test_deadline_variants_render(app):
             case.formatted_deadline = case.deadline_str
             cases.append(case)
         app.jinja_env.globals["csrf_token"] = lambda: ""
-        app.jinja_env.globals["current_user"] = SimpleNamespace(is_authenticated=False, role="")
+        app.jinja_env.globals["current_user"] = SimpleNamespace(
+            is_authenticated=False, role=""
+        )
         with app.test_request_context():
             render = app.jinja_env.get_template("closed_cases.html").render(cases=cases)
         assert cases[1].deadline_flags["is_expired"]

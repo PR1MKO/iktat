@@ -1,6 +1,7 @@
 from sqlalchemy import func
-from app.utils.time_utils import now_local
+
 from app.models import Case
+from app.utils.time_utils import now_local
 
 
 def generate_case_number_for_year(session, year: int | None = None) -> str:

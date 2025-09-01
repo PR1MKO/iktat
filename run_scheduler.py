@@ -1,8 +1,11 @@
 import time
+
 import schedule
+
 from app import create_app
 from app.tasks import send_deadline_warning_email
 from app.utils.time_utils import now_local
+
 
 def main():
     app = create_app()
@@ -12,7 +15,7 @@ def main():
             now = now_local()
             if now.weekday() < 5 and now.hour == 8:
                 send_deadline_warning_email()
-                
+
         # Check every minute if it's time to run
         schedule.every(1).minutes.do(run_if_morning)
 

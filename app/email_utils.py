@@ -1,5 +1,5 @@
-from flask_mail import Message
 from flask import current_app
+from flask_mail import Message
 
 from . import mail
 
@@ -20,4 +20,3 @@ def send_email(subject, recipients, body):
         mail.send(msg)
     except Exception as e:  # pragma: no cover - log but don't fail
         current_app.logger.error("Failed to send email: %s", e)
-

@@ -6,8 +6,8 @@ Revises: 147a352640ee
 Create Date: 2025-08-27 14:00:00.000000
 """
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e361b9f3fdb8"
@@ -40,7 +40,7 @@ def upgrade():
         return
 
     # Backfill NULLs to canonical default (idempotent).
-    op.execute('UPDATE "case" SET status = \'new\' WHERE status IS NULL')
+    op.execute("UPDATE \"case\" SET status = 'new' WHERE status IS NULL")
 
     # Ensure NOT NULL + server_default using SQLite-safe batch alter.
     with op.batch_alter_table("case") as batch:

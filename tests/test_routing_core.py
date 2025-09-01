@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from app.models import Case, UploadedFile, db
-from tests.helpers import create_user, login
 from app.paths import ensure_case_folder
+from tests.helpers import create_user, login
 
 
 @pytest.mark.routes

@@ -1,9 +1,8 @@
-import pytest
 from datetime import date
 
 from app import db
-from app.models import Case
 from app.investigations.models import Investigation
+from app.models import Case
 
 
 def test_case_status_default(app):
@@ -11,13 +10,13 @@ def test_case_status_default(app):
         c = Case(case_number="T-PK-1")
         db.session.add(c)
         db.session.commit()
-        assert c.status == 'new'
+        assert c.status == "new"
 
 
 def test_case_pk_autoincrement(app):
     with app.app_context():
-        a = Case(case_number="T-PK-2", status='beérkezett')
-        b = Case(case_number="T-PK-3", status='beérkezett')
+        a = Case(case_number="T-PK-2", status="beérkezett")
+        b = Case(case_number="T-PK-3", status="beérkezett")
         db.session.add_all([a, b])
         db.session.commit()
         assert isinstance(a.id, int) and isinstance(b.id, int)

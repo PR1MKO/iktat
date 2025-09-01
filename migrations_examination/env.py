@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from logging.config import fileConfig
 
 from alembic import context
@@ -18,14 +19,17 @@ EXAM_TABLES = {
     "investigation_change_log",
 }
 
+
 def _is_sqlite_connection(conn) -> bool:
     try:
         return conn.dialect.name == "sqlite"
     except Exception:
         return False
 
+
 def _is_sqlite_url(url: str) -> bool:
     return (url or "").strip().lower().startswith("sqlite")
+
 
 def include_object(obj, name, type_, reflected, compare_to):
     """
@@ -41,6 +45,7 @@ def include_object(obj, name, type_, reflected, compare_to):
 
     # Fallback (safe default)
     return False
+
 
 def run_migrations_offline() -> None:
     engine = db.engines.get("examination") or db.get_engine(bind="examination")
@@ -60,6 +65,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online() -> None:
     engine = db.engines.get("examination") or db.get_engine(bind="examination")
     with engine.connect() as connection:
@@ -74,6 +80,7 @@ def run_migrations_online() -> None:
         )
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()

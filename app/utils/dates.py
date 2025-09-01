@@ -1,5 +1,5 @@
-from datetime import datetime, timezone, date
-from typing import Optional, Dict
+from datetime import date, datetime, timezone
+from typing import Dict, Optional
 
 
 def now_utc() -> datetime:
@@ -11,6 +11,7 @@ def safe_fmt(dt: Optional[datetime], pattern: str = "%Y.%m.%d %H:%M") -> str:
         return ""
     try:
         from app.utils.time_utils import BUDAPEST_TZ
+
         return dt.astimezone(BUDAPEST_TZ).strftime(pattern)
     except Exception:
         return dt.strftime(pattern)
@@ -20,11 +21,19 @@ def safe_iso(dt: Optional[datetime]) -> str:
     return dt.isoformat() if dt else ""
 
 
-def compute_deadline_flags(deadline: Optional[datetime], warn_days: int = 7) -> Dict[str, object]:
+def compute_deadline_flags(
+    deadline: Optional[datetime], warn_days: int = 7
+) -> Dict[str, object]:
     if not deadline:
-        return {"is_expired": False, "is_today": False, "is_warning": False, "days_left": None}
+        return {
+            "is_expired": False,
+            "is_today": False,
+            "is_warning": False,
+            "days_left": None,
+        }
     try:
         from app.utils.time_utils import now_local
+
         today = now_local().date()
         d = deadline.date()
     except Exception:
@@ -39,14 +48,15 @@ def compute_deadline_flags(deadline: Optional[datetime], warn_days: int = 7) -> 
     }
 
 
-
 def attach_case_dates(case):
     case.registration_time_str = safe_fmt(getattr(case, "registration_time", None))
     case.deadline_str = safe_fmt(getattr(case, "deadline", None))
     case.updated_at_iso = safe_iso(getattr(case, "updated_at", None))
     case.deadline_flags = compute_deadline_flags(getattr(case, "deadline", None))
     case.tox_viewed_at_str = safe_fmt(getattr(case, "tox_viewed_at", None))
-    case.tox_doc_generated_at_str = safe_fmt(getattr(case, "tox_doc_generated_at", None))
+    case.tox_doc_generated_at_str = safe_fmt(
+        getattr(case, "tox_doc_generated_at", None)
+    )
     if hasattr(case, "uploaded_file_records"):
         for rec in case.uploaded_file_records:
             rec.upload_time_str = safe_fmt(getattr(rec, "upload_time", None))

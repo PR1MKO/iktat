@@ -4,9 +4,9 @@ Usage: python scripts/stamp_multibind.py [default|examination|all]
 
 import sys
 
-from flask import Flask
 from alembic import command
 from alembic.config import Config
+from flask import Flask
 
 from app import create_app
 

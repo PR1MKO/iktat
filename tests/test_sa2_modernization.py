@@ -5,7 +5,6 @@ from __future__ import annotations
 import pathlib
 import re
 
-
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
@@ -41,4 +40,3 @@ def test_script_uses_db_engines_accessor():
     assert "db.get_engine(" in content
     legacy = "db.get_engine" + "(current_app"
     assert legacy not in content
-	

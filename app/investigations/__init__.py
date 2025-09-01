@@ -1,7 +1,8 @@
 from flask import Blueprint
 
 investigations_bp = Blueprint(
-    'investigations', __name__, template_folder='../templates/investigations'
+    "investigations", __name__, template_folder="../templates/investigations"
 )
 
-from . import routes, models  # noqa: F401
+# Keep imports after blueprint to avoid circular import issues.
+from . import models, routes  # noqa: F401, E402

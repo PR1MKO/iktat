@@ -17,46 +17,53 @@ def _get_token(client, url):
 
 
 def _create_case():
-    case = Case(case_number='C100', registration_time=now_local(), status='beérkezett')
+    case = Case(case_number="C100", registration_time=now_local(), status="beérkezett")
     db.session.add(case)
     db.session.commit()
     return case.id
 
 
 def test_meta_token_present(client, app):
-    app.config['WTF_CSRF_ENABLED'] = True
-    resp = client.get('/login')
+    app.config["WTF_CSRF_ENABLED"] = True
+    resp = client.get("/login")
     html = resp.get_data(as_text=True)
     m = re.search(r'<meta name="csrf-token" content="([^"]+)">', html)
     assert m and m.group(1)
 
 
 def test_ajax_header_rule_present():
-    base_html = Path('app/templates/base.html').read_text(encoding='utf-8')
-    assert 'X-CSRFToken' in base_html
+    base_html = Path("app/templates/base.html").read_text(encoding="utf-8")
+    assert "X-CSRFToken" in base_html
 
 
-@pytest.mark.parametrize('mode', ['login', 'add_note'])
+@pytest.mark.parametrize("mode", ["login", "add_note"])
 def test_post_requires_token(client, app, mode):
-    app.config['WTF_CSRF_ENABLED'] = True
+    app.config["WTF_CSRF_ENABLED"] = True
     with client:
-        if mode == 'login':
-            url = '/login'
-            resp = client.post(url, data={'username': 'x', 'password': 'y'})
+        if mode == "login":
+            url = "/login"
+            resp = client.post(url, data={"username": "x", "password": "y"})
             assert resp.status_code == 400
             token = _get_token(client, url)
-            resp = client.post(url, data={'username': 'x', 'password': 'y', 'csrf_token': token})
+            resp = client.post(
+                url, data={"username": "x", "password": "y", "csrf_token": token}
+            )
             assert resp.status_code in (200, 302)
         else:
             with app.app_context():
-                create_user('admin', 'pw', 'admin')
+                create_user("admin", "pw", "admin")
                 case_id = _create_case()
-            token = _get_token(client, '/login')
-            resp = client.post('/login', data={'username': 'admin', 'password': 'pw', 'csrf_token': token})
+            token = _get_token(client, "/login")
+            resp = client.post(
+                "/login",
+                data={"username": "admin", "password": "pw", "csrf_token": token},
+            )
             assert resp.status_code in (200, 302)
-            url = f'/cases/{case_id}/add_note'
-            resp = client.post(url, json={'new_note': 'hi'})
+            url = f"/cases/{case_id}/add_note"
+            resp = client.post(url, json={"new_note": "hi"})
             assert resp.status_code == 400
             token = generate_csrf()
-            resp = client.post(url, json={'new_note': 'hi'}, headers={'X-CSRFToken': token})
+            resp = client.post(
+                url, json={"new_note": "hi"}, headers={"X-CSRFToken": token}
+            )
             assert resp.status_code == 200

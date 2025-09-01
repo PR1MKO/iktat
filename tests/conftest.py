@@ -1,39 +1,34 @@
-﻿# --- Hard guard for Codex Flask-WTF<=1.1.x (runs before anything else) ---
-import flask as _fl
-from markupsafe import Markup as _MSM
-_fl.Markup = _MSM  # ensure any "from flask import Markup" resolves safely
-import tests.compat_flaskwtf  # noqa: F401  # soft patch (no-op on >=1.2.x)
-# -------------------------------------------------------------------------
+﻿# tests/conftest.py
 
-# tests/conftest.py
-
-# --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
-import tests.compat_flaskwtf  # noqa: F401
-# --------------------------------------------------------
-
+# --- Imports first to satisfy E402 ---
+import itertools
 import os
-import sys
 import pathlib
 import random
+import sys
 import uuid
-import itertools
 from datetime import datetime, timezone
 
+import flask as _fl
 import pytest
+from markupsafe import Markup as _MSM
 from sqlalchemy.pool import StaticPool
+
+# --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
+_fl.Markup = _MSM  # ensure any "from flask import Markup" resolves safely
+import tests.compat_flaskwtf  # noqa: F401
 
 # Ensure app package is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 os.environ.setdefault("SECRET_KEY", "test-secret")
 
-from app import create_app, db  # noqa: E402
-from config import TestingConfig  # noqa: E402
-from app.utils import time_utils
-from app.utils import dates as dates_util
-
 # --- Ensure *all* models are registered before create_all() ---
-# Single import that aggregates every model module.
-from app import models_all  # noqa: F401  # pylint: disable=unused-import
+from app import models_all  # noqa: F401
+from app import create_app, db
+from app.utils import dates as dates_util
+from app.utils import time_utils
+from config import TestingConfig
+
 # --------------------------------------------------------------
 
 
@@ -64,9 +59,7 @@ def _seed_random(monkeypatch):
 def _fixed_now(monkeypatch):
     fixed = time_utils.BUDAPEST_TZ.localize(datetime(2020, 1, 1, 12, 0))
     monkeypatch.setattr(time_utils, "now_local", lambda: fixed)
-    monkeypatch.setattr(
-        dates_util, "now_utc", lambda: fixed.astimezone(timezone.utc)
-    )
+    monkeypatch.setattr(dates_util, "now_utc", lambda: fixed.astimezone(timezone.utc))
     for name, mod in list(sys.modules.items()):
         if name.startswith("tests.") and hasattr(mod, "now_local"):
             monkeypatch.setattr(mod, "now_local", lambda: fixed, raising=False)
@@ -81,6 +74,7 @@ def _tmp_upload_dirs(tmp_path, monkeypatch):
     monkeypatch.setenv("UPLOAD_CASES_ROOT", str(cases))
     monkeypatch.setenv("UPLOAD_INVESTIGATIONS_ROOT", str(investigations))
 
+
 @pytest.fixture
 def app(_tmp_upload_dirs):
     app = create_app(TestingConfig)
@@ -88,9 +82,9 @@ def app(_tmp_upload_dirs):
     # Shared in-memory DB across the process for deterministic tests
     app.config.update(
         TESTING=True,
-        WTF_CSRF_ENABLED=False,                  # allow login form posts in tests
-        SQLALCHEMY_DATABASE_URI="sqlite://",     # shared in-memory DB
-        SQLALCHEMY_BINDS={                       # second bind (example) for investigations/others
+        WTF_CSRF_ENABLED=False,  # allow login form posts in tests
+        SQLALCHEMY_DATABASE_URI="sqlite://",  # shared in-memory DB
+        SQLALCHEMY_BINDS={  # second bind (example) for investigations/others
             "examination": "sqlite://",
         },
         SQLALCHEMY_ENGINE_OPTIONS={
@@ -98,7 +92,7 @@ def app(_tmp_upload_dirs):
             "connect_args": {"check_same_thread": False},
         },
         SQLALCHEMY_SESSION_OPTIONS={
-            "expire_on_commit": False,           # avoid mid-request reloads
+            "expire_on_commit": False,  # avoid mid-request reloads
         },
     )
 
@@ -106,7 +100,6 @@ def app(_tmp_upload_dirs):
     assert app.config["SQLALCHEMY_SESSION_OPTIONS"]["expire_on_commit"] is False
 
     with app.app_context():
-        # Schema setup/teardown handled by the _db fixture below.
         yield app
 
 
@@ -114,10 +107,6 @@ def app(_tmp_upload_dirs):
 def _db(app):
     """
     Fresh schema for all binds before each test.
-
-    Important: we *don't* call drop_all() before create_all(), because on a
-    brand-new in-memory SQLite DB, dropping non-existent tables can throw
-    OperationalError in some environments. We drop in teardown instead.
     """
     with app.app_context():
         # Create default bind schema
@@ -131,12 +120,10 @@ def _db(app):
 
         # Teardown between tests
         db.session.remove()
-        # Drop extra binds first (isolate any relationships)
         for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
             try:
                 db.drop_all(bind_key=bind_key)
             except Exception:
-                # Some engines/versions can race on checkfirst; ignore here.
                 pass
         try:
             db.drop_all()

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 from tools.devdoc import append_entry
 
 
@@ -30,4 +28,3 @@ def test_env_override(tmp_path, monkeypatch):
     content = env_path.read_text(encoding="utf-8")
     assert "**Heads:**" in content
     assert content.endswith("\n")
-	

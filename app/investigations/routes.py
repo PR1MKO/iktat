@@ -1,6 +1,7 @@
 # app/investigations/routes.py
 
 from datetime import timedelta
+from pathlib import Path
 
 from flask import (
     abort,
@@ -13,34 +14,40 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_, func, text
-from pathlib import Path
+from sqlalchemy import func, or_, text
 from werkzeug import exceptions
-from app.utils.uploads import save_upload, send_safe
 
 from app import db
-from app.utils.rbac import require_roles as roles_required
-from app.utils.time_utils import fmt_date, now_local
-from app.utils.dates import safe_fmt
-from app.utils.permissions import capabilities_for
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
 from app.services.core_user_read import get_user_safe
+from app.utils.dates import safe_fmt
+from app.utils.permissions import capabilities_for
+from app.utils.rbac import require_roles as roles_required
+from app.utils.time_utils import fmt_date, now_local
+from app.utils.uploads import save_upload, send_safe
+
 from . import investigations_bp
-from .forms import InvestigationForm, FileUploadForm, InvestigationNoteForm
+from .forms import FileUploadForm, InvestigationForm, InvestigationNoteForm
 from .models import (
     Investigation,
-    InvestigationNote,
     InvestigationAttachment,
     InvestigationChangeLog,
+    InvestigationNote,
 )
-from .utils import generate_case_number, user_display_name, init_investigation_upload_dirs
+from .utils import (
+    generate_case_number,
+    init_investigation_upload_dirs,
+    user_display_name,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _can_modify(inv, user) -> bool:
     return user.role in {"admin", "iroda"}
+
 
 def _can_note_or_upload(inv, user) -> bool:
     if user.role in {"admin", "iroda"}:
@@ -86,6 +93,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 # Routes
 # ---------------------------------------------------------------------------
 
+
 @investigations_bp.route("/")
 @login_required
 @roles_required("admin", "iroda", "szakértő", "pénzügy")
@@ -96,9 +104,9 @@ def list_investigations():
     sort_order = request.args.get("sort_order", "asc")
     page = request.args.get("page", 1, type=int)
     per_page = 25
-    
+
     query = Investigation.query
-    
+
     if search:
         like = f"%{search}%"
         query = query.filter(
@@ -116,7 +124,7 @@ def list_investigations():
                 Investigation.investigation_type.ilike(like),
                 Investigation.institution_name.ilike(like),
                 func.strftime("%Y-%m-%d", Investigation.birth_date).like(like),
-                func.strftime("%Y",       Investigation.birth_date).like(like),
+                func.strftime("%Y", Investigation.birth_date).like(like),
             )
         )
 
@@ -128,7 +136,9 @@ def list_investigations():
         "deadline": Investigation.deadline,
     }.get(sort_by, Investigation.id)
 
-    query = query.order_by(order_col.desc() if sort_order == "desc" else order_col.asc())
+    query = query.order_by(
+        order_col.desc() if sort_order == "desc" else order_col.asc()
+    )
 
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     investigations = pagination.items
@@ -143,7 +153,7 @@ def list_investigations():
     has_edit_investigation = (
         "investigations.edit_investigation" in current_app.view_functions
     )
-       
+
     return render_template(
         "investigations/list.html",
         investigations=investigations,
@@ -157,22 +167,23 @@ def list_investigations():
         caps=capabilities_for(current_user),
     )
 
+
 @investigations_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @roles_required("admin", "iroda")
 def new_investigation():
     form = InvestigationForm()
-    
+
     experts = db.session.execute(
         text(
             "SELECT id, screen_name, username FROM user "
             "WHERE role IN ('szakértő', 'szak') ORDER BY screen_name, username"
         )
     ).all()
-    form.assigned_expert_id.choices = [
-        (0, "— Válasszon —")
-    ] + [(row.id, row.screen_name or row.username) for row in experts]
-    
+    form.assigned_expert_id.choices = [(0, "— Válasszon —")] + [
+        (row.id, row.screen_name or row.username) for row in experts
+    ]
+
     if form.validate_on_submit():
         assignment_type = form.assignment_type.data
         assigned_expert_id = (
@@ -180,7 +191,11 @@ def new_investigation():
         )
         inv = Investigation(
             subject_name=form.subject_name.data,
-            maiden_name=getattr(form, "maiden_name", None).data if hasattr(form, "maiden_name") else None,
+            maiden_name=(
+                getattr(form, "maiden_name", None).data
+                if hasattr(form, "maiden_name")
+                else None
+            ),
             mother_name=form.mother_name.data,
             birth_place=form.birth_place.data,
             birth_date=form.birth_date.data,
@@ -212,8 +227,8 @@ def new_investigation():
         for errs in form.errors.values():
             for err in errs:
                 flash(err)
-        if current_app.config.get('STRICT_PRG_ENABLED', True):
-            return redirect(url_for('investigations.new_investigation'))
+        if current_app.config.get("STRICT_PRG_ENABLED", True):
+            return redirect(url_for("investigations.new_investigation"))
 
     return render_template("investigations/new.html", form=form)
 
@@ -225,11 +240,9 @@ def documents(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    folder = str(ensure_investigation_folder(inv.case_number))
 
     attachments = (
-        InvestigationAttachment.query
-        .filter_by(investigation_id=id)
+        InvestigationAttachment.query.filter_by(investigation_id=id)
         .order_by(InvestigationAttachment.uploaded_at.desc())
         .all()
     )
@@ -257,15 +270,13 @@ def view_investigation(id):
         abort(404)
 
     attachments = (
-        InvestigationAttachment.query
-        .filter_by(investigation_id=id)
+        InvestigationAttachment.query.filter_by(investigation_id=id)
         .order_by(InvestigationAttachment.uploaded_at.desc())
         .all()
     )
 
     notes = (
-        InvestigationNote.query
-        .filter_by(investigation_id=id)
+        InvestigationNote.query.filter_by(investigation_id=id)
         .order_by(InvestigationNote.timestamp.desc())
         .all()
     )
@@ -274,8 +285,7 @@ def view_investigation(id):
         note.timestamp_str = safe_fmt(note.timestamp)
 
     changelog_entries = (
-        InvestigationChangeLog.query
-        .filter_by(investigation_id=id)
+        InvestigationChangeLog.query.filter_by(investigation_id=id)
         .order_by(InvestigationChangeLog.timestamp.desc())
         .all()
     )
@@ -297,6 +307,7 @@ def view_investigation(id):
         user_display_name=user_display_name,
         caps=capabilities_for(current_user),
     )
+
 
 @investigations_bp.route("/<int:id>")
 @login_required
@@ -347,6 +358,7 @@ def detail_investigation(id):
         caps=capabilities_for(current_user),
     )
 
+
 @investigations_bp.route("/<int:id>/edit", methods=["POST"])
 @login_required
 @roles_required("admin", "iroda")
@@ -371,7 +383,7 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required('admin', 'iroda', 'szakértő')
+@roles_required("admin", "iroda", "szakértő")
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -379,7 +391,11 @@ def add_investigation_note(id):
     caps = capabilities_for(current_user)
     if not caps.get("can_post_investigation_notes"):
         abort(403)
-    if current_user.role not in {"admin", "iroda"} and current_user.id not in {inv.expert1_id, inv.expert2_id, inv.describer_id}:
+    if current_user.role not in {"admin", "iroda"} and current_user.id not in {
+        inv.expert1_id,
+        inv.expert2_id,
+        inv.describer_id,
+    }:
         abort(403)
 
     form = InvestigationNoteForm()
@@ -410,9 +426,10 @@ def add_investigation_note(id):
     )
     return html
 
+
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
-@roles_required('admin', 'iroda', 'szakértő')
+@roles_required("admin", "iroda", "szakértő")
 def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -420,7 +437,11 @@ def upload_investigation_file(id):
     caps = capabilities_for(current_user)
     if not caps.get("can_upload_investigation"):
         abort(403)
-    if current_user.role not in {"admin", "iroda"} and current_user.id not in {inv.expert1_id, inv.expert2_id, inv.describer_id}:
+    if current_user.role not in {"admin", "iroda"} and current_user.id not in {
+        inv.expert1_id,
+        inv.expert2_id,
+        inv.describer_id,
+    }:
         abort(403)
 
     form = FileUploadForm()
@@ -448,12 +469,15 @@ def upload_investigation_file(id):
     db.session.add(attachment)
     db.session.commit()
 
-    return jsonify({
-        "id": attachment.id,
-        "filename": attachment.filename,
-        "category": attachment.category,
-        "uploaded_at": fmt_date(attachment.uploaded_at),
-    })
+    return jsonify(
+        {
+            "id": attachment.id,
+            "filename": attachment.filename,
+            "category": attachment.category,
+            "uploaded_at": fmt_date(attachment.uploaded_at),
+        }
+    )
+
 
 @investigations_bp.route("/<int:id>/files/<path:filename>")
 @login_required

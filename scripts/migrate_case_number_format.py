@@ -8,11 +8,13 @@ Steps:
 Usage:
     python scripts/migrate_case_number_format.py
 """
+
 import os
 import re
+
 from app import create_app, db
-from app.models import Case, AuditLog, TaskMessage
-from app.paths import case_root, case_folder_name
+from app.models import AuditLog, Case, TaskMessage
+from app.paths import case_folder_name, case_root
 
 OLD_RE = re.compile(r"^(\d{4})-(\d{3})$")
 LOG_RE = re.compile(r"\b(\d{4})-(\d{3})\b")
@@ -66,12 +68,16 @@ with app.app_context():
     for log in logs:
         if not log.details:
             continue
-        new_details = LOG_RE.sub(lambda m: f"{int(m.group(2)):04d}-{m.group(1)}", log.details)
+        new_details = LOG_RE.sub(
+            lambda m: f"{int(m.group(2)):04d}-{m.group(1)}", log.details
+        )
         if new_details != log.details:
             log.details = new_details
     msgs = TaskMessage.query.all()
     for msg in msgs:
-        new_msg = LOG_RE.sub(lambda m: f"{int(m.group(2)):04d}-{m.group(1)}", msg.message)
+        new_msg = LOG_RE.sub(
+            lambda m: f"{int(m.group(2)):04d}-{m.group(1)}", msg.message
+        )
         if new_msg != msg.message:
             msg.message = new_msg
     db.session.commit()

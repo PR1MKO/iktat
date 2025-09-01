@@ -4,6 +4,7 @@ Test-only shim: if flask_wtf Recaptcha widgets import Markup from Flask (1.1.x),
 patch them to use markupsafe.Markup so pytest can run in Codex envs pinning 1.1.1.
 Safe to import multiple times; no effect if already fixed in >=1.2.x.
 """
+
 from importlib import import_module
 
 try:
@@ -12,8 +13,12 @@ try:
     # If it exposes a Markup symbol coming via Flask, swap it to markupsafe.Markup.
     try:
         from markupsafe import Markup as _SafeMarkup
+
         # Rebind only if needed
-        if getattr(widgets, "Markup", None) and getattr(widgets, "Markup").__module__ in {"flask", "flask.helpers"}:
+        if getattr(widgets, "Markup", None) and widgets.Markup.__module__ in {
+            "flask",
+            "flask.helpers",
+        }:
             widgets.Markup = _SafeMarkup  # type: ignore[attr-defined]
     except Exception:
         # If markupsafe isn't available or anything odd happens, fail silently (tests may still run).

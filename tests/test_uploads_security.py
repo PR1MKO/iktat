@@ -30,16 +30,21 @@ def _prep_case(app, client, tmp_path, number):
     login(client, "admin", "secret")
     return cid
 
+
 def test_upload_traversal_blocked(app, client, tmp_path):
     cid = _prep_case(app, client, tmp_path, "T1")
     data = {"category": "egyéb", "file": (BytesIO(b"x"), "../../evil.txt")}
-    resp = client.post(f"/cases/{cid}/upload", data=data, content_type="multipart/form-data")
+    resp = client.post(
+        f"/cases/{cid}/upload", data=data, content_type="multipart/form-data"
+    )
     assert resp.status_code == 400
+
 
 def test_download_traversal_blocked(app, client, tmp_path):
     cid = _prep_case(app, client, tmp_path, "D1")
     resp = client.get(f"/cases/{cid}/files/../secret.txt")
     assert resp.status_code == 400
+
 
 @pytest.mark.parametrize(
     "fname, expected",
@@ -48,7 +53,9 @@ def test_download_traversal_blocked(app, client, tmp_path):
 def test_extension_whitelist(app, client, tmp_path, fname, expected):
     cid = _prep_case(app, client, tmp_path, "E1")
     data = {"category": "egyéb", "file": (BytesIO(b"data"), fname)}
-    resp = client.post(f"/cases/{cid}/upload", data=data, content_type="multipart/form-data")
+    resp = client.post(
+        f"/cases/{cid}/upload", data=data, content_type="multipart/form-data"
+    )
     if expected:
         assert resp.status_code in (200, 302)
     else:
@@ -58,18 +65,25 @@ def test_extension_whitelist(app, client, tmp_path, fname, expected):
 def test_mime_sanity(app, client, tmp_path):
     cid = _prep_case(app, client, tmp_path, "M1")
     data = {"category": "egyéb", "file": (BytesIO(b"pdf"), "a.pdf")}
-    resp = client.post(f"/cases/{cid}/upload", data=data, content_type="multipart/form-data")
+    resp = client.post(
+        f"/cases/{cid}/upload", data=data, content_type="multipart/form-data"
+    )
     assert resp.status_code in (200, 302)
     resp = client.get(f"/cases/{cid}/files/a.pdf")
     assert resp.status_code == 200
-    assert resp.headers["Content-Type"] in ("application/pdf", "application/octet-stream")
+    assert resp.headers["Content-Type"] in (
+        "application/pdf",
+        "application/octet-stream",
+    )
 
 
 def test_separate_roots(app, client, tmp_path):
     cid = _prep_case(app, client, tmp_path, "S1")
     fname = "root.pdf"
     data = {"category": "egyéb", "file": (BytesIO(b"data"), fname)}
-    resp = client.post(f"/cases/{cid}/upload", data=data, content_type="multipart/form-data")
+    resp = client.post(
+        f"/cases/{cid}/upload", data=data, content_type="multipart/form-data"
+    )
     assert resp.status_code in (200, 302)
     assert not list(Path(app.config["UPLOAD_INVESTIGATIONS_ROOT"]).rglob(fname))
 
@@ -79,6 +93,7 @@ def test_size_limit(app, client, tmp_path):
     cid = _prep_case(app, client, tmp_path, "L1")
     big = BytesIO(b"x" * 2048)
     data = {"category": "egyéb", "file": (big, "big.pdf")}
-    resp = client.post(f"/cases/{cid}/upload", data=data, content_type="multipart/form-data")
+    resp = client.post(
+        f"/cases/{cid}/upload", data=data, content_type="multipart/form-data"
+    )
     assert resp.status_code == 413
-    

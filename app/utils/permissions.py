@@ -92,8 +92,7 @@ _BASE_ROLE_CAPS: Dict[str, Dict[str, bool]] = {
 def _intersection_caps(matrix: Dict[str, Dict[str, bool]]) -> Dict[str, bool]:
     """Return the intersection (logical AND) of all role capabilities."""
     return {
-        cap: all(caps.get(cap, False) for caps in matrix.values())
-        for cap in _CAP_KEYS
+        cap: all(caps.get(cap, False) for caps in matrix.values()) for cap in _CAP_KEYS
     }
 
 

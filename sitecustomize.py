@@ -10,9 +10,11 @@ import pathlib
 
 _original_read_text = pathlib.Path.read_text
 
+
 def _read_text_utf8_default(self, *args, **kwargs):
     if "encoding" not in kwargs:
         kwargs["encoding"] = "utf-8"
     return _original_read_text(self, *args, **kwargs)
+
 
 pathlib.Path.read_text = _read_text_utf8_default

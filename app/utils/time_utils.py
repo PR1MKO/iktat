@@ -1,5 +1,6 @@
+from datetime import date, datetime
+
 import pytz
-from datetime import datetime, date
 
 BUDAPEST_TZ = pytz.timezone("Europe/Budapest")
 
@@ -7,8 +8,8 @@ BUDAPEST_TZ = pytz.timezone("Europe/Budapest")
 def now_local() -> datetime:
     """Return current time in Budapest timezone."""
     return datetime.now(BUDAPEST_TZ)
-    
-    
+
+
 def to_local(dt: datetime) -> datetime:
     """Ensure ``dt`` is in Budapest timezone.
 
@@ -18,7 +19,8 @@ def to_local(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=BUDAPEST_TZ)
     return dt.astimezone(BUDAPEST_TZ)
-    
+
+
 def fmt_date(value: date | datetime | None) -> str:
     """Format a date or datetime as YYYY.MM.DD."""
     if not value:
@@ -26,4 +28,3 @@ def fmt_date(value: date | datetime | None) -> str:
     if isinstance(value, datetime):
         value = value.date()
     return value.strftime("%Y.%m.%d")
-    

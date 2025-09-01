@@ -1,7 +1,8 @@
 # app/utils/roles.py
 from functools import wraps
+
 from flask import abort, flash, redirect, url_for
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 from sqlalchemy.orm.exc import DetachedInstanceError, ObjectDeletedError
 
 from app import db
@@ -59,4 +60,3 @@ def roles_required(*roles):
         return wrapper
 
     return decorator
-

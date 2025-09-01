@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import mimetypes
 from pathlib import Path
 from typing import Optional
-import mimetypes
 
-from flask import current_app, request, send_file, abort
+from flask import abort, current_app, request, send_file
 from werkzeug import exceptions
 from werkzeug.utils import secure_filename
 
@@ -53,7 +53,11 @@ def save_upload(file_storage, root: Path, domain: str, *subdirs: str) -> Path:
         raise exceptions.BadRequest("forbidden file type")
     # basic MIME sanity
     expected, _ = mimetypes.guess_type(filename)
-    if expected and file_storage.mimetype and file_storage.mimetype not in (expected, "application/octet-stream"):
+    if (
+        expected
+        and file_storage.mimetype
+        and file_storage.mimetype not in (expected, "application/octet-stream")
+    ):
         raise exceptions.BadRequest("forbidden file type")
     target_dir = resolve_safe(root, *subdirs)
     target_dir.mkdir(parents=True, exist_ok=True)

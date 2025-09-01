@@ -6,9 +6,8 @@ Create Date: 2025-08-18 10:23:07.000000
 
 """
 
-from alembic import op, context
 import sqlalchemy as sa
-
+from alembic import context, op
 
 # revision identifiers, used by Alembic.
 revision = "f2ca12fa098a"
@@ -38,4 +37,3 @@ def downgrade():
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.UniqueConstraint("investigation_number"),
     )
-

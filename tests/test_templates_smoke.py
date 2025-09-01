@@ -6,74 +6,80 @@ from app import create_app, login_manager
 
 
 class Guest(AnonymousUserMixin):
-    role = ''
-    screen_name = ''
-    username = ''
+    role = ""
+    screen_name = ""
+    username = ""
 
 
 @pytest.fixture(scope="module")
 def app():
-    app = create_app({
-        'TESTING': True,
-        'WTF_CSRF_ENABLED': False,
-        'SERVER_NAME': 'example.test',
-    })
+    app = create_app(
+        {
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+            "SERVER_NAME": "example.test",
+        }
+    )
     login_manager.anonymous_user = Guest
     return app
 
 
 case_stub = {
-    'id': 1,
-    'case_number': 'CASE-1',
-    'name': 'Test',
-    'status': 'nyitott',
-    'deadline': None,
-    'notes': [],
-    'tox_orders': [],
-    'files': [],
-    'formatted_deadline': '',
-    'case_type': '',
-    'institution_name': '',
-    'deceased_name': '',
+    "id": 1,
+    "case_number": "CASE-1",
+    "name": "Test",
+    "status": "nyitott",
+    "deadline": None,
+    "notes": [],
+    "tox_orders": [],
+    "files": [],
+    "formatted_deadline": "",
+    "case_type": "",
+    "institution_name": "",
+    "deceased_name": "",
 }
 
 
 templates = [
-    ('base.html', 'auth.login', False, {}),
+    ("base.html", "auth.login", False, {}),
     (
-        'list_cases.html',
-        'auth.list_cases',
+        "list_cases.html",
+        "auth.list_cases",
         False,
         {
-            'cases': [],
-            'users_map': {},
-            'sort_by': '',
-            'sort_order': '',
-            'query_params': {},
-            'search_query': '',
-            'case_type_filter': '',
-            'status_filter': '',
+            "cases": [],
+            "users_map": {},
+            "sort_by": "",
+            "sort_order": "",
+            "query_params": {},
+            "search_query": "",
+            "case_type_filter": "",
+            "status_filter": "",
         },
     ),
     (
-        'edit_case.html',
-        'auth.edit_case',
+        "edit_case.html",
+        "auth.edit_case",
         True,
-        {'case': case_stub, 'szakerto_users': [], 'leiro_users': []},
+        {"case": case_stub, "szakerto_users": [], "leiro_users": []},
     ),
     (
-        'case_detail.html',
-        'auth.case_detail',
+        "case_detail.html",
+        "auth.case_detail",
         True,
-        {'case': case_stub, 'caps': {'can_upload_case': False}, 'changelog_entries': []},
+        {
+            "case": case_stub,
+            "caps": {"can_upload_case": False},
+            "changelog_entries": [],
+        },
     ),
     (
-        'case_documents.html',
-        'auth.case_documents',
+        "case_documents.html",
+        "auth.case_documents",
         True,
-        {'case': case_stub},
+        {"case": case_stub},
     ),
-    ('login.html', 'auth.login', False, {}),
+    ("login.html", "auth.login", False, {}),
 ]
 
 
@@ -86,7 +92,7 @@ def test_render_templates(app, tmpl, endpoint, needs_id, ctx):
 
 
 def test_macros(app):
-    with app.test_request_context('/'):
+    with app.test_request_context("/"):
         render_template_string(
             "{% import 'includes/case_macros.html' as cm %}"
             "{{ cm.cases_filter_form() }}"
@@ -97,9 +103,9 @@ def test_macros(app):
 def test_url_map_build(app):
     with app.app_context():
         for rule in app.url_map.iter_rules():
-            if rule.endpoint == 'static':
+            if rule.endpoint == "static":
                 continue
-            if rule.arguments - {'case_id'}:
+            if rule.arguments - {"case_id"}:
                 continue
-            kwargs = {'case_id': 1} if 'case_id' in rule.arguments else {}
+            kwargs = {"case_id": 1} if "case_id" in rule.arguments else {}
             url_for(rule.endpoint, **kwargs)

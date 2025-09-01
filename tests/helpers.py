@@ -1,8 +1,8 @@
 from datetime import date
 
-from app.models import User, db
 from app.investigations.models import Investigation
 from app.investigations.utils import generate_case_number
+from app.models import User, db
 
 
 def create_user(username="admin", password="secret", role="admin", **kw):
@@ -23,7 +23,9 @@ def create_user(username="admin", password="secret", role="admin", **kw):
             db.session.commit()
         return existing
 
-    user = User(username=username, screen_name=kw.get("screen_name", username), role=role, **kw)
+    user = User(
+        username=username, screen_name=kw.get("screen_name", username), role=role, **kw
+    )
     if password:
         user.set_password(password)
     db.session.add(user)
@@ -38,6 +40,7 @@ def login(client, username, password):
         data={"username": username, "password": password},
         follow_redirects=False,
     )
+
 
 def login_follow(client, username, password):
     # Use this when you need an authenticated session within the same client context.

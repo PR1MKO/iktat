@@ -1,14 +1,16 @@
 # app/investigations/utils.py
-from sqlalchemy import func
-from flask import current_app
-from pathlib import Path
 import shutil
+from pathlib import Path
+
+from flask import current_app
+from sqlalchemy import func
+
+from app.paths import ensure_investigation_folder as ensure_invest_path
+from app.paths import investigation_root as invest_root_path
 from app.utils.time_utils import now_local
+
 from .models import Investigation
-from app.paths import (
-    investigation_root as invest_root_path,
-    ensure_investigation_folder as ensure_invest_path,
-)
+
 
 def resolve_investigation_upload_root(app) -> str:
     return str(invest_root_path())
@@ -17,9 +19,11 @@ def resolve_investigation_upload_root(app) -> str:
 def resolve_upload_root(app) -> str:
     return str(invest_root_path())
 
+
 def ensure_investigation_folder(app, case_number: str) -> str:
     return str(ensure_invest_path(case_number))
-    
+
+
 def init_investigation_upload_dirs(case_or_inv) -> str:
     """Seed per-investigation upload scaffold.
 
@@ -53,6 +57,7 @@ def init_investigation_upload_dirs(case_or_inv) -> str:
 
     return str(target)
 
+
 def generate_case_number(session) -> str:
     """
     Investigation case number format (legacy, for tests): V:####/YYYY
@@ -80,6 +85,6 @@ def generate_case_number(session) -> str:
             return candidate
         seq += 1
 
+
 def user_display_name(u):
     return (u.full_name or u.screen_name or u.username) if u else "—"
-    

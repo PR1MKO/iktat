@@ -1,5 +1,5 @@
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 from app.investigations.models import Investigation
 from app.investigations.utils import init_investigation_upload_dirs
@@ -44,7 +44,9 @@ def test_investigation_templates_copied(client, app):
 
     with client:
         login(client, "admin", "secret")
-        resp = client.post("/investigations/new", data=_base_form_data(), follow_redirects=False)
+        resp = client.post(
+            "/investigations/new", data=_base_form_data(), follow_redirects=False
+        )
         assert resp.status_code == 302
 
     with app.app_context():
@@ -59,4 +61,3 @@ def test_investigation_templates_copied(client, app):
         readme.write_text("custom")
         init_investigation_upload_dirs(inv.case_number)
         assert readme.read_text() == "custom"
-

@@ -1,7 +1,7 @@
 import pytest
 
 from app.models import Case, db
-from tests.helpers import create_user, login, create_investigation
+from tests.helpers import create_investigation, create_user, login
 
 
 @pytest.fixture
@@ -67,7 +67,10 @@ def test_add_note_permissions(client, setup):
         assert resp.status_code in (200, 302)
     with client:
         login(client, "norole", "pw")
-        assert client.post(f"/cases/{cid}/add_note", json={"new_note": "hi"}).status_code == 403
+        assert (
+            client.post(f"/cases/{cid}/add_note", json={"new_note": "hi"}).status_code
+            == 403
+        )
 
 
 def test_investigation_list_permissions(client, setup):
@@ -87,12 +90,18 @@ def test_investigation_note_permissions(client, setup):
         assert resp.status_code in (200, 302)
     with client:
         login(client, "szak", "pw")
-        assert client.post(f"/investigations/{inv_id}/notes", json={"text": "hi"}).status_code == 403
+        assert (
+            client.post(
+                f"/investigations/{inv_id}/notes", json={"text": "hi"}
+            ).status_code
+            == 403
+        )
 
 
 def test_login_public(client):
     assert client.get("/login").status_code == 200
-    resp = client.post("/login", data={"username": "bad", "password": "bad"}, follow_redirects=False)
+    resp = client.post(
+        "/login", data={"username": "bad", "password": "bad"}, follow_redirects=False
+    )
     assert resp.status_code in (200, 302)
     assert resp.status_code != 403
-	

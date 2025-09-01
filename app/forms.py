@@ -2,66 +2,94 @@
 
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField, PasswordField, SelectField, TextAreaField, DateField,
-    DateTimeLocalField
+    DateField,
+    DateTimeLocalField,
+    PasswordField,
+    SelectField,
+    StringField,
+    TextAreaField,
 )
-from wtforms.validators import DataRequired, Optional, Length
+from wtforms.validators import DataRequired, Length, Optional
+
 
 class AdminUserForm(FlaskForm):
-    username = StringField('Felhasználónév', validators=[DataRequired(), Length(max=64)])
-    screen_name = StringField('Megjelenítendő név', validators=[Optional(), Length(max=64)])
-    full_name = StringField('Teljes név', validators=[Optional(), Length(max=128)])
-    password = PasswordField('Jelszó', validators=[Optional()])
+    username = StringField(
+        "Felhasználónév", validators=[DataRequired(), Length(max=64)]
+    )
+    screen_name = StringField(
+        "Megjelenítendő név", validators=[Optional(), Length(max=64)]
+    )
+    full_name = StringField("Teljes név", validators=[Optional(), Length(max=128)])
+    password = PasswordField("Jelszó", validators=[Optional()])
     role = SelectField(
-        'Szerepkör',
+        "Szerepkör",
         choices=[
-            ('admin', 'Admin'),
-            ('iroda', 'Iroda'),
-            ('pénzügy', 'Pénzügy'),
-            ('szignáló', 'Szignáló'),
-            ('szakértő', 'Szakértő'),
-            ('leíró', 'Leíró'),
-            ('toxi', 'toxi'),
+            ("admin", "Admin"),
+            ("iroda", "Iroda"),
+            ("pénzügy", "Pénzügy"),
+            ("szignáló", "Szignáló"),
+            ("szakértő", "Szakértő"),
+            ("leíró", "Leíró"),
+            ("toxi", "toxi"),
         ],
     )
-    default_leiro_id = SelectField('Default leíró', coerce=int, validators=[Optional()], choices=[], render_kw={'disabled': True})
+    default_leiro_id = SelectField(
+        "Default leíró",
+        coerce=int,
+        validators=[Optional()],
+        choices=[],
+        render_kw={"disabled": True},
+    )
+
 
 class EditCaseForm(FlaskForm):
-    deceased_name = StringField(
-        'Elhunyt neve',
-        validators=[DataRequired()]
-    )
+    deceased_name = StringField("Elhunyt neve", validators=[DataRequired()])
     case_type = SelectField(
-        'Típus',
-        choices=[('', '-- Válasszon --')] + [
-            (v, v) for v in ['hatósági', 'klinikai', 'igazságügyi', 'kórboncolási', 'elengedés']
-        ],
-        validators=[DataRequired()]
-    )
-    status = SelectField(
-        'Állapot',
-        choices=[('', '-- Válasszon --')] + [
-            (v, v) for v in [
-                'beérkezett','boncolva-leírónál','boncolva-orvosnál',
-                'leiktatva','szignálva','lezárt',
-                'rendőrségre küldve','számla megérkezett','postafakkba'
+        "Típus",
+        choices=[("", "-- Válasszon --")]
+        + [
+            (v, v)
+            for v in [
+                "hatósági",
+                "klinikai",
+                "igazságügyi",
+                "kórboncolási",
+                "elengedés",
             ]
         ],
-        validators=[DataRequired()]
+        validators=[DataRequired()],
     )
-    institution_name = StringField('Intézmény neve', validators=[Optional()])
-    external_case_number = StringField('Külső ügyirat szám', validators=[Optional()])
-    birth_date = DateField('Születési idő', format='%Y-%m-%d', validators=[Optional()])
+    status = SelectField(
+        "Állapot",
+        choices=[("", "-- Válasszon --")]
+        + [
+            (v, v)
+            for v in [
+                "beérkezett",
+                "boncolva-leírónál",
+                "boncolva-orvosnál",
+                "leiktatva",
+                "szignálva",
+                "lezárt",
+                "rendőrségre küldve",
+                "számla megérkezett",
+                "postafakkba",
+            ]
+        ],
+        validators=[DataRequired()],
+    )
+    institution_name = StringField("Intézmény neve", validators=[Optional()])
+    external_case_number = StringField("Külső ügyirat szám", validators=[Optional()])
+    birth_date = DateField("Születési idő", format="%Y-%m-%d", validators=[Optional()])
     registration_time = DateTimeLocalField(
-        'Regisztrálva',
-        format='%Y-%m-%dT%H:%M',
-        validators=[DataRequired()]
+        "Regisztrálva", format="%Y-%m-%dT%H:%M", validators=[DataRequired()]
     )
     # deadline is shown but not editable
-    expert_1 = SelectField('Szakértő 1', coerce=str, validators=[Optional()])
-    expert_2 = SelectField('Szakértő 2', coerce=str, validators=[Optional()])
-    describer = SelectField('Leíró', coerce=str, validators=[Optional()])
-    notes = TextAreaField('Megjegyzés', validators=[Optional()])
+    expert_1 = SelectField("Szakértő 1", coerce=str, validators=[Optional()])
+    expert_2 = SelectField("Szakértő 2", coerce=str, validators=[Optional()])
+    describer = SelectField("Leíró", coerce=str, validators=[Optional()])
+    notes = TextAreaField("Megjegyzés", validators=[Optional()])
+
 
 class CaseIdentifierForm(FlaskForm):
     external_id = StringField("Külső ügyirat szám")

@@ -1,24 +1,26 @@
 import re
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from datetime import timedelta
 
 from app.utils.dates import compute_deadline_flags
 from app.utils.time_utils import now_local
 
-
 # --- helpers -----------------------------------------------------------------
 
 _JINJA_BLOCK_RE = re.compile(r"(\{\{.*?\}\}|\{%-?.*?-?%\})", re.DOTALL)
+
 
 def _iter_jinja_blocks(text: str):
     """Yield (start, end, block_text) for each Jinja expression/statement block."""
     for m in _JINJA_BLOCK_RE.finditer(text):
         yield m.start(), m.end(), m.group(0)
 
+
 def _line_of_pos(text: str, pos: int) -> int:
     """1-based line number for byte offset pos."""
     return text.count("\n", 0, pos) + 1
+
 
 def _snippet_around(text: str, line_no: int, context: int = 2) -> str:
     """Return up to ~5 lines of context around the given 1-based line_no."""
@@ -29,6 +31,7 @@ def _snippet_around(text: str, line_no: int, context: int = 2) -> str:
 
 
 # --- tests -------------------------------------------------------------------
+
 
 def test_no_datetime_in_templates():
     # Only Jinja blocks are scanned; JS/CSS/HTML outside Jinja is ignored.
@@ -44,7 +47,7 @@ def test_no_datetime_in_templates():
 
     for tpl in Path("app/templates").rglob("*.html"):
         text = tpl.read_text(encoding="utf-8")
-        for start, end, block in _iter_jinja_blocks(text):
+        for start, _end, block in _iter_jinja_blocks(text):
             for rx in banned:
                 for m in rx.finditer(block):
                     abs_pos = start + m.start()
@@ -68,7 +71,9 @@ def test_compute_deadline_flags_boundaries():
 def test_sample_templates_render(app):
     # Minimal globals used by some templates
     app.jinja_env.globals["csrf_token"] = lambda: ""
-    app.jinja_env.globals["current_user"] = SimpleNamespace(is_authenticated=False, role="")
+    app.jinja_env.globals["current_user"] = SimpleNamespace(
+        is_authenticated=False, role=""
+    )
 
     with app.test_request_context():
         case = SimpleNamespace(
@@ -90,7 +95,9 @@ def test_sample_templates_render(app):
             notes="",
         )
         changelog_entries = [
-            SimpleNamespace(timestamp_str="2024.01.03 12:00", edited_by="u", new_value="v")
+            SimpleNamespace(
+                timestamp_str="2024.01.03 12:00", edited_by="u", new_value="v"
+            )
         ]
 
         render = app.jinja_env.get_template("assign_pathologist.html").render(
@@ -104,6 +111,15 @@ def test_sample_templates_render(app):
         )
         assert 'form_version" value="2024-01-02T00:00:00"' in render
 
-        users = [SimpleNamespace(id=1, username="u", screen_name="", full_name="", role="", last_login_str="")]
+        users = [
+            SimpleNamespace(
+                id=1,
+                username="u",
+                screen_name="",
+                full_name="",
+                role="",
+                last_login_str="",
+            )
+        ]
         render2 = app.jinja_env.get_template("admin_users.html").render(users=users)
         assert "u" in render2

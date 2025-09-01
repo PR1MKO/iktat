@@ -4,13 +4,12 @@ blinker==1.9.0
 click==8.2.1
 coverage==7.3.2
 docxtpl==0.16.8
-et_xmlfile==2.0.0
 Flask==2.3.2
 Flask-Login==0.6.3
 Flask-Mail==0.9.1
 Flask-Migrate==4.1.0
 Flask-SQLAlchemy==3.1.1
-Flask-WTF>=1.2.1
+Flask-WTF==1.2.1
 greenlet==3.2.3
 iniconfig==2.1.0
 itsdangerous==2.2.0
@@ -25,6 +24,7 @@ passlib==1.7.4
 pluggy==1.6.0
 pytest==7.4.2
 pytest-xdist==3.5.0
+# pytest-alembic==0.10.5   # optional, for migration health
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-docx==0.8.11
@@ -32,9 +32,7 @@ pytz==2025.2
 six==1.17.0
 SQLAlchemy==2.0.23
 typing_extensions==4.14.1
-tzdata==2025.2
 Werkzeug==2.3.6
 WTForms==3.2.1
-xlrd==2.0.1
 pyyaml>=6.0.1,<7
-tzdata>=2024.1
+pre-commit==3.7.1

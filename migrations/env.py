@@ -4,13 +4,12 @@ from alembic import context
 from alembic.config import Config
 from flask import current_app
 
-
 config = getattr(context, "config", Config())
 
 # ensure the Alembic logger config is set up
 if getattr(config, "config_file_name", None):
     fileConfig(config.config_file_name)
-    
+
 # Support multiple version locations (default + examination)
 version_locations = config.get_main_option("version_locations")
 if not version_locations:
@@ -49,7 +48,7 @@ def run_migrations_offline() -> None:
         include_object=include_object,
         tag=bind_key,
     )
-    
+
     with context.begin_transaction():
         context.run_migrations()
 

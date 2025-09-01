@@ -1,4 +1,4 @@
-from tests.helpers import create_user, create_investigation, login
+from tests.helpers import create_investigation, create_user, login
 
 
 def test_investigation_expert_name_display(client, app):
@@ -20,4 +20,3 @@ def test_missing_expert_shows_dash(client, app):
     resp = client.get("/investigations/")
     assert resp.status_code == 200
     assert "—".encode("utf-8") in resp.data
-

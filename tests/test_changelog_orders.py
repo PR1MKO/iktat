@@ -19,8 +19,11 @@ def test_tox_order_changelog_records_incrementally(app):
         case.tox_orders = case.tox_orders + "\n" + second
         db.session.commit()
 
-        logs = ChangeLog.query.filter_by(case_id=case.id, field_name="tox_orders").order_by(ChangeLog.id).all()
+        logs = (
+            ChangeLog.query.filter_by(case_id=case.id, field_name="tox_orders")
+            .order_by(ChangeLog.id)
+            .all()
+        )
         assert len(logs) == 2
         assert logs[1].new_value == second
         assert logs[0].new_value != logs[1].new_value
-		

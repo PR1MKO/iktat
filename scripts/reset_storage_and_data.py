@@ -3,14 +3,15 @@ import os
 import shutil
 
 from app import create_app, db
-from app.models import Case, UploadedFile, ChangeLog, TaskMessage  # default bind
+from app.investigations.models import Investigation  # examination bind
 from app.investigations.models import (
-    Investigation,
     InvestigationAttachment,
-    InvestigationNote,
     InvestigationChangeLog,
-)  # examination bind
+    InvestigationNote,
+)
+from app.models import Case, ChangeLog, TaskMessage, UploadedFile  # default bind
 from app.paths import case_root, investigation_root
+
 
 def _safe_rmtree(path):
     try:
@@ -20,6 +21,7 @@ def _safe_rmtree(path):
     except Exception as e:
         print(f"[WARN] Could not reset folder {path}: {e}")
 
+
 def main():
     app = create_app()
     with app.app_context():
@@ -27,7 +29,9 @@ def main():
         cases_root = case_root()
         inv_root = investigation_root()
 
-        print(f"[INFO] Resetting storage:\n  Cases: {cases_root}\n  Investigations: {inv_root}")
+        print(
+            f"[INFO] Resetting storage:\n  Cases: {cases_root}\n  Investigations: {inv_root}"
+        )
         _safe_rmtree(cases_root)
         _safe_rmtree(inv_root)
 
@@ -49,7 +53,7 @@ def main():
         db.session.commit()
         print("[DONE] Storage cleared and tables wiped (users preserved).")
 
+
 if __name__ == "__main__":
     # This script is meant to be run manually (e.g., `python scripts/reset_storage_and_data.py`)
     main()
-    

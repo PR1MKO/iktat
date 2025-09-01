@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta, date
-from app.utils.time_utils import now_local
+from datetime import date, datetime, timedelta
 
-from app.models import User, Case, UploadedFile, ChangeLog, db
+from app.models import Case, ChangeLog, UploadedFile, User, db
+from app.utils.time_utils import now_local
 
 
 def test_user_creation_and_password(app):
@@ -68,7 +68,9 @@ def test_uploaded_file_association(app):
         db.session.add(case)
         db.session.commit()
 
-        uf = UploadedFile(case_id=case.id, filename="report.txt", uploader="alice", category="egyéb")
+        uf = UploadedFile(
+            case_id=case.id, filename="report.txt", uploader="alice", category="egyéb"
+        )
         db.session.add(uf)
         db.session.commit()
 
@@ -96,4 +98,3 @@ def test_change_log_created_on_update(app):
         assert log.new_value == "New"
         assert log.edited_by == "system"
         assert log.case == case
-

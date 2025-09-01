@@ -1,6 +1,7 @@
 # scripts/sqlite_hotfix_add_full_name.py
-from app import create_app, db
 from sqlalchemy import text
+
+from app import create_app, db
 
 app = create_app()
 with app.app_context():

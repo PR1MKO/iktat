@@ -22,7 +22,9 @@ def claim_idempotency(
     ttl = current_app.config.get("IDEMPOTENCY_TTL_SECONDS", ttl_seconds)
     now = datetime.now(timezone.utc)
     expiry = now - timedelta(seconds=ttl)
-    db.session.query(IdempotencyToken).filter(IdempotencyToken.created_at < expiry).delete()
+    db.session.query(IdempotencyToken).filter(
+        IdempotencyToken.created_at < expiry
+    ).delete()
     token = IdempotencyToken(
         key=key,
         route=route,

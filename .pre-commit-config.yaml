@@ -4,12 +4,34 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]  # safe on staged changes; CI runs check-only
+
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
+
   - repo: https://github.com/psf/black
     rev: 24.8.0
     hooks:
       - id: black
-    
+
+  # --- Local hooks for Alembic migration health (multi-DB, Windows-safe) ---
+  - repo: local
+    hooks:
+      - id: flask-db-check
+        name: Flask DB Check (model vs migration drift)
+        entry: flask db check
+        language: system
+        pass_filenames: false
+
+      - id: flask-db-single-head
+        name: Alembic Single Head Check
+        entry: python -c "import subprocess, sys; out=subprocess.check_output(['flask','db','heads']).decode().splitlines(); sys.exit(1 if len(out)>1 else 0)"
+        language: system
+        pass_filenames: false
+
+      - id: flask-db-upgrade-sql
+        name: Alembic Upgrade SQL Dry Run
+        entry: flask db upgrade --sql
+        language: system
+        pass_filenames: false
