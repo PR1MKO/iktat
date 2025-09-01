@@ -34,7 +34,7 @@ SQLAlchemy==2.0.23
 typing_extensions==4.14.1
 Werkzeug==2.3.6
 WTForms==3.2.1
-pyyaml>=6.0.1,<7
+PyYAML>=6.0.1,<7
 pre-commit==3.7.1
 docxtpl>=0.16
 python-docx>=0.8.11
