@@ -9,26 +9,26 @@ def read(p: str) -> str:
     return Path(p).read_text(encoding="utf-8")
 
 
-def imports_create_app_from_app(src: str) -> bool:
+def imports_get_app_from_context(src: str) -> bool:
     t = ast.parse(src)
     for node in ast.walk(t):
-        if isinstance(node, ast.ImportFrom) and node.module == "app":
-            if any(getattr(n, "name", "") == "create_app" for n in node.names):
+        if isinstance(node, ast.ImportFrom) and node.module == "app.utils.context":
+            if any(getattr(n, "name", "") == "get_app" for n in node.names):
                 return True
     return False
 
 
 def test_same_factory_import():
     for f in FILES:
-        assert imports_create_app_from_app(
+        assert imports_get_app_from_context(
             read(f)
-        ), f"{f} must import create_app from app"
+        ), f"{f} must import get_app from app.utils.context"
 
 
 def test_run_exposes_wsgi_app():
     src = read("run.py")
     assert re.search(
-        r"^app\s*=\s*create_app\(\)", src, re.M
+        r"^app\s*=\s*get_app\(\)", src, re.M
     ), "run.py must define module-level app"
 
 

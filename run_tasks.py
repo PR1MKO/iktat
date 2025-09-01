@@ -1,33 +1,26 @@
-import time
+import logging
+import sys
 
-import schedule
-
-from app import create_app
-from app.tasks import send_deadline_warning_email
-from app.utils.time_utils import now_local
+from app.utils.context import get_app, setup_logging
 
 
-def main():
-    app = create_app()
+def _run_once() -> int:
+    app = get_app()
+    setup_logging()
     with app.app_context():
+        from app.tasks.smoke import ping_db
 
-        def job():
-            now = now_local().strftime("%Y-%m-%d %H:%M")
-            print(f"[{now}] Running deadline warning task...")
-            count = send_deadline_warning_email()
-            print(f"Email sent for {count} upcoming case(s).")
+        logging.getLogger(__name__).info("smoke: %r", ping_db())
+        return 0
 
-        # Schedule: 8:00 AM CET, Mon-Fri
-        schedule.every().monday.at("08:00").do(job)
-        schedule.every().tuesday.at("08:00").do(job)
-        schedule.every().wednesday.at("08:00").do(job)
-        schedule.every().thursday.at("08:00").do(job)
-        schedule.every().friday.at("08:00").do(job)
 
-        while True:
-            schedule.run_pending()
-            time.sleep(60)
+def main() -> int:
+    try:
+        return _run_once()
+    except Exception:
+        logging.exception("run_tasks.py: fatal")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

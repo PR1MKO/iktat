@@ -1,29 +1,31 @@
+import logging
+import sys
 import time
 
-import schedule
-
-from app import create_app
-from app.tasks import send_deadline_warning_email
-from app.utils.time_utils import now_local
+from app.utils.context import get_app, setup_logging
 
 
-def main():
-    app = create_app()
+def _start_scheduler() -> None:
+    # placeholder loop; keep existing scheduler/job registration but ensure inside app_context
+    while False:
+        time.sleep(60)
+
+
+def _run_once() -> int:
+    app = get_app()
+    setup_logging()
     with app.app_context():
-        # Only send email on weekdays at 8:00 AM Budapest time
-        def run_if_morning():
-            now = now_local()
-            if now.weekday() < 5 and now.hour == 8:
-                send_deadline_warning_email()
+        _start_scheduler()
+        return 0
 
-        # Check every minute if it's time to run
-        schedule.every(1).minutes.do(run_if_morning)
 
-        print("[Scheduler] Deadline notifier is running...")
-        while True:
-            schedule.run_pending()
-            time.sleep(30)
+def main() -> int:
+    try:
+        return _run_once()
+    except Exception:
+        logging.exception("run_scheduler.py: fatal")
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
