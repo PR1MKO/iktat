@@ -1,6 +1,7 @@
 import logging
 import sys
 
+from app import create_app  # noqa: F401
 from app.utils.context import get_app, run_with_app, setup_logging  # noqa: F401
 
 
