@@ -17,7 +17,7 @@ def test_cookie_notice_csrf(client, app):
         resp = client.post("/ack_cookie_notice")
         assert resp.status_code == 400
         token = generate_csrf()
-        resp = client.post("/ack_cookie_notice", data={"csrf_token": token})
+        resp = client.post("/ack_cookie_notice", headers={"X-CSRFToken": token})
         assert resp.status_code == 204
         page = client.get("/dashboard")
         assert b"cookie-banner" not in page.data
