@@ -1,18 +1,13 @@
 import logging
 import sys
-import time
 
-from app.utils.context import run_with_app, setup_logging
-
-
-def _start_scheduler() -> None:
-    # placeholder loop; keep existing scheduler/job registration but ensure inside app_context
-    while False:
-        time.sleep(60)
+from app.utils.context import get_app, run_with_app, setup_logging  # noqa: F401
 
 
 def _init_and_run() -> int:
-    _start_scheduler()
+    from app.tasks.smoke import ping_db
+
+    logging.getLogger(__name__).info("smoke: %r", ping_db())
     return 0
 
 

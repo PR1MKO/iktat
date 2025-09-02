@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from app.utils.context import run_with_app, setup_logging
+from app.utils.context import get_app, run_with_app, setup_logging  # noqa: F401
 
 
 def _init_and_run() -> int:
