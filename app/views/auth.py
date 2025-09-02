@@ -792,7 +792,7 @@ def upload_file(case_id):
             request.referrer or url_for("auth.case_detail", case_id=case_id)
         )
 
-    flash(f'Uploaded: {", ".join(saved)}', "success")
+    flash(f"Uploaded: {', '.join(saved)}", "success")
     if request.referrer and "/ugyeim/" in request.referrer:
         return redirect(url_for("main.elvegzem", case_id=case_id))
     if request.referrer and "elvegzem_toxi" in request.referrer:

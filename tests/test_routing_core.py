@@ -34,6 +34,6 @@ def test_route_smoke(client, app):
     with client:
         login(client, "admin", "secret")
         assert client.get("/cases").status_code == 200
-        assert client.get(f"/cases/{cid+1}/view").status_code == 404
+        assert client.get(f"/cases/{cid + 1}/view").status_code == 404
         assert client.get(f"/cases/{cid}/files/ok.txt").status_code == 200
         assert client.get(f"/cases/{cid}/files/missing.txt").status_code == 404

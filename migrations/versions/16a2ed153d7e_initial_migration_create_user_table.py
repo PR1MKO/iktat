@@ -1,7 +1,7 @@
 """Initial migration: create User table
 
 Revision ID: 16a2ed153d7e
-Revises: 
+Revises:
 Create Date: 2025-06-11 11:35:48.403750
 
 """

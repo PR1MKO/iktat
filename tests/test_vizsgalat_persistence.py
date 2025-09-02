@@ -41,6 +41,6 @@ def test_vizsgalat_orders_persist(client, app, monkeypatch):
         assert len(lines) == 2
         assert (
             lines[0]
-            == f'Alkohol vér rendelve (1): {t1.strftime("%Y-%m-%d %H:%M")} – doc'
+            == f"Alkohol vér rendelve (1): {t1.strftime('%Y-%m-%d %H:%M')} – doc"
         )
-        assert lines[1] == f'CPK rendelve (2): {t2.strftime("%Y-%m-%d %H:%M")} – doc'
+        assert lines[1] == f"CPK rendelve (2): {t2.strftime('%Y-%m-%d %H:%M')} – doc"

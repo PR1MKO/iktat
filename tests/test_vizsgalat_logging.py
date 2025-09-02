@@ -28,5 +28,5 @@ def test_empty_tox_field_is_logged(client, app, monkeypatch):
         assert case.alkohol_vizelet_ordered is True
         assert (
             case.tox_orders.strip()
-            == f'Alkohol vizelet rendelve: {fixed.strftime("%Y-%m-%d %H:%M")} – doc'
+            == f"Alkohol vizelet rendelve: {fixed.strftime('%Y-%m-%d %H:%M')} – doc"
         )

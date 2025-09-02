@@ -460,7 +460,7 @@ def upload_elvegzes_files(case_id):
             current_app.logger.error(f"Database error: {e}")
             flash("Valami hiba történt. Próbáld újra.", "danger")
             return redirect(url_for("main.elvegzem", case_id=case.id))
-        flash(f'Feltöltve: {", ".join(saved)}', "success")
+        flash(f"Feltöltve: {', '.join(saved)}", "success")
 
     return redirect(url_for("main.elvegzem", case_id=case.id))
 

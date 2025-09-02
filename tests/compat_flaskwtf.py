@@ -1,4 +1,4 @@
-﻿"""
+"""
 tests/compat_flaskwtf.py
 Test-only shim: if flask_wtf Recaptcha widgets import Markup from Flask (1.1.x),
 patch them to use markupsafe.Markup so pytest can run in Codex envs pinning 1.1.1.

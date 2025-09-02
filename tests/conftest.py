@@ -1,4 +1,4 @@
-﻿# tests/conftest.py
+# tests/conftest.py
 
 # --- Imports first to satisfy E402 ---
 import itertools
