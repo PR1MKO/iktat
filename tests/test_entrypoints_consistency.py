@@ -39,6 +39,4 @@ def test_main_guards_exist():
 
 def test_tasks_and_scheduler_use_app_context():
     for f in ["run_tasks.py", "run_scheduler.py"]:
-        assert "with app.app_context()" in read(
-            f
-        ), f"{f} must wrap work in app.app_context()"
+        assert "run_with_app(" in read(f), f"{f} must wrap work via run_with_app()"

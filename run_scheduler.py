@@ -2,7 +2,7 @@ import logging
 import sys
 import time
 
-from app.utils.context import get_app, setup_logging
+from app.utils.context import run_with_app, setup_logging
 
 
 def _start_scheduler() -> None:
@@ -11,19 +11,19 @@ def _start_scheduler() -> None:
         time.sleep(60)
 
 
-def _run_once() -> int:
-    app = get_app()
-    setup_logging()
-    with app.app_context():
-        _start_scheduler()
-        return 0
+def _init_and_run() -> int:
+    _start_scheduler()
+    return 0
 
 
 def main() -> int:
     try:
-        return _run_once()
+        setup_logging()
+        return run_with_app(_init_and_run)
     except Exception:
         logging.exception("run_scheduler.py: fatal")
+        if __name__ == "__main__":
+            sys.exit(1)
         return 1
 
 

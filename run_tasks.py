@@ -1,24 +1,24 @@
 import logging
 import sys
 
-from app.utils.context import get_app, setup_logging
+from app.utils.context import run_with_app, setup_logging
 
 
-def _run_once() -> int:
-    app = get_app()
-    setup_logging()
-    with app.app_context():
-        from app.tasks.smoke import ping_db
+def _init_and_run() -> int:
+    from app.tasks.smoke import ping_db
 
-        logging.getLogger(__name__).info("smoke: %r", ping_db())
-        return 0
+    logging.getLogger(__name__).info("smoke: %r", ping_db())
+    return 0
 
 
 def main() -> int:
     try:
-        return _run_once()
+        setup_logging()
+        return run_with_app(_init_and_run)
     except Exception:
         logging.exception("run_tasks.py: fatal")
+        if __name__ == "__main__":
+            sys.exit(1)
         return 1
 
 
