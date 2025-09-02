@@ -40,15 +40,63 @@ def test_login_unknown_user(client):
     assert b"Invalid username or password" in resp.data
 
 
-def test_logout_clears_session(client, app):
+def test_logout_get_method_not_allowed(client, app):
     with app.app_context():
         create_user()
     with client:
         login(client, "admin", "secret")
         resp = client.get("/logout")
+        assert resp.status_code == 405
+
+
+def test_logout_post_requires_csrf(client, app):
+    with app.app_context():
+        create_user()
+    with client:
+        login(client, "admin", "secret")
+        app.config["WTF_CSRF_ENABLED"] = True
+        resp = client.post("/logout")
+        assert resp.status_code in (400, 403)
+
+
+def test_logout_post_with_csrf_clears_session(client, app):
+    with app.app_context():
+        create_user()
+    with client:
+        login(client, "admin", "secret")
+        app.config["WTF_CSRF_ENABLED"] = True
+        resp = client.get("/dashboard")
+        html = resp.get_data(as_text=True)
+        import re
+
+        token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html).group(1)
+        resp = client.post("/logout", data={"csrf_token": token})
         assert resp.status_code == 302
         assert "/login" in resp.headers["Location"]
         assert session.get("_user_id") is None
+
+
+def test_dashboard_deadline_uses_now_local(client, app, monkeypatch):
+    with app.app_context():
+        create_user()
+    import app.views.auth as auth_module
+
+    called = {"today": False}
+    real_date = auth_module.date
+
+    class DummyDate:
+        @staticmethod
+        def today():
+            called["today"] = True
+            return real_date.today()
+
+    monkeypatch.setattr(auth_module, "date", DummyDate)
+
+    with client:
+        login(client, "admin", "secret")
+        resp = client.get("/dashboard")
+        assert resp.status_code == 200
+    assert called["today"] is False
 
 
 # --- Registration via admin ---

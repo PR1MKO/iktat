@@ -5,7 +5,7 @@ import csv
 import hashlib
 import io
 import shutil
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import (
@@ -156,7 +156,7 @@ def login():
     return render_template("login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.post("/logout")
 @login_required
 def logout():
     logout_user()
@@ -199,7 +199,7 @@ def dashboard():
         .all()
     )
 
-    today = date.today()
+    today = now_local().date()
     threshold = today + timedelta(days=14)
     upcoming_deadlines = (
         Case.query.filter(
