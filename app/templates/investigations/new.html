@@ -11,7 +11,7 @@
       <div class="col-md-12">
         <label class="form-label d-block">{{ form.assignment_type.label }}</label>
         <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" id="assignment_type-intezeti" name="assignment_type" value="INTEZETI" {% if form.assignment_type.data == 'INTEZETI' %}checked{% endif %}>
+          <input class="form-check-input" type="radio" id="assignment_type-intezeti" name="assignment_type" value="INTEZETI" {% if form.assignment_type.data == 'INTEZETI' or not form.assignment_type.data %}checked{% endif %}>
           <label class="form-check-label" for="assignment_type-intezeti">Intézeti</label>
         </div>
         <div class="form-check form-check-inline">
@@ -25,7 +25,7 @@
     <div class="row mb-3">
       <div class="col-md-6">
         <label class="form-label" for="assigned_expert_id">{{ form.assigned_expert_id.label }}</label>
-        <select class="form-select" id="assigned_expert_id" name="assigned_expert_id" disabled>
+        <select class="form-select" id="assigned_expert_id" name="assigned_expert_id" {% if form.assignment_type.data != 'SZAKÉRTŐI' %}disabled{% endif %} {% if form.assignment_type.data == 'SZAKÉRTŐI' %}required{% endif %}>
           {% for val, label in form.assigned_expert_id.choices %}
             <option value="{{ val }}" {% if form.assigned_expert_id.data == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
@@ -114,22 +114,6 @@
       <a href="{{ url_for('investigations.list_investigations') }}" class="btn btn-secondary">Mégse</a>
     </div>
   </form>
-  <script>
-    function toggleExpertSelect() {
-      const szak = document.getElementById('assignment_type-szakertoi');
-      const select = document.getElementById('assigned_expert_id');
-      if (szak.checked) {
-        select.disabled = false;
-        select.required = true;
-      } else {
-        select.disabled = true;
-        select.required = false;
-        select.value = '0';
-      }
-    }
-    document.getElementById('assignment_type-intezeti').addEventListener('change', toggleExpertSelect);
-    document.getElementById('assignment_type-szakertoi').addEventListener('change', toggleExpertSelect);
-    window.addEventListener('load', toggleExpertSelect);
-  </script>
+    <script src="{{ url_for('static', filename='js/investigations_toggle.js') }}" defer></script>
 </div>
 {% endblock %}
