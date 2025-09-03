@@ -13,17 +13,17 @@ from wtforms.validators import DataRequired, Optional, ValidationError
 
 
 class InvestigationForm(FlaskForm):
-    subject_name = StringField("Név", validators=[DataRequired()])
-    maiden_name = StringField("Leánykori név", validators=[Optional()])
+    subject_name = StringField("Vizsgált személy neve", validators=[DataRequired()])
+    maiden_name = StringField("Leánykori neve", validators=[Optional()])
     mother_name = StringField("Anyja neve", validators=[DataRequired()])
     birth_place = StringField("Születési hely", validators=[DataRequired()])
     birth_date = DateField(
         "Születési idő", format="%Y-%m-%d", validators=[DataRequired()]
     )
     taj_number = StringField("TAJ szám", validators=[DataRequired()])
-    residence = StringField("Lakcím", validators=[DataRequired()])
-    citizenship = StringField("Állampolgárság", validators=[DataRequired()])
-    institution_name = StringField("Intézmény neve", validators=[DataRequired()])
+    residence = StringField("Lakcíme", validators=[DataRequired()])
+    citizenship = StringField("Állampolgársága", validators=[DataRequired()])
+    institution_name = StringField("Beküldő intézmény", validators=[DataRequired()])
     investigation_type = SelectField(
         "Vizsgálat típusa",
         choices=[
@@ -34,7 +34,7 @@ class InvestigationForm(FlaskForm):
         ],
         validators=[DataRequired()],
     )
-    external_case_number = StringField("Külső ügyszám", validators=[Optional()])
+    external_case_number = StringField("Külső ügyirat szám", validators=[Optional()])
     other_identifier = StringField("Egyéb azonosító", validators=[Optional()])
 
     assignment_type = RadioField(
@@ -54,7 +54,7 @@ class InvestigationForm(FlaskForm):
         validators=[Optional()],
     )
 
-    submit = SubmitField("Mentés")
+    submit = SubmitField("Vizsgálat létrehozása")
 
     def validate(self, *args, **kwargs):
         valid = super().validate(*args, **kwargs)
