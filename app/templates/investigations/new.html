@@ -90,16 +90,16 @@
         {{ form.birth_date(class="form-control", type="date", required=True) }}
         {% for e in form.birth_date.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
       </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ form.taj_number.label }}</label>
+        {{ form.taj_number(class="form-control", required=True) }}
+        {% for e in form.taj_number.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
+      </div>
     </div>
 
     <!-- Row 5: residence and citizenship -->
     <div class="row mb-4">
       <div class="col-md-8">
-        <label class="form-label">{{ form.taj_number.label }}</label>
-        {{ form.taj_number(class="form-control", required=True) }}
-        {% for e in form.taj_number.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
-      </div>
-      <div class="col-md-4">
         <label class="form-label">{{ form.residence.label }}</label>
         {{ form.residence(class="form-control", required=True) }}
         {% for e in form.residence.errors %}<div class="text-danger">{{ e }}</div>{% endfor %}
