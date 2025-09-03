@@ -5,7 +5,7 @@ CSP = (
     "img-src 'self' data:; "
     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
     "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-    "font-src 'self' data: https://fonts.gstatic.com;"
+    "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;"
 )
 
 
