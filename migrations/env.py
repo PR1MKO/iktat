@@ -12,12 +12,14 @@ config = getattr(context, "config", Config())
 if getattr(config, "config_file_name", None):
     fileConfig(config.config_file_name)
 
-# Support multi-location versions (default + examination)
-if not config.get_main_option("version_locations"):
-    config.set_main_option(
-        "version_locations",
-        "migrations/versions migrations_examination/versions",
-    )
+# --- Ensure BOTH version locations are present -----------------------------
+# Some runners set version_locations to "migrations/versions" already, which
+# makes a simple "if not set" check skip our second location. Merge explicitly.
+_existing = (config.get_main_option("version_locations") or "").split()
+_locations = {p.strip() for p in _existing if p.strip()}
+_locations.update({"migrations/versions", "migrations_examination/versions"})
+config.set_main_option("version_locations", " ".join(sorted(_locations)))
+# ---------------------------------------------------------------------------
 
 # Flask-Migrate / SQLAlchemy handles
 db = current_app.extensions["migrate"].db

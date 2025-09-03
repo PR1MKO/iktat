@@ -1,4 +1,4 @@
-# Live temp-DB upgrade for SQLite (works with batch_alter_table; replaces --sql dry-run)
+# Live temp-DB upgrade for SQLite (works with render_as_batch and multi-dir)
 import os
 import shutil
 import sys
@@ -10,66 +10,80 @@ os.chdir(REPO_ROOT)
 sys.path.insert(0, str(REPO_ROOT))
 os.environ.setdefault("FLASK_APP", "app:create_app")
 
-from flask_migrate import upgrade  # noqa: E402
+from flask_migrate import upgrade as fm_upgrade  # noqa: E402
 
-# Import app factory safely after adjusting sys.path
 from app import create_app  # noqa: E402
 
 
 def _uri_to_path(uri: str) -> str:
+    """Return filesystem path for sqlite:/// URIs, else ''."""
     if not uri or not uri.startswith("sqlite:///"):
         return ""
     return uri.replace("sqlite:///", "", 1)
 
 
+def _copy_if_exists(src_path: str) -> str:
+    """Copy src sqlite db to a NamedTemporaryFile; return temp path."""
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+    tmp.close()
+    if src_path and os.path.exists(src_path):
+        shutil.copy2(src_path, tmp.name)
+    return tmp.name
+
+
 def main() -> int:
-    app = create_app()
-    with app.app_context():
-        main_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-        binds = dict(app.config.get("SQLALCHEMY_BINDS", {}))
-
-        # Only meaningful for SQLite
-        if not main_uri.startswith("sqlite:///"):
-            print("Skip: non-SQLite dialect.")
-            return 0
-
-        main_src = _uri_to_path(main_uri)
+    # 1) Create a *real* app to discover the current URIs
+    discovery_app = create_app()
+    with discovery_app.app_context():
+        main_uri = discovery_app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        binds = dict(discovery_app.config.get("SQLALCHEMY_BINDS") or {})
         exam_uri = binds.get("examination", "")
-        exam_src = _uri_to_path(exam_uri) if exam_uri else ""
 
-        # Prepare temp copies
-        tmp_main = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
-        tmp_main.close()
-        if main_src and os.path.exists(main_src):
-            shutil.copy2(main_src, tmp_main.name)
+    # 2) Only meaningful for SQLite
+    if not (
+        main_uri.startswith("sqlite:///")
+        or (exam_uri and exam_uri.startswith("sqlite:///"))
+    ):
+        print("Skip: live temp upgrade is only implemented for SQLite.")
+        return 0
 
-        tmp_exam = None
-        if exam_src:
-            tmp_exam = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
-            tmp_exam.close()
-            if os.path.exists(exam_src):
-                shutil.copy2(exam_src, tmp_exam.name)
+    # 3) Make temp copies
+    main_src = _uri_to_path(main_uri)
+    exam_src = _uri_to_path(exam_uri) if exam_uri else ""
 
-        # Point config to temp DBs
-        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_main.name}"
-        if tmp_exam:
-            binds["examination"] = f"sqlite:///{tmp_exam.name}"
-            app.config["SQLALCHEMY_BINDS"] = binds
+    tmp_main = _copy_if_exists(main_src) if main_uri else ""
+    tmp_exam = _copy_if_exists(exam_src) if exam_src else ""
 
-        try:
-            upgrade()  # real upgrade on temp DBs
-            print("Alembic Live Upgrade (temp SQLite) OK")
-            return 0
-        except Exception as e:
-            print(f"Alembic Live Upgrade FAILED: {e}")
-            return 1
-        finally:
-            for p in [tmp_main.name, tmp_exam.name if tmp_exam else None]:
-                if p and os.path.exists(p):
-                    try:
-                        os.remove(p)
-                    except Exception:
-                        pass
+    # 4) Build a *fresh* app configured to use the temp copies
+    test_config = {}
+    if main_uri:
+        test_config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_main}"
+    if exam_uri:
+        test_config["SQLALCHEMY_BINDS"] = {"examination": f"sqlite:///{tmp_exam}"}
+
+    flask_app = create_app(test_config=test_config)
+
+    try:
+        with flask_app.app_context():
+            # 5) Upgrade default tree
+            fm_upgrade()  # defaults to "migrations"
+
+            # 6) Upgrade examination tree
+            if exam_uri:
+                fm_upgrade(directory="migrations_examination")
+
+        print("Alembic Live Upgrade (temp SQLite) OK")
+        return 0
+    except Exception as e:
+        print(f"Alembic Live Upgrade FAILED: {e}")
+        return 1
+    finally:
+        for p in (tmp_main, tmp_exam):
+            if p and os.path.exists(p):
+                try:
+                    os.remove(p)
+                except Exception:
+                    pass
 
 
 if __name__ == "__main__":

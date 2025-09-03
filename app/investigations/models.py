@@ -56,7 +56,8 @@ class Investigation(db.Model):
     )
 
     __table_args__ = (
-        db.Index("ix_investigation_case_number", "case_number"),
+        # Keep the historical UNIQUE name that exists in the DB already
+        db.UniqueConstraint("case_number", name="ux_investigation_case_number"),
         db.Index("ix_investigation_subject_name", "subject_name"),
         db.Index("ix_investigation_institution_name", "institution_name"),
         db.Index("ix_investigation_taj_number", "taj_number"),

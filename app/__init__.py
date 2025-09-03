@@ -1,5 +1,3 @@
-# app/__init__.py
-
 import logging
 import os
 import re
@@ -99,6 +97,31 @@ def create_app(test_config=None):
 
     # Init extensions
     db.init_app(flask_app)
+
+    # 🔒 Force-load ALL models into metadata (core first, then features)
+    # isort: off
+    import app.models_all  # noqa: F401
+    import importlib
+
+    inv_mod = importlib.import_module("app.investigations.models")  # noqa: F401
+    # 🩹 HOTFIX: if investigations tables were attached to a different MetaData,
+    # remap them into THIS db.metadata so Alembic sees them.
+    try:
+        _classes = [
+            getattr(inv_mod, "Investigation", None),
+            getattr(inv_mod, "InvestigationNote", None),
+            getattr(inv_mod, "InvestigationAttachment", None),
+            getattr(inv_mod, "InvestigationChangeLog", None),
+        ]
+        for _cls in filter(None, _classes):
+            _t = getattr(_cls, "__table__", None)
+            if _t is not None and _t.metadata is not db.metadata:
+                _cls.__table__ = _t.tometadata(db.metadata)
+    except Exception:
+        # best-effort remap; don't crash app startup
+        pass
+    # isort: on
+
     migrate.init_app(flask_app, db)
     migrate_examination.init_app(
         flask_app,
@@ -120,9 +143,6 @@ def create_app(test_config=None):
         _ = investigation_root()
 
     from .models import User  # noqa: F401
-
-    with flask_app.app_context():
-        from app import models  # noqa: F401
 
     @login_manager.user_loader
     def load_user(user_id):

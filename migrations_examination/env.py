@@ -19,6 +19,7 @@ EXAM_TABLES = {
     "investigation_attachment",
     "investigation_change_log",
 }
+EXAM_INDEX_PREFIXES = ("ix_investigation_", "ux_investigation_")
 
 
 def _is_sqlite_connection(conn) -> bool:
@@ -38,8 +39,12 @@ def include_object(obj, name, type_, reflected, compare_to):
         return name in EXAM_TABLES
 
     parent = getattr(obj, "table", None)
-    if parent is not None:
-        return parent.name in EXAM_TABLES
+    if parent is not None and type_ in {
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    }:
+        return parent.name in EXAM_TABLES or name.startswith(EXAM_INDEX_PREFIXES)
 
     return False
 
@@ -55,9 +60,10 @@ def _get_exam_engine():
 
 
 def run_migrations_offline() -> None:
-    # Build URL from the registered examination engine (no get_engine fallback)
     engine = _get_exam_engine()
     exam_url = engine.url.render_as_string(hide_password=False).replace("%", "%%")
+
+    context.config.attributes["current_bind_key"] = "examination"
 
     context.configure(
         url=exam_url,
@@ -68,6 +74,7 @@ def run_migrations_offline() -> None:
         compare_server_default=True,
         render_as_batch=_is_sqlite_url(exam_url),
         literal_binds=True,
+        tag="examination",
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -76,6 +83,8 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     engine = _get_exam_engine()
     with engine.connect() as connection:
+        context.config.attributes["current_bind_key"] = "examination"
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
@@ -84,6 +93,7 @@ def run_migrations_online() -> None:
             compare_type=True,
             compare_server_default=True,
             render_as_batch=_is_sqlite_connection(connection),
+            tag="examination",
         )
         with context.begin_transaction():
             context.run_migrations()

@@ -1,41 +1,41 @@
 repos:
   # Ruff pinned
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.6   # matches ruff==0.5.6
+    rev: v0.5.6
     hooks:
       - id: ruff
         args: [--fix]
 
   # isort pinned
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2   # matches isort==5.13.2
+    rev: 5.13.2
     hooks:
       - id: isort
 
   # Black pinned
   - repo: https://github.com/psf/black
-    rev: 24.8.0   # matches black==24.8.0
+    rev: 24.8.0
     hooks:
       - id: black
         language_version: python3.10
 
-  # Local DB health hooks
+  # Local DB health hooks (Windows CMD form; set FLASK_APP inline)
   - repo: local
     hooks:
       - id: flask-db-check
         name: Flask DB Check (model vs migration drift)
-        entry: python hooks/flask_db_check.py
+        entry: cmd /c "set FLASK_APP=app:create_app&& set PYTHONUTF8=1&& python hooks\\flask_db_check.py"
         language: system
         pass_filenames: false
 
       - id: flask-db-single-head
         name: Alembic Single Head Check
-        entry: python hooks/flask_db_single_head.py
+        entry: cmd /c "set FLASK_APP=app:create_app&& set PYTHONUTF8=1&& python hooks\\flask_db_single_head.py"
         language: system
         pass_filenames: false
 
       - id: flask-db-upgrade-live
         name: Alembic Live Upgrade (temp SQLite)
-        entry: python hooks/flask_db_upgrade_live.py
+        entry: cmd /c "set FLASK_APP=app:create_app&& set PYTHONUTF8=1&& python hooks\\flask_db_upgrade_live.py"
         language: system
         pass_filenames: false

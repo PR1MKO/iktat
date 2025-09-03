@@ -10,6 +10,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 os.chdir(REPO_ROOT)
 sys.path.insert(0, str(REPO_ROOT))
 
+# 🔒 Load app + models so any dynamic script_location/versions logic can see metadata if needed
+try:
+    from app import create_app
+
+    app = create_app()
+    with app.app_context():
+        import app.models_all  # noqa: F401
+except Exception as _e:
+    # Not strictly required for head check, but doesn't hurt
+    print(f"[single-head] Info: prelude import note: {_e}")
+
 # Adjust if your migrations dir isn't named "migrations"
 MIGRATIONS_DIR = REPO_ROOT / "migrations"
 ALEMBIC_INI = REPO_ROOT / "alembic.ini"
