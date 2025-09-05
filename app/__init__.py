@@ -233,6 +233,23 @@ def create_app(test_config=None):
     flask_app.jinja_env.globals["fmt_date"] = fmt_date
     flask_app.jinja_env.globals["BUDAPEST_TZ"] = BUDAPEST_TZ
 
+    def _datetime_local(val):
+        if not val:
+            return ""
+        try:
+            dt = val
+            try:
+                if dt.tzinfo is None:
+                    dt = BUDAPEST_TZ.localize(dt)
+                dt = dt.astimezone(BUDAPEST_TZ)
+            except Exception:  # pragma: no cover - best effort
+                pass
+            return dt.strftime("%Y-%m-%dT%H:%M")
+        except Exception:  # pragma: no cover - best effort
+            return ""
+
+    flask_app.jinja_env.filters["datetime_local"] = _datetime_local
+
     TOX_ORDER_RE = re.compile(
         r"^(?P<name>.+?) rendelve: (?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>.+)$"
     )

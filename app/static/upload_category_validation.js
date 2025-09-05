@@ -7,7 +7,7 @@ function setupCategoryValidation() {
     if (!select || !button) return;
 
     function update() {
-      const isValid = select.selectedIndex > 0;
+      const isValid = !!select.value;
       button.disabled = !isValid;
       if (warning) {
         warning.classList.toggle('d-none', isValid);
@@ -19,29 +19,26 @@ function setupCategoryValidation() {
     update();
 
     // Block submission when no category is selected
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', (event) => {
       if (!form.checkValidity() || !select.value) {
         event.preventDefault();
         try { form.reportValidity(); } catch (_) {}
         update();
+        return;
       }
     });
     form.dataset.catValidationAttached = '1';
   });
 }
 
-function initUploadCategoryValidation() {
-  try {
-    setupCategoryValidation();
-  } catch (e) {
-    console.warn(e);
-  }
+function _initCatVal() {
+  try { setupCategoryValidation(); } catch (e) { console.warn(e); }
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initUploadCategoryValidation, { once: true });
+  document.addEventListener('DOMContentLoaded', _initCatVal, { once: true });
 } else {
-  initUploadCategoryValidation();
+  _initCatVal();
 }
-window.addEventListener('htmx:load', initUploadCategoryValidation);
-window.addEventListener('htmx:afterSwap', initUploadCategoryValidation);
+window.addEventListener?.('htmx:load', _initCatVal);
+window.addEventListener?.('htmx:afterSwap', _initCatVal);

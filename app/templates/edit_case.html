@@ -170,13 +170,13 @@
   <!-- Regisztrálva -->
   <div class="col-md-6">
     <label for="registration_time" class="form-label">Regisztrálva</label>
-    <input type="datetime-local" id="registration_time" name="registration_time" class="form-control" value="{{ case.registration_time_str }}" disabled>
+    <input type="datetime-local" id="registration_time" name="registration_time" class="form-control" value="{{ case.registration_time|datetime_local }}" disabled>
   </div>
 
   <!-- Határidő -->
   <div class="col-md-6">
     <label for="deadline" class="form-label">Határidő</label>
-    <input type="datetime-local" id="deadline" name="deadline" class="form-control" value="{{ case.deadline_str }}" disabled>
+    <input type="datetime-local" id="deadline" name="deadline" class="form-control" value="{{ case.deadline|datetime_local }}" disabled>
   </div>
 
   <!-- Állapot -->

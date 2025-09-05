@@ -142,54 +142,15 @@
     </div>
   </footer>
 
-  <script>
-  document.querySelectorAll('.ajax-file-upload-form').forEach(form => {
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const fileInput = form.querySelector('input[type="file"]');
-      const categorySelect = form.querySelector('select[name="category"]');
-      if (!form.checkValidity() || !categorySelect || !categorySelect.value) {
-        try { form.reportValidity(); } catch (_) {}
-        return;
-      }
-      if (!fileInput.files.length) {
-        fileInput.classList.add('is-invalid');
-        return;
-      }
-      const formData = new FormData(form);
-      const tokenEl = form.querySelector('input[name="csrf_token"]');
-      const csrfToken = (tokenEl && tokenEl.value) || (document.querySelector('meta[name="csrf-token"]')?.content || '');
-      const headers = new Headers();
-      if (!headers.has('X-CSRFToken')) headers.set('X-CSRFToken', csrfToken);
-      fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers,
-      })
-      .then(resp => resp.json())
-      .then(data => {
-        if (data.success) {
-          alert('Fájl feltöltve: ' + data.filename);
-          fileInput.value = '';
-        } else {
-          alert(data.error || 'Ismeretlen hiba!');
-        }
-      })
-      .catch(() => alert('Hiba a fájl feltöltésekor!'));
-    });
-  });
-  </script>
-
+  <script src="{{ url_for('static', filename='js/upload_helpers.js') }}" defer></script>
+  <!-- X-CSRFToken header handled in upload_helpers.js -->
   <script src="{{ url_for('static', filename='upload_category_validation.js') }}" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/alerts.js') }}" defer></script>
 
   {% if config.get('BFCACHE_RELOAD_ENABLED', True) %}
-  <script>
-    window.addEventListener('pageshow', function (e) {
-      if (e.persisted) location.reload();
-    });
-  </script>
+  <!-- pageshow handler moved to external file -->
+  <script src="{{ url_for('static', filename='js/bfcache_reload.js') }}" defer></script>
   {% endif %}
 
   {# Include cookie handler script ONLY when banner is shown (to satisfy test) #}
