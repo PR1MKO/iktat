@@ -1,3 +1,4 @@
+# lint: single-bind
 """add examinationcase table
 
 Revision ID: a0c2905147be

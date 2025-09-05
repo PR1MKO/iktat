@@ -1,3 +1,4 @@
+# lint: single-bind
 """drop legacy examination_case from core
 
 Revision ID: f2ca12fa098a
