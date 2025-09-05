@@ -903,7 +903,10 @@ def assign_pathologist(case_id):
 
     if request.method == "POST" and request.form.get("action") == "upload":
         file = request.files.get("file")
-        category = request.form.get("category") or "egyéb"
+        category = (request.form.get("category") or "").strip()
+        if file and (not category or not is_valid_category(category)):
+            flash("Kategória megadása kötelező.", "danger")
+            return redirect(url_for("auth.assign_pathologist", case_id=case.id))
         if file:
             fn = handle_file_upload(case, file, category=category)
             if fn:

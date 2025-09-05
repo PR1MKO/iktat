@@ -147,6 +147,11 @@
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       const fileInput = form.querySelector('input[type="file"]');
+      const categorySelect = form.querySelector('select[name="category"]');
+      if (!form.checkValidity() || !categorySelect || !categorySelect.value) {
+        try { form.reportValidity(); } catch (_) {}
+        return;
+      }
       if (!fileInput.files.length) {
         fileInput.classList.add('is-invalid');
         return;

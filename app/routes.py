@@ -26,7 +26,7 @@ from app.utils.dates import attach_case_dates, safe_fmt
 from app.utils.idempotency import claim_idempotency, make_default_key
 from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import now_local
-from app.utils.uploads import resolve_safe, save_upload
+from app.utils.uploads import is_valid_category, resolve_safe, save_upload
 
 main_bp = Blueprint("main", __name__)
 
@@ -229,7 +229,10 @@ def elvegzem(case_id):
         # 2) File upload
         enforce_upload_size_limit()
         f = request.files.get("result_file")
-        category = request.form.get("category") or "egyéb"
+        category = (request.form.get("category") or "").strip()
+        if f and (not category or not is_valid_category(category)):
+            flash("Kategória megadása kötelező.", "danger")
+            return redirect(url_for("main.elvegzem", case_id=case.id))
         file_uploaded = handle_file_upload(case, f, category=category) if f else None
 
         # 3) Halotti bizonyítvány mezők
@@ -446,7 +449,10 @@ def upload_elvegzes_files(case_id):
         return redirect(url_for("main.elvegzem", case_id=case.id))
 
     saved = []
-    category = request.form.get("category") or "egyéb"
+    category = (request.form.get("category") or "").strip()
+    if not category or not is_valid_category(category):
+        flash("Kategória megadása kötelező.", "danger")
+        return redirect(url_for("main.elvegzem", case_id=case.id))
     for f in files:
         fn = handle_file_upload(case, f, category=category)
         if fn:
@@ -555,7 +561,10 @@ def leiro_elvegzem(case_id):
         # 1) Handle file upload
         enforce_upload_size_limit()
         file = request.files.get("result_file")
-        category = request.form.get("category") or "egyéb"
+        category = (request.form.get("category") or "").strip()
+        if file and (not category or not is_valid_category(category)):
+            flash("Kategória megadása kötelező.", "danger")
+            return redirect(url_for("main.leiro_elvegzem", case_id=case.id))
         file_uploaded = handle_file_upload(case, file, category=category)
 
         # 2) Add any new note
@@ -630,7 +639,10 @@ def leiro_upload_file(case_id):
         return redirect(url_for("main.leiro_elvegzem", case_id=case.id))
 
     file = request.files.get("result_file")
-    category = request.form.get("category") or "egyéb"
+    category = (request.form.get("category") or "").strip()
+    if not category or not is_valid_category(category):
+        flash("Kategória megadása kötelező.", "danger")
+        return redirect(url_for("main.leiro_elvegzem", case_id=case.id))
     file_uploaded = handle_file_upload(case, file, category=category)
     if not file_uploaded:
         flash("Nincs kiválasztott fájl.", "warning")

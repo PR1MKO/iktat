@@ -210,7 +210,32 @@ def test_upload_requires_category(client, app):
         )
         assert resp.status_code == 302
         assert resp.headers["Location"].endswith(f"/cases/{cid}/documents")
-        follow = client.get(resp.headers["Location"])
+        follow = client.get(resp.headers["Location"], follow_redirects=True)
+        assert "Kategória megadása kötelező.".encode("utf-8") in follow.data
+    with app.app_context():
+        assert UploadedFile.query.count() == initial
+
+
+def test_leiro_upload_requires_category(client, app):
+    with app.app_context():
+        create_user("leiro", role="leíró")
+        case = Case(case_number="LEIROCAT", describer="leiro")
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+        initial = UploadedFile.query.count()
+    with client:
+        login(client, "leiro", "secret")
+        data = {"result_file": (io.BytesIO(b"x"), "doc.txt"), "category": ""}
+        resp = client.post(
+            f"/leiro/ugyeim/{cid}/upload_file",
+            data=data,
+            content_type="multipart/form-data",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith(f"/leiro/ugyeim/{cid}/elvegzem")
+        follow = client.get(resp.headers["Location"], follow_redirects=True)
         assert "Kategória megadása kötelező.".encode("utf-8") in follow.data
     with app.app_context():
         assert UploadedFile.query.count() == initial
