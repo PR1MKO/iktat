@@ -18,13 +18,20 @@
 
   <div class="row">
     <div class="col-md-12 mb-3">
-      {% set upload_url = url_for('auth.upload_file', case_id=case.id) %}
       {% set categories = [
           ('tox_lelet', 'toxikológiai lelet'),
           ('végzés', 'végzés'),
           ('egyéb', 'egyéb')
         ] %}
-      {{ cm.file_upload_block(upload_url, 'file', 'tox-file-upload', True, 'Fájl feltöltése', 'Feltöltés', {}, categories) }}
+      {{ cm.file_upload_block(
+          case_id=case.id,
+          input_name='file',
+          form_id='tox-file-upload',
+          multiple=True,
+          label='Fájl feltöltése',
+          btn_label='Feltöltés',
+          categories=categories
+      ) }}
     </div>
     <div class="col-md-12 mb-3">
       {{ cm.uploaded_files(case) }}

@@ -210,7 +210,7 @@
   <div class="row">
     <div class="col-12">
       {{ cm.file_upload_block(
-        url_for('auth.upload_file', case_id=case.id),
+        case_id=case.id,
         input_name='file',
         form_id='file-upload-form',
         multiple=True,

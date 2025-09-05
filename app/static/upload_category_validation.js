@@ -1,5 +1,6 @@
 function setupCategoryValidation() {
   document.querySelectorAll('.file-upload-form').forEach(form => {
+    if (form.dataset.catValidationAttached === '1') return;
     const select = form.querySelector('select[name="category"]');
     const button = form.querySelector('.upload-btn');
     const warning = form.querySelector('.category-warning');
@@ -25,7 +26,22 @@ function setupCategoryValidation() {
         update();
       }
     });
+    form.dataset.catValidationAttached = '1';
   });
 }
 
-document.addEventListener('DOMContentLoaded', setupCategoryValidation);
+function initUploadCategoryValidation() {
+  try {
+    setupCategoryValidation();
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initUploadCategoryValidation, { once: true });
+} else {
+  initUploadCategoryValidation();
+}
+window.addEventListener('htmx:load', initUploadCategoryValidation);
+window.addEventListener('htmx:afterSwap', initUploadCategoryValidation);
