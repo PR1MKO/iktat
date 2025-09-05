@@ -187,7 +187,7 @@
     {% set options = default_categories %}
   {% endif %}
   <select name="category" class="form-select me-2 category-select" required>
-    <option value="" selected>-- Válasszon kategóriát --</option>
+    <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
     {% for c in options %}
       {% if c.__class__.__name__ in ['list', 'tuple'] %}
         <option value="{{ c[0] }}">{{ c[1] }}</option>
