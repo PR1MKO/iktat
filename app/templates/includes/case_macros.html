@@ -160,8 +160,7 @@
       action="{{ upload_url }}"
       method="post"
       enctype="multipart/form-data"
-      class="needs-validation d-flex align-items-center file-upload-form"
-      novalidate>
+      class="needs-validation d-flex align-items-center file-upload-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for name, value in extra_fields.items() %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
@@ -180,10 +179,16 @@
         ('jegyzőkönyv', 'Jegyzőkönyv'),
         ('egyéb', 'Egyéb')
      ] %}
-  {% set cat_options = categories if categories is not none else default_categories %}
+  {% if categories is not none %}
+    {% set options = categories %}
+  {% elif cat_options is defined %}
+    {% set options = cat_options %}
+  {% else %}
+    {% set options = default_categories %}
+  {% endif %}
   <select name="category" class="form-select me-2 category-select" required>
-    <option value="" disabled selected>-- Válasszon kategóriát --</option>
-    {% for c in cat_options %}
+    <option value="" selected>-- Válasszon kategóriát --</option>
+    {% for c in options %}
       {% if c.__class__.__name__ in ['list', 'tuple'] %}
         <option value="{{ c[0] }}">{{ c[1] }}</option>
       {% else %}

@@ -191,6 +191,31 @@ def test_upload_blocked_for_finalized_case(client, app):
         assert UploadedFile.query.filter_by(case_id=case_id).count() == 0
 
 
+def test_upload_requires_category(client, app):
+    with app.app_context():
+        create_user(username="iroda", role="iroda")
+        case = Case(case_number="NOCAT")
+        db.session.add(case)
+        db.session.commit()
+        cid = case.id
+        initial = UploadedFile.query.count()
+    with client:
+        login(client, "iroda", "secret")
+        data = {"file": (io.BytesIO(b"x"), "file.pdf")}
+        resp = client.post(
+            f"/cases/{cid}/upload",
+            data=data,
+            content_type="multipart/form-data",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith(f"/cases/{cid}/documents")
+        follow = client.get(resp.headers["Location"])
+        assert "Kategória megadása kötelező.".encode("utf-8") in follow.data
+    with app.app_context():
+        assert UploadedFile.query.count() == initial
+
+
 def test_upload_large_file_blocked(client, app):
     with app.app_context():
         create_user()

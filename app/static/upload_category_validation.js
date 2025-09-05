@@ -5,17 +5,12 @@ function setupCategoryValidation() {
     const warning = form.querySelector('.category-warning');
     if (!select || !button) return;
     function update() {
-      const valid = select.value !== '' && select.value !== null;
-      button.disabled = !valid;
-      if (valid) {
-        button.style.opacity = '';
-        button.style.cursor = '';
-        warning && warning.classList.add('d-none');
-      } else {
-        button.style.opacity = '0.6';
-        button.style.cursor = 'not-allowed';
-        warning && warning.classList.remove('d-none');
+      const isValid = select.selectedIndex > 0;
+      button.disabled = !isValid;
+      if (warning) {
+        warning.classList.toggle('d-none', isValid);
       }
+      select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
     }
     select.addEventListener('change', update);
     update();

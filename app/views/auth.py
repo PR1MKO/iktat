@@ -41,7 +41,13 @@ from app.utils.permissions import capabilities_for
 from app.utils.query_helpers import apply_case_filters, build_cases_and_users_map
 from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import BUDAPEST_TZ, fmt_date, now_local
-from app.utils.uploads import resolve_safe, save_upload, send_safe
+from app.utils.uploads import (
+    get_upload_categories,
+    is_valid_category,
+    resolve_safe,
+    save_upload,
+    send_safe,
+)
 
 from ..utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from ..utils.case_status import CASE_STATUS_FINAL, is_final_status
@@ -722,9 +728,13 @@ def case_documents(case_id):
             flash("Valami hiba történt. Próbáld újra.", "danger")
             if current_app.config.get("STRICT_PRG_ENABLED", True):
                 return redirect(url_for("auth.case_documents", case_id=case_id))
-            return render_template("case_documents.html", case=case)
+            return render_template(
+                "case_documents.html", case=case, cat_options=get_upload_categories()
+            )
         return redirect(url_for("auth.edit_case", case_id=case_id))
-    return render_template("case_documents.html", case=case)
+    return render_template(
+        "case_documents.html", case=case, cat_options=get_upload_categories()
+    )
 
 
 @auth_bp.route("/cases/<int:case_id>/upload", methods=["POST"])
@@ -742,12 +752,10 @@ def upload_file(case_id):
 
     root = Path(current_app.config["UPLOAD_CASES_ROOT"])
     subdir = file_safe_case_number(case.case_number)
-    category = request.form.get("category")
-    if not category:
-        flash("Kérjük, válasszon fájl kategóriát.", "error")
-        return redirect(
-            request.referrer or url_for("auth.case_detail", case_id=case_id)
-        )
+    category = (request.form.get("category") or "").strip()
+    if not category or not is_valid_category(category):
+        flash("Kategória megadása kötelező.", "danger")
+        return redirect(url_for("auth.case_documents", case_id=case_id))
 
     files = request.files.getlist("file")
     if not files:

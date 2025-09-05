@@ -18,6 +18,16 @@ ALLOWED_EXTENSIONS = {
     "investigations": {"pdf", "jpg", "jpeg", "png"},
 }
 
+DEFAULT_UPLOAD_CATEGORIES = ["végzés", "jegyzőkönyv", "egyéb"]
+
+
+def get_upload_categories():
+    return current_app.config.get("UPLOAD_CATEGORIES", DEFAULT_UPLOAD_CATEGORIES)
+
+
+def is_valid_category(value: str) -> bool:
+    return value in get_upload_categories()
+
 
 def allowed_file(filename: str, domain: str) -> bool:
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
