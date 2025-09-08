@@ -1,9 +1,0 @@
-/* Fixed-top navbar compensation and scroll anchoring */
-:root { --nav-offset: 56px; }
-@media (min-width: 992px) {
-  :root { --nav-offset: 60px; }
-}
-body {
-  padding-top: var(--nav-offset);
-  scroll-padding-top: var(--nav-offset);
-}

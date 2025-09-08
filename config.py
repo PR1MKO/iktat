@@ -44,6 +44,8 @@ class Config:
     NO_STORE_HEADERS_ENABLED = True
     BFCACHE_RELOAD_ENABLED = True
     STRICT_PRG_ENABLED = True
+    # Disable caching of static files in development
+    SEND_FILE_MAX_AGE_DEFAULT = 0
 
 
 class TestingConfig(Config):
