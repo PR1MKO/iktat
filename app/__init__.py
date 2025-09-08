@@ -165,7 +165,7 @@ def create_app(test_config=None):
 
     @flask_app.context_processor
     def inject_nonce():
-        return {"csp_nonce": csp_nonce()}
+        return {"csp_nonce": csp_nonce}
 
     @flask_app.errorhandler(RequestEntityTooLarge)
     def _too_large(e):  # noqa: ARG001

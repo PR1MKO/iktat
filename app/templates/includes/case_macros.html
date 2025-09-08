@@ -187,7 +187,13 @@
   {% else %}
     {% set options = default_categories %}
   {% endif %}
-  <select name="category" class="form-select me-2 category-select" required>
+  <select name="category"
+    id="upload-category-{{ form_id or 'file-upload-form' }}"
+    class="form-select me-2 category-select"
+    required
+    aria-invalid="false"
+    aria-describedby="category-help-{{ form_id or 'file-upload-form' }}"
+  >
     <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
     {% for c in options %}
       {% if c.__class__.__name__ in ['list', 'tuple'] %}
@@ -197,10 +203,16 @@
       {% endif %}
     {% endfor %}
   </select>
+  <div
+    id="category-help-{{ form_id or 'file-upload-form' }}"
+    class="invalid-feedback category-warning d-none"
+    role="alert"
+  >
+    Kategória megadása kötelező.
+  </div>
   {% if caps['can_upload_case'] %}
   <button type="submit" class="btn btn-outline-success upload-btn" disabled>{{ btn_label }}</button>
   {% endif %}
-  <span class="text-danger small ms-2 category-warning d-none">Kategória megadása kötelező</span>
 </form>
 {% endmacro %}
 

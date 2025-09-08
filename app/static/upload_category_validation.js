@@ -11,7 +11,10 @@
     const isValid = !!(select && select.value);
     if (button) button.disabled = !isValid;
     if (warning) warning.classList.toggle('d-none', isValid);
-    if (select) select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
+    if (select) {
+      select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
+      select.classList.toggle('is-invalid', !isValid);
+    }
   }
 
   // Enable/disable on category change
@@ -24,7 +27,10 @@
     const isValid = !!(select && select.value);
     if (!isValid) {
       e.preventDefault();
-      update();
+      update
+      // move focus to the field and ensure it is visible
+      try { select.focus({ preventScroll: false }); } catch (_) { select.focus(); }
+      try { select.scrollIntoView({ block: 'center' }); } catch (_) {}
     }
   });
 
