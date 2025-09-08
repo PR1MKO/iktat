@@ -58,3 +58,12 @@ class TestingConfig(Config):
     @staticmethod
     def init_app(app):
         pass
+
+
+# --- Dev convenience: ensure static CSS updates are visible without hard refresh ---
+try:
+    if DEBUG:  # type: ignore[name-defined]  # noqa: F821
+        SEND_FILE_MAX_AGE_DEFAULT = 0
+except NameError:
+    # If DEBUG not defined in this config, set a conservative default for development.
+    SEND_FILE_MAX_AGE_DEFAULT = 0

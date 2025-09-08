@@ -18,8 +18,8 @@ def test_login_csp_and_css(client):
     html = r.get_data(as_text=True)
     _assert_no_external_css_and_no_inline_style(html)
     assert "/static/css/bootstrap.min.css" in html
-    assert "/static/css/bootstrap-icons.css" in html
     assert "/static/css/custom.css" in html
+    assert "/static/css/bootstrap-icons.css" not in html
 
 
 def test_tox_doc_form_extends_styles_block(client, app):
@@ -39,6 +39,6 @@ def test_tox_doc_form_extends_styles_block(client, app):
     html = r.get_data(as_text=True)
     _assert_no_external_css_and_no_inline_style(html)
     assert "/static/css/bootstrap.min.css" in html
-    assert "/static/css/bootstrap-icons.css" in html
     assert "/static/css/custom.css" in html
+    assert "/static/css/bootstrap-icons.css" not in html
     assert "/static/css/tox_doc_form.css" in html

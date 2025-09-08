@@ -1,0 +1,12 @@
+/* Fixed-top navbar compensation + scroll anchoring */
+:root { --nav-offset: 72px; }              /* increase if still clipped */
+@media (min-width: 992px) { :root { --nav-offset: 76px; } }
+body { padding-top: var(--nav-offset); scroll-padding-top: var(--nav-offset); }
+
+/* Ensure navbar stays above content and is opaque */
+.navbar.fixed-top { z-index: 1030; background: #ffffff; }
+
+/* Remove all icon glyphs project-wide without touching templates */
+ion-icon,
+[class^="ion-"], [class*=" ion-"],
+.bi, [class^="bi "], [class*=" bi-"] { display: none !important; }
