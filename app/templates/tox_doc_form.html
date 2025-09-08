@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Toxikológiai Kirendelő Generálás{% endblock %}
+{% block styles %}{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/tox_doc_form.css') }}">
+{% endblock %}
 {% block sidebar %}{% endblock %}
 
 {% block content %}
@@ -30,39 +33,15 @@
         <input type="number" class="form-control" name="osszesen_ara" id="osszesen_ara" readonly>
       </div>
       <div class="col-12 text-end">
-        <button class="btn btn-success mt-2" type="submit" onclick="return confirm('Biztosan el szeretn\u00e9 k\u00e9sz\u00edteni a dokumentumot? Az OK gomb megnyom\u00e1sa ut\u00e1n a dokumentum nem lesz a tov\u00e1bbiakban szerkeszthet\u0151')">
+        <button class="btn btn-success mt-2" type="submit" id="tox-generate">
           <i class="bi bi-file-earmark-word me-1"></i> Toxikológiai kirendelő generálása
         </button>
       </div>
     </div>
   </form>
 </div>
-<style>
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
-</style>
+{% endblock %}
 
-<script>
-function recalc() {
-  let total = 0;
-  document.querySelectorAll('input[name$="_minta_count"]').forEach(cnt => {
-    const key = cnt.name.replace('_minta_count', '');
-    const priceEl = document.querySelector(`input[name="${key}_minta_ara"]`);
-    const qty = parseFloat(cnt.value) || 0;
-    const price = parseFloat(priceEl.value) || 0;
-    total += qty * price;
-  });
-  document.getElementById('osszesen_ara').value = Math.round(total);
-}
-document.querySelectorAll('input[data-price-per-unit]').forEach(el => {
-  el.addEventListener('input', recalc);
-});
-recalc();
-</script>
+{% block scripts %}{{ super() }}
+<script type="module" src="{{ url_for('static', filename='js/pages/tox_doc_form.js') }}"></script>
 {% endblock %}

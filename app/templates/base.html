@@ -6,10 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}Forensic Case Tracker{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+  {% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-icons.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+  {% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -120,7 +121,7 @@
   <!-- X-CSRFToken header handled in upload_helpers.js -->
   <script src="{{ url_for('static', filename='upload_category_validation.js') }}" defer></script>
   <script src="{{ url_for('static', filename='js/case_upload_block.js') }}" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/alerts.js') }}" defer></script>
 
   {% if config.get('BFCACHE_RELOAD_ENABLED', True) %}
