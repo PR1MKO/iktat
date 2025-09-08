@@ -718,6 +718,7 @@ def case_documents(case_id):
         resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)
     ) is not None:
         return resp
+    caps = capabilities_for(current_user)
     if request.method == "POST":
         case.tox_ordered = bool(request.form.get("tox_ordered"))
         try:
@@ -729,11 +730,17 @@ def case_documents(case_id):
             if current_app.config.get("STRICT_PRG_ENABLED", True):
                 return redirect(url_for("auth.case_documents", case_id=case_id))
             return render_template(
-                "case_documents.html", case=case, cat_options=get_upload_categories()
+                "case_documents.html",
+                case=case,
+                cat_options=get_upload_categories(),
+                caps=caps,
             )
         return redirect(url_for("auth.edit_case", case_id=case_id))
     return render_template(
-        "case_documents.html", case=case, cat_options=get_upload_categories()
+        "case_documents.html",
+        case=case,
+        cat_options=get_upload_categories(),
+        caps=caps,
     )
 
 
