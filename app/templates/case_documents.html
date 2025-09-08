@@ -52,5 +52,6 @@
 
 {% block scripts %}
   {{ super() }}
-  <script src="{{ url_for('static', filename='upload_category_validation.js') }}"></script>
+  {# Use CSP nonce + defer so strict-dynamic allows this external script #}
+  <script nonce="{{ csp_nonce }}" defer src="{{ url_for('static', filename='upload_category_validation.js') }}"></script>
 {% endblock %}

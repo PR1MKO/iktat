@@ -1,41 +1,33 @@
-function setupCategoryValidation() {
-  document.querySelectorAll('.file-upload-form').forEach(form => {
-    if (form.dataset.catValidationAttached === '1') return;
-    const select = form.querySelector('select[name="category"]');
-    const button = form.querySelector('.upload-btn');
-    const warning = form.querySelector('.category-warning');
-    if (!select) { form.dataset.catValidationAttached = '1'; return; }
+(() => {
+  const form = document.querySelector('form.file-upload-form');
+  if (!form || form.dataset.catValidationAttached) return;
+  form.dataset.catValidationAttached = '1';
 
-    function update() {
-      const isValid = !!select.value;
-      if (button) button.disabled = !isValid;
-      if (warning) warning.classList.toggle('d-none', isValid);
-      select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
-    }
+  const select  = form.querySelector('select[name="category"]');
+  const button  = form.querySelector('.upload-btn');
+  const warning = form.querySelector('.category-warning');
 
-    select.addEventListener('change', update);
-    update();
+  function update() {
+    const isValid = !!(select && select.value);
+    if (button) button.disabled = !isValid;
+    if (warning) warning.classList.toggle('d-none', isValid);
+    if (select) select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
+  }
 
-    // Block submission when no category is selected
-    form.addEventListener('submit', (event) => {
-      if (!form.checkValidity() || !select.value) {
-        event.preventDefault();
-        try { form.reportValidity(); } catch (_) {}
-        update();
-      }
-    });
-    form.dataset.catValidationAttached = '1';
+  // Enable/disable on category change
+  form.addEventListener('change', (e) => {
+    if (e.target === select) update();
   });
-}
 
-function _initCatVal() {
-  try { setupCategoryValidation(); } catch (e) { console.warn(e); }
-}
+  // Guard submit: only allow when category chosen; otherwise prevent + show warning
+  form.addEventListener('submit', (e) => {
+    const isValid = !!(select && select.value);
+    if (!isValid) {
+      e.preventDefault();
+      update();
+    }
+  });
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _initCatVal, { once: true });
-} else {
-  _initCatVal();
-}
-window.addEventListener?.('htmx:load', _initCatVal);
-window.addEventListener?.('htmx:afterSwap', _initCatVal);
+  // Initial state on load
+  update();
+})();
