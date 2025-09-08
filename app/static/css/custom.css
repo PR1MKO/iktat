@@ -1,12 +1,29 @@
 /* Fixed-top navbar compensation + scroll anchoring */
-:root { --nav-offset: 72px; }              /* increase if still clipped */
-@media (min-width: 992px) { :root { --nav-offset: 76px; } }
+:root { --nav-offset: 56px; }
+@media (min-width: 992px) { :root { --nav-offset: 56px; } }
 body { padding-top: var(--nav-offset); scroll-padding-top: var(--nav-offset); }
+:target { scroll-margin-top: var(--nav-offset); }
 
 /* Ensure navbar stays above content and is opaque */
 .navbar.fixed-top { z-index: 1030; background: #ffffff; }
 
-/* Remove all icon glyphs project-wide without touching templates */
+/* Flush layout: remove vertical gap under navbar for both sidebar and main content */
+main,
+.container, .container-fluid,
+.content, .page-content,
+#sidebar, .sidebar,
+.sidebar .card, .sidebar .list-group,
+.row:first-child { margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }
+
+/* Align main title with the top of the sidebar’s first item */
+.content h1:first-child,
+.content h2:first-child,
+.page-content h1:first-child,
+.page-content h2:first-child,
+.container h1:first-child,
+.container h2:first-child { margin-top: 0 !important; }
+
+/* Icons removed project-wide */
 ion-icon,
 [class^="ion-"], [class*=" ion-"],
 .bi, [class^="bi "], [class*=" bi-"] { display: none !important; }
