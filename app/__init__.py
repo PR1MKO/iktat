@@ -20,6 +20,8 @@ load_dotenv()
 from app.utils.time_utils import BUDAPEST_TZ, fmt_date  # noqa: E402
 from config import Config  # noqa: E402
 
+from .security import csp_header, csp_nonce  # noqa: E402
+
 # Instantiate extensions
 db = SQLAlchemy()
 mail = Mail()
@@ -161,6 +163,10 @@ def create_app(test_config=None):
 
     register_error_handlers(flask_app)
 
+    @flask_app.context_processor
+    def inject_nonce():
+        return {"csp_nonce": csp_nonce()}
+
     @flask_app.errorhandler(RequestEntityTooLarge)
     def _too_large(e):  # noqa: ARG001
         return "File too large", 413
@@ -289,15 +295,6 @@ def create_app(test_config=None):
                 response.headers["Pragma"] = "no-cache"
                 response.headers["Expires"] = "0"
 
-        # ✅ Relaxed CSP (allows Bootstrap/Fonts CDNs)
-        response.headers.setdefault(
-            "Content-Security-Policy",
-            "default-src 'self'; "
-            "img-src 'self' data:; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
-            "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-            "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;",
-        )
         response.headers.setdefault(
             "Referrer-Policy", "strict-origin-when-cross-origin"
         )
@@ -312,7 +309,7 @@ def create_app(test_config=None):
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=15552000; includeSubDomains"
             )
-        return response
+        return csp_header(response)
 
     if (
         not flask_app.debug

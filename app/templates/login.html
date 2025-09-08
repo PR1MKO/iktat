@@ -44,19 +44,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
 
-
-<script>
-  (function() {
-    'use strict';
-    const form = document.querySelector('.needs-validation');
-    form.addEventListener('submit', function(event) {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      form.classList.add('was-validated');
-    }, false);
-  })();
-</script>
+{% block scripts %}
+<script type="module" src="{{ url_for('static', filename='js/pages/login.js') }}"></script>
 {% endblock %}

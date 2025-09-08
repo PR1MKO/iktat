@@ -1,12 +1,11 @@
 from tests.helpers import create_user, login
 
 
-def test_csp_allows_bootstrap_icons_font_sources(client):
+def test_csp_contains_nonce(client):
     r = client.get("/login")
     csp = r.headers.get("Content-Security-Policy", "")
-    assert "font-src" in csp
-    assert "https://cdn.jsdelivr.net" in csp
-    assert "https://cdnjs.cloudflare.com" in csp
+    assert "script-src 'self' 'nonce-" in csp
+    assert "'unsafe-inline'" not in csp
 
 
 def test_base_contains_bi_classes(client):

@@ -1,39 +1,32 @@
 from tests.helpers import create_user, login, login_follow
 
-CSP = (
-    "default-src 'self'; "
-    "img-src 'self' data:; "
-    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; "
-    "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
-    "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;"
-)
+EXPECTED_HEADERS = {
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
 
 
 def test_security_headers_present(client):
     resp = client.get("/login")
     assert resp.status_code == 200
-    assert resp.headers.get("Content-Security-Policy") == CSP
-    assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
-    assert resp.headers.get("X-Content-Type-Options") == "nosniff"
-    assert resp.headers.get("X-Frame-Options") == "DENY"
-    assert (
-        resp.headers.get("Permissions-Policy")
-        == "camera=(), microphone=(), geolocation=()"
-    )
+    csp = resp.headers.get("Content-Security-Policy", "")
+    assert "script-src 'self' 'nonce-" in csp
+    assert "'unsafe-inline'" not in csp
+    for key, value in EXPECTED_HEADERS.items():
+        assert resp.headers.get(key) == value
     assert "Strict-Transport-Security" not in resp.headers
 
     create_user("admin", "secret", "admin")
     login(client, "admin", "secret")
     resp = client.get("/")
     assert resp.status_code == 200
-    assert resp.headers.get("Content-Security-Policy") == CSP
-    assert resp.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
-    assert resp.headers.get("X-Content-Type-Options") == "nosniff"
-    assert resp.headers.get("X-Frame-Options") == "DENY"
-    assert (
-        resp.headers.get("Permissions-Policy")
-        == "camera=(), microphone=(), geolocation=()"
-    )
+    csp = resp.headers.get("Content-Security-Policy", "")
+    assert "script-src 'self' 'nonce-" in csp
+    assert "'unsafe-inline'" not in csp
+    for key, value in EXPECTED_HEADERS.items():
+        assert resp.headers.get(key) == value
 
 
 def test_hsts_when_https(app, client):
