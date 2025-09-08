@@ -1,0 +1,30 @@
+{% macro icon(name) -%}
+  {# Map common icon names (former Ionicons) to Bootstrap Icons #}
+  {% set map = {
+    'home': 'house',
+    'document': 'file-text',
+    'documents': 'files',
+    'download': 'download',
+    'upload': 'upload',
+    'trash': 'trash',
+    'close': 'x-lg',
+    'add': 'plus-lg',
+    'create': 'plus-lg',
+    'edit': 'pencil-square',
+    'search': 'search',
+    'person': 'person',
+    'people': 'people',
+    'warning': 'exclamation-triangle',
+    'info': 'info-circle',
+    'checkmark': 'check2',
+    'checkmark-circle': 'check-circle',
+    'arrow-down': 'arrow-down',
+    'arrow-up': 'arrow-up',
+    'arrow-forward': 'arrow-right',
+    'arrow-back': 'arrow-left',
+    'alert': 'exclamation-circle',
+    'settings': 'gear'
+  } %}
+  {% set bi = map.get(name, 'circle') %}
+  <i class="bi bi-{{ bi }}"></i>
+{%- endmacro %}

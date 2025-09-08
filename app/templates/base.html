@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
   {% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100
+
+  {% import 'includes/macros.html' as macros %}
 
   {% if current_user.is_authenticated and not current_user.cookie_notice_ack_at %}
     <div id="cookie-banner" class="alert alert-info text-center mb-0">
