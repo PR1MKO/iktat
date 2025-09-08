@@ -1023,6 +1023,9 @@ def add_user():
         password = (form.password.data or "").strip()
         role = (form.role.data or "").strip()
         chosen = form.default_leiro_id.data or None
+        screen_name = (form.screen_name.data or "").strip()
+        if not screen_name:
+            screen_name = username
         if role == "szakértő":
             if not chosen:
                 errs = list(form.default_leiro_id.errors)
@@ -1045,7 +1048,7 @@ def add_user():
             user = User(
                 username=username,
                 role=role,
-                screen_name=(form.screen_name.data or "").strip() or None,
+                screen_name=screen_name,
                 full_name=(form.full_name.data or "").strip() or None,
             )
             user.set_password(password)

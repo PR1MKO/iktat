@@ -4,14 +4,12 @@ function setupCategoryValidation() {
     const select = form.querySelector('select[name="category"]');
     const button = form.querySelector('.upload-btn');
     const warning = form.querySelector('.category-warning');
-    if (!select || !button) return;
+    if (!select) { form.dataset.catValidationAttached = '1'; return; }
 
     function update() {
       const isValid = !!select.value;
-      button.disabled = !isValid;
-      if (warning) {
-        warning.classList.toggle('d-none', isValid);
-      }
+      if (button) button.disabled = !isValid;
+      if (warning) warning.classList.toggle('d-none', isValid);
       select.setAttribute('aria-invalid', isValid ? 'false' : 'true');
     }
 
@@ -24,7 +22,6 @@ function setupCategoryValidation() {
         event.preventDefault();
         try { form.reportValidity(); } catch (_) {}
         update();
-        return;
       }
     });
     form.dataset.catValidationAttached = '1';

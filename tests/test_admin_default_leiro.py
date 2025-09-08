@@ -69,6 +69,30 @@ def test_add_non_expert_ignores_default_leiro(client, app):
         assert u.default_leiro_id is None
 
 
+def test_add_user_without_screen_name_defaults_to_username(client, app):
+    with app.app_context():
+        admin = create_user("admin", "secret", role="admin")
+        leiro = create_user("leiroX", "pw", role="leíró")
+        leiro_id = leiro.id
+    with client:
+        login(client, "admin", "secret")
+        resp = client.post(
+            "/admin/users/add",
+            data={
+                "username": "doc_no_sn",
+                "password": "pw",
+                "role": "szakértő",
+                "default_leiro_id": str(leiro_id),
+                # intentionally omit screen_name
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code in (200, 302)
+    with app.app_context():
+        u = User.query.filter_by(username="doc_no_sn").one()
+        assert u.screen_name == "doc_no_sn"
+
+
 def test_edit_expert_updates_default_leiro(client, app):
     with app.app_context():
         admin = create_user("admin", "secret", role="admin")

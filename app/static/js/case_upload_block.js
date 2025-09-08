@@ -6,11 +6,11 @@
 
       var select = form.querySelector('select[name="category"]');
       var button = form.querySelector('.upload-btn');
-      if (!select || !button) { form.dataset.catValidationAttached = '1'; return; }
+      if (!select) { form.dataset.catValidationAttached = '1'; return; }
 
       function update() {
         var ok = !!select.value;
-        button.disabled = !ok;
+        if (button) button.disabled = !ok;
         select.setAttribute('aria-invalid', ok ? 'false' : 'true');
       }
 
@@ -22,7 +22,6 @@
           ev.preventDefault();
           try { form.reportValidity(); } catch (e) {}
           update();
-          return;
         }
       });
 
