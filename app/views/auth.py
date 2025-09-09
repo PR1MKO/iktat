@@ -868,10 +868,39 @@ def szignal_cases():
         .all()
     )
 
+    # Investigations without any assigned experts
+    investigations_unassigned = (
+        Investigation.query.filter(
+            and_(
+                Investigation.expert1_id.is_(None),
+                Investigation.expert2_id.is_(None),
+            )
+        )
+        .order_by(Investigation.registration_time.desc())
+        .all()
+    )
+
+    # Investigations where at least one expert is present
+    investigations_with_expert = (
+        Investigation.query.filter(
+            or_(
+                Investigation.expert1_id.isnot(None),
+                Investigation.expert2_id.isnot(None),
+            )
+        )
+        .order_by(Investigation.registration_time.desc())
+        .all()
+    )
+
+    for inv in investigations_unassigned + investigations_with_expert:
+        inv.registration_time_str = fmt_date(inv.registration_time)
+
     return render_template(
         "szignal_cases.html",
         szignalando_cases=szignalando_cases,
         szerkesztheto_cases=szerkesztheto_cases,
+        investigations_unassigned=investigations_unassigned,
+        investigations_with_expert=investigations_with_expert,
     )
 
 

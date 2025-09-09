@@ -147,6 +147,27 @@ def test_investigation_posts_forbid_szignalo(client, setup):
         )
 
 
+def test_szignal_cases_forbidden_for_non_szignalo(client, setup):
+    with client:
+        login(client, "admin", "pw")
+        assert client.get("/szignal_cases").status_code == 403
+
+
+def test_szignal_cases_all_sections_visible_for_szignalo(client, setup):
+    with client:
+        login(client, "szignalo", "pw")
+        resp = client.get("/szignal_cases")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        for sid in (
+            'id="examinations-unassigned"',
+            'id="examinations-with-expert"',
+            'id="investigations-unassigned"',
+            'id="investigations-with-expert"',
+        ):
+            assert sid in html
+
+
 def test_login_public(client):
     assert client.get("/login").status_code == 200
     resp = client.post(
