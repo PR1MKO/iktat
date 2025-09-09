@@ -1,74 +1,63 @@
 {% extends "base.html" %}
+
+{# Hide sidebar on this page only #}
+{% block sidebar %}{% endblock %}
+
 {% block title %}Új felhasználó hozzáadása{% endblock %}
-{# Removed case_macros import as role field renders directly from WTForms #}
 
 {% block content %}
-<div class="card-body d-flex align-items-center py-3">
-  <i class="bi bi-person-gear fs-3 me-3 text-primary"></i>
-  <div>
-    <h3 class="h4 mb-0"><small>Új felhasználó hozzáadása</small></h3>
-  </div>
+<div class="container page-admin-user-add py-3">
+  <h1 class="h4 mb-3">Új felhasználó</h1>
+
+  <form id="admin-user-add-form" method="post" class="row g-3 needs-validation" novalidate>
+    {{ form.hidden_tag() }}
+
+    <!-- row1 -->
+    <div class="col-md-6">
+      <label for="{{ form.username.id }}" class="visually-hidden">Email cím</label>
+      {{ form.username(class="form-control", placeholder="Email cím", required=True, type="email") }}
+    </div>
+    <div class="col-md-6">
+      <label for="{{ form.full_name.id }}" class="visually-hidden">Teljes név</label>
+      {{ form.full_name(class="form-control", placeholder="Teljes név", required=True) }}
+    </div>
+
+    <!-- row2 -->
+    <div class="col-md-6">
+      <label for="{{ form.screen_name.id }}" class="visually-hidden">Monogram</label>
+      {{ form.screen_name(class="form-control", placeholder="Monogram", required=True) }}
+    </div>
+    <div class="col-md-6">
+      <label for="{{ form.password.id }}" class="visually-hidden">Jelszó</label>
+      {{ form.password(class="form-control", placeholder="Jelszó", required=True) }}
+    </div>
+
+    <!-- row3 -->
+    <div class="col-md-6">
+      <label for="{{ form.role.id }}" class="visually-hidden">Szerepkör</label>
+      <select id="{{ form.role.id }}" name="{{ form.role.name }}" class="form-select" required>
+        <option value="" disabled {% if not form.role.data %}selected{% endif %}>Válasszon szerepkört</option>
+        {% for val, label in form.role.choices %}
+          <option value="{{ val }}"{% if form.role.data == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label for="{{ form.default_leiro_id.id }}" class="visually-hidden">Default leíró</label>
+      <select id="{{ form.default_leiro_id.id }}" name="{{ form.default_leiro_id.name }}" class="form-select" required>
+        <option value="" disabled {% if not form.default_leiro_id.data %}selected{% endif %}>Válasszon leírót</option>
+        {% for val, label in form.default_leiro_id.choices %}
+          <option value="{{ val }}"{% if form.default_leiro_id.data == val %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-12 mt-4">
+      <button type="submit" class="btn btn-primary">Mentés</button>
+    </div>
+  </form>
 </div>
-
-<form method="post" class="row g-3 needs-validation" novalidate>
-  {# CSRF token #}
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-  <div class="col-md-6">
-    <label for="username" class="form-label visually-hidden">Felhasználónév *</label>
-    <input type="text" id="username" name="username" class="form-control"
-           required aria-label="Felhasználónév" title="Felhasználónév" placeholder="Felhasználónév">
-    <div class="invalid-feedback">Kérjük, adja meg a felhasználónevet.</div>
-  </div>
-
-    <div class="col-md-6">
-      <label for="screen_name" class="form-label visually-hidden">Megjelenítendő név</label>
-      <input type="text" id="screen_name" name="screen_name" class="form-control"
-             aria-label="Megjelenítendő név" title="Megjelenítendő név" placeholder="Megjelenítendő név">
-    </div>
-
-    <div class="col-md-6">
-      <label for="full_name" class="form-label">Teljes név</label>
-      <input type="text" id="full_name" name="full_name" class="form-control"
-             maxlength="128" aria-label="Teljes név" title="Teljes név"
-             value="{{ (form.full_name.data if form else '') or '' }}">
-    </div>
-
-    <div class="col-md-6">
-      <label for="password" class="form-label visually-hidden">Jelszó *</label>
-      <input type="password" id="password" name="password" class="form-control"
-             required aria-label="Jelszó" title="Jelszó" placeholder="Jelszó">
-    <div class="invalid-feedback">Kérjük, adja meg a jelszót.</div>
-  </div>
-
-  <div class="col-md-6">
-    {{ form.role.label(class_="form-label") }}
-    {{ form.role(class_="form-select", id="role", required=True) }}
-    <div class="invalid-feedback">Kérjük, válassza ki a szerepkört.</div>
-  </div>
-
-  <div class="col-md-6">
-    <label for="default_leiro_id" class="form-label">Default leíró</label>
-    <select class="form-select {{ 'is-invalid' if form.default_leiro_id.errors }}" id="default_leiro_id" name="default_leiro_id" {% if form.role.data != 'szakértő' %}disabled{% else %}required{% endif %}>
-      <option value="0">-- Válasszon --</option>
-      {% for leiro in leiro_users %}
-        <option value="{{ leiro.id }}" {% if form.default_leiro_id.data == leiro.id %}selected{% endif %}>{{ leiro.screen_name or leiro.username }}</option>
-      {% endfor %}
-    </select>
-    {% if form and form.default_leiro_id.errors %}
-      {% for e in form.default_leiro_id.errors %}
-        <div class="text-danger small">{{ e }}</div>
-      {% endfor %}
-    {% endif %}
-    <small class="form-text text-muted">Szakértő esetén kötelező.</small>
-  </div>
-
-  <div class="col-12 d-flex gap-2">
-    <button type="submit" class="btn btn-success">Létrehozás</button>
-    <a href="{{ url_for('auth.admin_users') }}" class="btn btn-outline-secondary">Mégse</a>
-  </div>
-</form>
-
 {% endblock %}
 
 {% block scripts %}
