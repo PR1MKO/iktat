@@ -82,6 +82,14 @@ def test_investigation_list_permissions(client, setup):
         assert client.get("/investigations/").status_code == 403
 
 
+def test_sidebar_shows_investigations_link_for_szignalo(client, setup):
+    with client:
+        login(client, "szignalo", "pw")
+        resp = client.get("/dashboard")
+        assert resp.status_code == 200
+        assert b"\xc3\x96sszes vizsg\xc3\xa1lat" in resp.data
+
+
 def test_investigation_note_permissions(client, setup):
     inv_id = setup["inv_id"]
     with client:

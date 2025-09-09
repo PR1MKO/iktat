@@ -78,7 +78,7 @@
                 <i class="bi bi-folder2-open"></i> Összes boncolás
               </a>
             </li>
-            {% if caps['can_view_investigations'] %}
+            {% if current_user.is_authenticated %}
             <li class="nav-item">
               <a class="nav-link {% if request.endpoint == 'investigations.list_investigations' %}active{% endif %}" href="{{ url_for('investigations.list_investigations') }}">
                 <i class="bi bi-search"></i> Összes vizsgálat

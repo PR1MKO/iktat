@@ -96,7 +96,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 
 @investigations_bp.route("/")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló")
+@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
 def list_investigations():
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     case_type = request.args.get("case_type", "").strip()
@@ -235,7 +235,7 @@ def new_investigation():
 
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
-@roles_required("admin", "iroda", "szakértő", "szignáló")
+@roles_required("admin", "iroda", "szakértő", "szignáló", "szig")
 def documents(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -263,7 +263,7 @@ def documents(id):
 
 @investigations_bp.route("/<int:id>/view")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló")
+@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
 def view_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -311,7 +311,7 @@ def view_investigation(id):
 
 @investigations_bp.route("/<int:id>")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló")
+@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
 def detail_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
