@@ -49,10 +49,10 @@
 
   <div class="col-md-6">
     <label for="default_leiro_id" class="form-label">Default leíró</label>
-    <select class="form-select" id="default_leiro_id" name="default_leiro_id" disabled>
+    <select class="form-select {{ 'is-invalid' if form.default_leiro_id.errors }}" id="default_leiro_id" name="default_leiro_id" {% if form.role.data != 'szakértő' %}disabled{% else %}required{% endif %}>
       <option value="0">-- Válasszon --</option>
       {% for leiro in leiro_users %}
-        <option value="{{ leiro.id }}">{{ leiro.screen_name or leiro.username }}</option>
+        <option value="{{ leiro.id }}" {% if form.default_leiro_id.data == leiro.id %}selected{% endif %}>{{ leiro.screen_name or leiro.username }}</option>
       {% endfor %}
     </select>
     {% if form and form.default_leiro_id.errors %}
@@ -69,37 +69,9 @@
   </div>
 </form>
 
-  <script>
-    (function() {
-      'use strict';
-      document.querySelectorAll('.needs-validation').forEach(form => {
-        form.addEventListener('submit', event => {
-          if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          form.classList.add('was-validated');
-        }, false);
-      });
-    })();
-  </script>
-  <script>
-    (function () {
-      const role = document.getElementById('role');
-      const leiro = document.getElementById('default_leiro_id');
-      function toggle() {
-        const isExpert = role && role.value === 'szakértő';
-        if (!leiro) return;
-        leiro.disabled = !isExpert;
-        if (isExpert) {
-          leiro.setAttribute('required', 'required');
-        } else {
-          leiro.removeAttribute('required');
-          leiro.value = '0';
-        }
-      }
-      if (role) role.addEventListener('change', toggle);
-      toggle();
-    })();
-  </script>
-  {% endblock %}
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script type="module" src="{{ url_for('static', filename='js/pages/add_user.js') }}"></script>
+{% endblock %}

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from app.models import Case, db
@@ -75,7 +77,7 @@ def setup_add_user_fail(app, client, monkeypatch):
     return (
         "/admin/users/add",
         {"username": "x", "password": "y", "role": ""},
-        "Minden mező kitöltése kötelező.",
+        "This field is required.",
     )
 
 
@@ -139,5 +141,7 @@ def test_csp_nonce_present_and_non_empty_on_documents(client, app):
     login(client, username, "secret")
     resp = client.get(f"/investigations/{inv_id}/documents")
     html = resp.get_data(as_text=True)
+    # Nonce must be present and start with an alphanumeric character
     assert 'nonce="' in html
-    assert 'nonce="-' not in html
+    m = re.search(r'nonce="([A-Za-z0-9][A-Za-z0-9_-]{10,})"', html)
+    assert m, "CSP nonce must be present and start with an alphanumeric character."

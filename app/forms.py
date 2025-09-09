@@ -9,7 +9,7 @@ from wtforms import (
     StringField,
     TextAreaField,
 )
-from wtforms.validators import DataRequired, Length, Optional
+from wtforms.validators import DataRequired, Length, Optional, ValidationError
 
 
 class AdminUserForm(FlaskForm):
@@ -32,14 +32,29 @@ class AdminUserForm(FlaskForm):
             ("leíró", "Leíró"),
             ("toxi", "toxi"),
         ],
+        validators=[DataRequired()],
     )
     default_leiro_id = SelectField(
         "Default leíró",
         coerce=int,
-        validators=[Optional()],
         choices=[],
+        default=0,
         render_kw={"disabled": True},
+        validate_choice=False,
     )
+
+    def validate_default_leiro_id(self, field):
+        """
+        Require default_leiro_id when role is 'szakértő'.
+        Uses WTForms' default DataRequired message without customization.
+        """
+        if field.data is None:
+            field.data = 0
+        if getattr(self.role, "data", None) == "szakértő":
+            DataRequired()(self, field)
+            valid_ids = [choice[0] for choice in field.choices]
+            if field.data not in valid_ids:
+                raise ValidationError(field.gettext("Not a valid choice"))
 
 
 class EditCaseForm(FlaskForm):

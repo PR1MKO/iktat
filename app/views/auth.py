@@ -23,6 +23,7 @@ from flask import (
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import and_, func, or_
 from werkzeug import exceptions
+from wtforms.validators import DataRequired
 
 from app import db
 from app.audit import log_action
@@ -1024,59 +1025,41 @@ def add_user():
     form.default_leiro_id.choices = [(0, "-- Válasszon --")] + [
         (u.id, (u.screen_name or u.username)) for u in leiro_users
     ]
-
     if request.method == "POST":
+        form.password.validators = [DataRequired()]
+
+    if form.validate_on_submit():
         username = (form.username.data or "").strip()
         password = (form.password.data or "").strip()
         role = (form.role.data or "").strip()
-        chosen = form.default_leiro_id.data or None
-        screen_name = (form.screen_name.data or "").strip()
-        if not screen_name:
-            screen_name = username
-        if role == "szakértő":
-            if not chosen:
-                errs = list(form.default_leiro_id.errors)
-                errs.append("Szakértő esetén kötelező.")
-                form.default_leiro_id.errors = errs
-            else:
-                leiro = db.session.get(User, chosen)
-                if not leiro or leiro.role != "leíró":
-                    errs = list(form.default_leiro_id.errors)
-                    errs.append("Csak leíró választható.")
-                    form.default_leiro_id.errors = errs
-        if not username or not password or not role:
-            flash("Minden mező kitöltése kötelező.", "warning")
-        elif User.query.filter_by(username=username).first():
+        screen_name = (form.screen_name.data or "").strip() or username
+        full_name = (form.full_name.data or "").strip() or None
+
+        if User.query.filter_by(username=username).first():
             flash("Felhasználónév már foglalt.", "warning")
-        elif form.default_leiro_id.errors:
-            for err in form.default_leiro_id.errors:
-                flash(err, "warning")
         else:
             user = User(
                 username=username,
                 role=role,
                 screen_name=screen_name,
-                full_name=(form.full_name.data or "").strip() or None,
+                full_name=full_name,
             )
             user.set_password(password)
-            user.default_leiro_id = chosen if role == "szakértő" else None
+            if role == "szakértő":
+                user.default_leiro_id = form.default_leiro_id.data
             db.session.add(user)
-            try:
-                db.session.commit()
-            except Exception as e:  # noqa: BLE001
-                db.session.rollback()
-                current_app.logger.error(f"Database error: {e}")
-                flash("Valami hiba történt. Próbáld újra.", "danger")
-                if current_app.config.get("STRICT_PRG_ENABLED", True):
-                    return redirect(url_for("auth.add_user"))
-                return render_template(
-                    "add_user.html", form=form, leiro_users=leiro_users
-                )
+            db.session.commit()
             log_action("User created", f"{username} ({role})")
             flash("Felhasználó létrehozva.", "success")
             return redirect(url_for("auth.admin_users"))
+
+    elif request.method == "POST":
+        for errs in form.errors.values():
+            for err in errs:
+                flash(err, "warning")
         if current_app.config.get("STRICT_PRG_ENABLED", True):
             return redirect(url_for("auth.add_user"))
+
     return render_template("add_user.html", form=form, leiro_users=leiro_users)
 
 

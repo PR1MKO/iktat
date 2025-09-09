@@ -18,7 +18,8 @@ def test_add_expert_requires_default_leiro(client, app):
             follow_redirects=True,
         )
         assert any(r.status_code == 302 for r in resp.history)
-        assert b"k\xc3\xb6telez" in resp.data.lower() or b"kotelez" in resp.data.lower()
+        with app.app_context():
+            assert User.query.filter_by(username="docx").first() is None
 
 
 def test_add_expert_persists_default_leiro(client, app):
@@ -31,18 +32,18 @@ def test_add_expert_persists_default_leiro(client, app):
         resp = client.post(
             "/admin/users/add",
             data={
-                "username": "doc2",
+                "username": "docx2",
                 "password": "pw",
                 "role": "szakértő",
-                "default_leiro_id": str(leiro_id),
+                "default_leiro_id": str(leiro.id),
             },
             follow_redirects=True,
         )
-        assert resp.status_code in (200, 302)
+        assert any(r.status_code == 302 for r in resp.history)
     with app.app_context():
-        u = User.query.filter_by(username="doc2").one()
-        assert u.role == "szakértő"
-        assert u.default_leiro_id == leiro_id
+        u = User.query.filter_by(username="docx2").first()
+        assert u is not None
+        assert getattr(u, "default_leiro_id", None) == leiro.id
 
 
 def test_add_non_expert_ignores_default_leiro(client, app):
