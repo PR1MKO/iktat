@@ -73,5 +73,5 @@
 
 {% block scripts %}
   {{ super() }}
-  <script type="module" src="{{ url_for('static', filename='js/pages/add_user.js') }}"></script>
+  <script nonce="{{ csp_nonce }}" type="module" src="{{ url_for('static', filename='js/pages/add_user.js') }}"></script>
 {% endblock %}
