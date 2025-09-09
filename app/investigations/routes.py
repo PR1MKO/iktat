@@ -469,14 +469,17 @@ def upload_investigation_file(id):
     db.session.add(attachment)
     db.session.commit()
 
-    return jsonify(
-        {
-            "id": attachment.id,
-            "filename": attachment.filename,
-            "category": attachment.category,
-            "uploaded_at": fmt_date(attachment.uploaded_at),
-        }
-    )
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify(
+            {
+                "id": attachment.id,
+                "filename": attachment.filename,
+                "category": attachment.category,
+                "uploaded_at": fmt_date(attachment.uploaded_at),
+            }
+        )
+    flash("Fájl feltöltve.", "success")
+    return redirect(url_for("investigations.documents", id=id))
 
 
 @investigations_bp.route("/<int:id>/files/<path:filename>")

@@ -1,12 +1,13 @@
 import logging
 import os
 import re
+import secrets
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, request
+from flask import Flask, g, request
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -19,8 +20,6 @@ load_dotenv()
 
 from app.utils.time_utils import BUDAPEST_TZ, fmt_date  # noqa: E402
 from config import Config  # noqa: E402
-
-from .security import csp_header, csp_nonce  # noqa: E402
 
 # Instantiate extensions
 db = SQLAlchemy()
@@ -163,9 +162,13 @@ def create_app(test_config=None):
 
     register_error_handlers(flask_app)
 
+    @flask_app.before_request
+    def _set_csp_nonce():
+        g.csp_nonce = secrets.token_urlsafe(16)
+
     @flask_app.context_processor
-    def inject_nonce():
-        return {"csp_nonce": csp_nonce}
+    def _inject_csp_nonce():
+        return {"csp_nonce": getattr(g, "csp_nonce", "")}
 
     @flask_app.errorhandler(RequestEntityTooLarge)
     def _too_large(e):  # noqa: ARG001
@@ -309,7 +312,14 @@ def create_app(test_config=None):
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=15552000; includeSubDomains"
             )
-        return csp_header(response)
+        nonce = getattr(g, "csp_nonce", "")
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}' 'strict-dynamic'; "
+            "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; "
+            "img-src 'self' data:; style-src 'self'; connect-src 'self'"
+        )
+        return response
 
     if (
         not flask_app.debug

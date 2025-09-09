@@ -2,7 +2,7 @@ import pytest
 
 from app.models import Case, db
 from app.utils.time_utils import now_local
-from tests.helpers import create_user, login
+from tests.helpers import create_investigation, create_user, login
 
 
 def setup_login_fail(app, client, monkeypatch):
@@ -128,3 +128,16 @@ def test_prg_disabled_renders(client, app, monkeypatch, setup):
     resp = client.post(url, data=data, follow_redirects=False)
     assert resp.status_code == 200
     assert message in resp.get_data(as_text=True)
+
+
+def test_csp_nonce_present_and_non_empty_on_documents(client, app):
+    with app.app_context():
+        user = create_user()
+        inv = create_investigation()
+        username = user.username
+        inv_id = inv.id
+    login(client, username, "secret")
+    resp = client.get(f"/investigations/{inv_id}/documents")
+    html = resp.get_data(as_text=True)
+    assert 'nonce="' in html
+    assert 'nonce="-' not in html

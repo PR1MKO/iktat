@@ -139,7 +139,7 @@ def test_search_filters_across_fields(client, app, _search_data, query):
     assert b"V:0002/2023" not in resp.data
 
 
-def test_upload_endpoint_stores_file(client, app):
+def test_investigation_upload_ajax_json_contract(client, app):
     with app.app_context():
         user = create_user()
         inv = create_investigation()
@@ -155,8 +155,13 @@ def test_upload_endpoint_stores_file(client, app):
         f"/investigations/{inv_id}/upload",
         data=data,
         content_type="multipart/form-data",
+        headers={"X-Requested-With": "XMLHttpRequest"},
     )
     assert resp.status_code == 200
+    assert resp.is_json
+    payload = resp.get_json()
+    for key in ("id", "filename", "category", "uploaded_at"):
+        assert key in payload
     from app.paths import ensure_investigation_folder
 
     inv_dir = ensure_investigation_folder(case_number)
@@ -164,6 +169,23 @@ def test_upload_endpoint_stores_file(client, app):
     assert os.path.exists(upload_path)
     os.remove(upload_path)
     shutil.rmtree(inv_dir)
+
+
+def test_investigation_upload_prg_redirects_when_not_ajax(client, app):
+    with app.app_context():
+        user = create_user()
+        inv = create_investigation()
+        username = user.username
+        inv_id = inv.id
+    login(client, username, "secret")
+    resp = client.post(
+        f"/investigations/{inv_id}/upload",
+        data={"category": "option1", "file": (io.BytesIO(b"x"), "x.pdf")},
+        content_type="multipart/form-data",
+        follow_redirects=False,
+    )
+    assert resp.status_code in (302, 303)
+    assert f"/investigations/{inv_id}/documents" in resp.headers["Location"]
 
 
 def test_note_creation(client, app):
@@ -214,6 +236,7 @@ def test_permissions(client, app):
         f"/investigations/{inv_id}/upload",
         data={"category": "option1", "file": (io.BytesIO(b"x"), "x.pdf")},
         content_type="multipart/form-data",
+        headers={"X-Requested-With": "XMLHttpRequest"},
     )
     assert resp.status_code == 200
     from app.paths import ensure_investigation_folder
@@ -231,6 +254,7 @@ def test_permissions(client, app):
         f"/investigations/{inv_id}/upload",
         data={"category": "option1", "file": (io.BytesIO(b"x"), "y.txt")},
         content_type="multipart/form-data",
+        headers={"X-Requested-With": "XMLHttpRequest"},
     )
     assert resp.status_code == 403
 

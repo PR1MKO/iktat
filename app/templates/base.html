@@ -119,21 +119,21 @@
     </div>
   </footer>
 
-  <script src="{{ url_for('static', filename='js/upload_helpers.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/upload_helpers.js') }}" defer></script>
   <!-- X-CSRFToken header handled in upload_helpers.js -->
-  <script src="{{ url_for('static', filename='upload_category_validation.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='js/case_upload_block.js') }}" defer></script>
-  <script src="/static/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/alerts.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='upload_category_validation.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/case_upload_block.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="/static/js/bootstrap.bundle.min.js"></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/alerts.js') }}" defer></script>
 
   {% if config.get('BFCACHE_RELOAD_ENABLED', True) %}
   <!-- pageshow handler moved to external file -->
-  <script src="{{ url_for('static', filename='js/bfcache_reload.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/bfcache_reload.js') }}" defer></script>
   {% endif %}
 
   {# Include cookie handler script ONLY when banner is shown (to satisfy test) #}
   {% if current_user.is_authenticated and not current_user.cookie_notice_ack_at %}
-  <script src="{{ url_for('static', filename='js/cookie_notice.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/cookie_notice.js') }}" defer></script>
   {% endif %}
 
   {% block page_data %}{% endblock %}
