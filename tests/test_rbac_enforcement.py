@@ -98,6 +98,47 @@ def test_investigation_note_permissions(client, setup):
         )
 
 
+def test_investigation_list_allows_szignalo(client, setup):
+    with client:
+        login(client, "szignalo", "pw")
+        assert client.get("/investigations/").status_code == 200
+
+
+def test_investigation_view_allows_szignalo(client, setup):
+    inv_id = setup["inv_id"]
+    with client:
+        login(client, "szignalo", "pw")
+        assert client.get(f"/investigations/{inv_id}/view").status_code == 200
+
+
+def test_investigation_documents_allows_szignalo(client, setup):
+    inv_id = setup["inv_id"]
+    with client:
+        login(client, "szignalo", "pw")
+        assert client.get(f"/investigations/{inv_id}/documents").status_code == 200
+
+
+def test_investigation_posts_forbid_szignalo(client, setup):
+    inv_id = setup["inv_id"]
+    with client:
+        login(client, "szignalo", "pw")
+        assert client.post(f"/investigations/{inv_id}/edit", data={}).status_code == 403
+        assert (
+            client.post(
+                f"/investigations/{inv_id}/notes", json={"text": "n/a"}
+            ).status_code
+            == 403
+        )
+        assert (
+            client.post(
+                f"/investigations/{inv_id}/upload",
+                data={},
+                content_type="multipart/form-data",
+            ).status_code
+            == 403
+        )
+
+
 def test_login_public(client):
     assert client.get("/login").status_code == 200
     resp = client.post(

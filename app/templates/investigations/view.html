@@ -54,9 +54,8 @@
     </div>
     <ul id="notes" class="list-group">
       {% for note in notes %}
-        {% for note in notes %}
-          {% include 'investigations/_note.html' with note=note, author=note.author %}
-        {% endfor %}
+        {% set author = note.author %}
+        {% include 'investigations/_note.html' %}
       {% endfor %}
     </ul>
   </div>
