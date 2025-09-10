@@ -1,4 +1,6 @@
+# tests/test_rbac.py
 import io
+import re
 
 from app.models import Case, UploadedFile, User, db
 from tests.helpers import create_user, login
@@ -109,8 +111,11 @@ def test_toxi_dashboard_lists_cases(client, app):
     with client:
         login(client, "tox", "pw")
         resp = client.get("/ugyeim/toxi")
-        text = resp.data.decode("utf-8")
-        assert "C1" in text
-        assert "C2" in text
-        assert "C3" in text
-        assert "C4" not in text
+        html = resp.get_data(as_text=True)
+        # Strip <script> blocks to avoid CSP nonce / attribute false positives (e.g., "...C4...")
+        clean = re.sub(r"<script\b[^>]*>.*?</script\s*>", "", html, flags=re.I | re.S)
+        # Match standalone tokens only (not inside attributes/longer strings)
+        assert re.search(r"(?<![A-Za-z0-9])C1(?![A-Za-z0-9])", clean)
+        assert re.search(r"(?<![A-Za-z0-9])C2(?![A-Za-z0-9])", clean)
+        assert re.search(r"(?<![A-Za-z0-9])C3(?![A-Za-z0-9])", clean)
+        assert not re.search(r"(?<![A-Za-z0-9])C4(?![A-Za-z0-9])", clean)

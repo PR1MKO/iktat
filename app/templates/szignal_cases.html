@@ -63,48 +63,44 @@
         </div>
       </section>
 
-      <section id="examinations-with-expert">
-        <h2><span class="badge bg-primary">Szakértők szerkesztése</span></h2>
-        <table class="table table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>Boncszám</th>
-              <th>Elhunyt neve</th>
-              <th>Állapot</th>
-              <th>Regisztrálva</th>
-              <th>Határidő</th>
-              <th>Műveletek</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% set ns2 = namespace(count=0) %}
-            {% for case in szerkesztheto_cases %}
-              {% set ns2.count = ns2.count + 1 %}
-              <tr>
-                <td>{{ case.case_number }}</td>
-                <td>{{ case.deceased_name }}</td>
-                <td>{{ case.status }}</td>
-                <td>{{ case.registration_time_str }}</td>
-                <td>{{ case.formatted_deadline }}</td>
-                <td>
-                  <a class="btn btn-sm btn-outline-info"
-                     href="{{ url_for('auth.case_detail', case_id=case.id) }}">
-                    Megtekintés
-                  </a>
-                  <a class="btn btn-sm btn-outline-primary"
-                     href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
-                    Szakértő szerkesztése
-                  </a>
-                </td>
-              </tr>
-            {% endfor %}
-            {% if ns2.count == 0 %}
-              <tr>
-                <td colspan="6" class="text-center fst-italic">Nincs szerkeszthető szakértős ügy.</td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
+        <div class="card shadow-sm mb-4">
+          <div class="card-header fw-bold">Szakértők szerkesztése</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Boncszám</th>
+                    <th>Külső ügyirat szám</th>
+                    <th>Elhunyt neve</th>
+                    <th>Szakértő 1</th>
+                    <th>Műveletek</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% set ns2 = namespace(count=0) %}
+                  {% for case in szerkesztheto_cases %}
+                    {% set ns2.count = ns2.count + 1 %}
+                    <tr>
+                      <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number }}</a></td>
+                      <td>{{ case.external_case_number or case.temp_id or '–' }}</td>
+                      <td>{{ case.deceased_name }}</td>
+                      <td>{{ case.expert_1 or '–' }}</td>
+                      <td>
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">Szerkesztés/Hozzáadás</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                  {% if ns2.count == 0 %}
+                    <tr>
+                      <td colspan="5" class="text-center fst-italic">Nincs szerkeszthető szakértős ügy.</td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
 

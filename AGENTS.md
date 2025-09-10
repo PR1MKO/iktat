@@ -6,6 +6,7 @@
 - **Do not** run `pytest` (or any tests) during setup or mid-task.
 - If you must validate, use static checks only (imports, ruff/isort/black), no execution of tests.
 - If `constraints.txt` exists, use it: `pip install -r requirements.txt -c constraints.txt`.
+- Pre-commit hooks are configured to run **only on commit stage**; if you invoke `pre-commit run -a` during setup/maintenance it should do nothing.
 
 ## Workflow
 1) **PLAN** → short JSON plan.

@@ -1,40 +1,47 @@
+# Use the system Python (3.12 in Codex) and avoid per-hook virtualenvs.
+default_language_version:
+  python: python3.12
+
 repos:
-  # Ruff pinned
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.6
-    hooks:
-      - id: ruff
-        args: [--fix]
-
-  # isort pinned
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-
-  # Black pinned
-  - repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        language_version: python3.10
-
-  # Local hooks (Windows CMD form)
   - repo: local
     hooks:
-      # ---- Migration linter (runs on changed migration files) ----
+      # ---- Format / Lint (use system-installed tools) ----
+      - id: ruff
+        name: Ruff (system)
+        entry: ruff check
+        language: system
+        types: [python]
+        args: [--fix, --force-exclude]
+
+      - id: isort
+        name: isort (system)
+        entry: isort --profile black
+        language: system
+        types: [python]
+        exclude: ^migrations/
+
+      - id: black
+        name: Black (system)
+        entry: black
+        language: system
+        types: [python]
+        exclude: ^migrations/
+
+      # ---- Migration linter (SQLite + Multi-Bind) ----
+      # Cross-platform entry; no CMD, no bash. UTF-8 forced via -X.
       - id: alembic-lint
         name: Alembic Migration Linter (SQLite + Multi-Bind)
-        entry: cmd /c "set PYTHONUTF8=1&& python tools\\alembic_lint.py"
+        entry: python -X utf8 tools/alembic_lint.py
         language: system
         pass_filenames: false
         files: ^migrations/versions/.*\.py$
         stages: [pre-commit]
 
-      # ---- DB health checks ----
+      # ---- DB health (model vs migration drift) ----
+      # Set FLASK_APP inside the process; works on Windows & Linux.
       - id: flask-db-check
         name: Flask DB Check (model vs migration drift)
-        entry: cmd /c "set FLASK_APP=app:create_app&& set PYTHONUTF8=1&& python hooks\\flask_db_check.py"
+        entry: python -X utf8 -c "import os,runpy; os.environ['FLASK_APP']='app:create_app'; runpy.run_path('hooks/flask_db_check.py')"
         language: system
         pass_filenames: false
         stages: [pre-commit]

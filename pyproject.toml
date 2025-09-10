@@ -47,7 +47,7 @@ pytest = "7.4.2"
 pytest-xdist = "3.5.0"
 coverage = "7.3.2"
 black = "24.4.2"
-ruff = "0.5.0"
+ruff = "0.6.9"
 mypy = "1.10.0"
 
 [build-system]
@@ -63,7 +63,7 @@ include = '\.pyi?$'
 # Ensure these directory names appear in the file (and are sensibly excluded)
 exclude = '''
 (
-  /(\.venv|\.git|\.mypy_cache|\.pytest_cache|\.ruff_cache|build|dist)/
+  /(\.venv|venv|\.git|\.mypy_cache|\.pytest_cache|\.ruff_cache|build|dist)/
 | ^migrations/
 | ^instance/
 | ^uploads/
@@ -76,6 +76,7 @@ line_length = 88
 # Put the same paths here so the substrings are present and the tools agree
 skip = [
   ".venv",
+  "venv",
   "build",
   "dist",
   "migrations",
@@ -85,9 +86,10 @@ skip = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
-extend-exclude = [".venv", "build", "dist", "migrations", "instance", "uploads"]
+target-version = "py312"
+extend-exclude = [".venv", "venv", "build", "dist", "migrations", "instance", "uploads"]
 fix = true
+force-exclude = true
 
 [tool.ruff.lint]
 # keep in sync with black/isort prefs
