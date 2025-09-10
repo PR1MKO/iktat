@@ -16,44 +16,50 @@
   <div class="row row-cols-1 row-cols-lg-2 g-4">
     <div class="col">
       <section id="examinations-unassigned" class="mb-4">
-        <h2><span class="badge bg-danger">Boncolások</span></h2>
-        <div class="table-responsive">
-          <table id="exams-table" class="table table-sm align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>Boncszám</th>
-                <th>Elhunyt neve</th>
-                <th class="d-none">Állapot</th>
-                <th class="d-none">Regisztrálva</th>
-                <th class="d-none">Határidő</th>
-                <th>Műveletek</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% set ns1 = namespace(count=0) %}
-              {% for case in szignalando_cases %}
-                {% set ns1.count = ns1.count + 1 %}
-                <tr>
-                  <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number }}</a></td>
-                  <td>{{ case.deceased_name }}</td>
-                  <td class="d-none">{{ case.status }}</td>
-                  <td class="d-none">{{ case.registration_time_str }}</td>
-                  <td class="d-none">{{ case.formatted_deadline }}</td>
-                  <td>
-                    {# Megtekintés button removed — Boncszám is now the link #}
-                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
-                      Szakértő kijelölése
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
-              {% if ns1.count == 0 %}
-                <tr>
-                  <td colspan="6" class="text-center fst-italic">Nincs szignálandó ügy.</td>
-                </tr>
-              {% endif %}
-            </tbody>
-          </table>
+        <div class="card shadow-sm mb-4">
+          <div class="card-header fw-bold">Boncolások</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table id="exams-table" class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Boncszám</th>
+                    <th>Külső ügyirat szám</th>
+                    <th>Elhunyt neve</th>
+                    <th class="d-none">Állapot</th>
+                    <th class="d-none">Regisztrálva</th>
+                    <th class="d-none">Határidő</th>
+                    <th>Műveletek</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% set ns1 = namespace(count=0) %}
+                  {% for case in szignalando_cases %}
+                    {% set ns1.count = ns1.count + 1 %}
+                    <tr>
+                      <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number }}</a></td>
+                      <td>{{ case.external_case_number or case.temp_id or '–' }}</td>
+                      <td>{{ case.deceased_name }}</td>
+                      <td class="d-none">{{ case.status }}</td>
+                      <td class="d-none">{{ case.registration_time_str }}</td>
+                      <td class="d-none">{{ case.formatted_deadline }}</td>
+                      <td>
+                        {# Megtekintés button removed — Boncszám is now the link #}
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
+                          Szakértő kijelölése
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                  {% if ns1.count == 0 %}
+                    <tr>
+                      <td colspan="7" class="text-center fst-italic">Nincs szignálandó ügy.</td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
