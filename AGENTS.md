@@ -1,43 +1,23 @@
+# AGENT CONTRACT — IKTATAS2.0 (Browser Codex)
 
-# Developer Guide
+## Setup rules (must follow)
+- Install **only** base runtime deps from `requirements.txt`.
+- **Do not** install dev/test/tooling deps (`requirements-dev.txt`) unless explicitly asked.
+- **Do not** run `pytest` (or any tests) during setup or mid-task.
+- If you must validate, use static checks only (imports, ruff/isort/black), no execution of tests.
+- If `constraints.txt` exists, use it: `pip install -r requirements.txt -c constraints.txt`.
 
-This project is a Flask application with automated tests. Follow the instructions below when working in this repository.
+## Workflow
+1) **PLAN** → short JSON plan.
+2) **EXEC** → minimal diff patches, JSON-only output (temperature≈0), no tests.
+3) Humans run `FLASK.bat` (which runs `pytest`) at the end, then fix failures if any.
 
-## Environment setup
+## Context rules
+- Prefer `CONTEXT_PACK.md` + targeted snippets/diffs. Avoid full-file dumps.
+- Keep prompts ≤ ~8k tokens. Ask for missing snippets if needed.
 
-1. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
-   ```
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Export the required environment variables before running the app or tests:
-   - `MAIL_USERNAME` – email account used for outgoing mail
-   - `MAIL_PASSWORD` – password or app token for the above account
-   - `SECRET_KEY` – Flask secret key
-   These can be placed in a `.env` file or exported in your shell.
+## Optional scripts you may call
+- `codex/setup.ps1` — base deps only, **no tests**.
+- `codex/maintenance.ps1` — notes/reminders, **no tests**.
 
-## Running tests
-
-Execute the automated tests with:
-```bash
-pytest
-```
-
-## Scheduled tasks
-
-The application provides two scripts for periodic jobs. Run either of the following in an activated environment:
-```bash
-python run_scheduler.py  # simple scheduler
-python run_tasks.py      # alternative scheduler
-```
-
-## Coding conventions and pre‑commit steps
-
-- Ensure all tests pass before pushing changes:
-  ```bash
-  pytest
-  ```
+> For human developer setup and tasks, see `README.md`.

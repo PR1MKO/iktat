@@ -10,7 +10,10 @@ This project is a modern replacement for legacy Excel workflows, with future AI-
    - `python -m venv venv`
    - `venv\Scripts\activate`
 3. Install requirements:
-   - `pip install -r requirements.txt`
+   - If `constraints.txt` exists:
+     `pip install -r requirements.txt -c constraints.txt`
+   - Otherwise:
+     `pip install -r requirements.txt`
 4. Copy `.env.example` to `.env` and update the values or export these variables:
    - `MAIL_USERNAME` – your email account for outgoing mail
    - `MAIL_PASSWORD` – the password or app token
@@ -37,18 +40,11 @@ python test_smtp.py
 
 ## Development Setup
 
-To run the unit tests, first ensure all required packages are installed in your
-activated virtual environment. Install dependencies from `requirements.txt`:
-
+Install runtime deps first:
 ```bash
-pip install -r requirements.txt
-```
+pip install -r requirements.txt -c constraints.txt  # if constraints.txt exists
+# else: pip install -r requirements.txt
 
-Once the packages are installed you can execute the test suite with:
-
-```bash
-pytest
-```
 
 ## Folder Structure
 

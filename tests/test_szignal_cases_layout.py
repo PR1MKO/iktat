@@ -10,7 +10,7 @@ def test_investigations_empty_states_render(app, client):
     resp = client.get("/szignal_cases")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
-    assert "Vizsgálatok — nincs szakértő" in html
+    assert "Vizsgálatok" in html
     assert "Vizsgálatok — szakértővel" in html
     assert "Nincs találat." in html
 

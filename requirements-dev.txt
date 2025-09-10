@@ -1,0 +1,9 @@
+pytest
+pytest-xdist
+coverage
+pre-commit
+ruff
+isort
+black
+iniconfig
+pluggy
