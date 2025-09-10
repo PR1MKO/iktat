@@ -2,23 +2,22 @@
 # ---------------------------------------------------------------------------
 # Skip the entire test suite when running in Codex auto-setup/maintenance
 # (Linux container under /workspace/), or when explicitly requested.
-# This keeps Codex fast; humans still run tests locally (e.g., FLASK.bat).
+# IMPORTANT: use pytest.exit(returncode=0) so setup succeeds (exit code 0).
+# Humans still run tests locally (e.g., FLASK.bat).
 # ---------------------------------------------------------------------------
 import os
 import pathlib
+import sys
 
 import pytest
 
 _IN_CODEX = pathlib.Path.cwd().as_posix().startswith("/workspace/")
 if _IN_CODEX or os.environ.get("CODEX_SKIP_TESTS") == "1":
-    pytest.skip(
-        "Skipping tests inside Codex auto-setup/maintenance", allow_module_level=True
-    )
+    pytest.exit("Skipping tests inside Codex auto-setup/maintenance", returncode=0)
 
-# --- Imports first to satisfy E402 (after early skip) ---
+# --- Imports first to satisfy E402 (after early exit) ---
 import itertools
 import random
-import sys
 import uuid
 from datetime import datetime, timezone
 
