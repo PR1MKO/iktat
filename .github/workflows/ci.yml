@@ -27,17 +27,8 @@ jobs:
             pip install pytest pytest-xdist coverage ruff isort black iniconfig pluggy
           fi
 
-      - name: Sanity check imports
-        run: |
-          python - <<'PY'
-          import sys, sqlalchemy, pytest
-          print("Python:", sys.version.split()[0])
-          print("SQLAlchemy:", getattr(sqlalchemy, "__version__", "?"))
-          print("pytest:", pytest.__version__)
-          PY
-
       - name: Ruff (lint)
-        run: ruff check .
+        run: ruff .
 
       - name: Black (check)
         run: black --check .
