@@ -1,13 +1,10 @@
 # tests/conftest.py
 # ---------------------------------------------------------------------------
-# Skip the entire test suite when running in Codex auto-setup/maintenance
-# (Linux container under /workspace/), or when explicitly requested.
-# IMPORTANT: use pytest.exit(returncode=0) so setup succeeds (exit code 0).
-# Humans still run tests locally (e.g., FLASK.bat).
+# Skip the entire test suite during Codex auto-setup/maintenance (/workspace),
+# or when CODEX_SKIP_TESTS=1. Exit code MUST be 0 so setup doesn't retry/fail.
 # ---------------------------------------------------------------------------
 import os
 import pathlib
-import sys
 
 import pytest
 
@@ -18,6 +15,7 @@ if _IN_CODEX or os.environ.get("CODEX_SKIP_TESTS") == "1":
 # --- Imports first to satisfy E402 (after early exit) ---
 import itertools
 import random
+import sys
 import uuid
 from datetime import datetime, timezone
 
@@ -93,16 +91,14 @@ def app(_tmp_upload_dirs):
         TESTING=True,
         WTF_CSRF_ENABLED=False,  # allow login form posts in tests
         SQLALCHEMY_DATABASE_URI="sqlite://",  # shared in-memory DB
-        SQLALCHEMY_BINDS={  # second bind for 'examination' etc.
+        SQLALCHEMY_BINDS={
             "examination": "sqlite://",
         },
         SQLALCHEMY_ENGINE_OPTIONS={
             "poolclass": StaticPool,
             "connect_args": {"check_same_thread": False},
         },
-        SQLALCHEMY_SESSION_OPTIONS={
-            "expire_on_commit": False,  # avoid mid-request reloads
-        },
+        SQLALCHEMY_SESSION_OPTIONS={"expire_on_commit": False},
     )
 
     assert app.config["SQLALCHEMY_SESSION_OPTIONS"]["expire_on_commit"] is False
@@ -115,42 +111,32 @@ def app(_tmp_upload_dirs):
 def _db(app):
     """
     HARD RESET schema for all binds before each test (drop -> create).
-    Prevents 'table already exists' / 'no such table' issues and clears
-    stale identity maps — using modern Flask-SQLAlchemy engine accessors.
     """
     with app.app_context():
-        # Clean up any open session first
         try:
             db.session.remove()
         except Exception:
             pass
 
-        # Drop default bind
         try:
             db.drop_all()
         except Exception:
             pass
 
-        # Drop each extra bind
         for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
             try:
                 db.drop_all(bind_key=bind_key)
             except Exception:
                 pass
 
-        # Recreate default bind
         db.create_all()
-
-        # Recreate each extra bind
         for bind_key in app.config.get("SQLALCHEMY_BINDS", {}):
             db.create_all(bind_key=bind_key)
 
-        # Ensure no expired attributes will reload mid-request
         db.session.expire_all()
 
         yield
 
-        # Post-test cleanup; next test will drop/create again
         try:
             db.session.remove()
         finally:
