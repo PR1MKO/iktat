@@ -1,12 +1,12 @@
-# Dev/Test/Tooling (Windows-only). Codex (Linux) will skip all lines via markers.
+# Dev/Test/Tooling (cross-platform)
 -c constraints.txt
 
-pytest; sys_platform == "win32"
-pytest-xdist; sys_platform == "win32"
-coverage; sys_platform == "win32"
-pre-commit; sys_platform == "win32"
-ruff; sys_platform == "win32"
-isort; sys_platform == "win32"
-black; sys_platform == "win32"
-iniconfig; sys_platform == "win32"
-pluggy; sys_platform == "win32"
+pytest
+pytest-xdist
+coverage
+pre-commit
+ruff
+isort
+black
+iniconfig
+pluggy
