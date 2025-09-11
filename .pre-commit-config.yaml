@@ -1,47 +1,40 @@
-# Use the system Python (3.12 in Codex) and avoid per-hook virtualenvs.
+# .pre-commit-config.yaml
 default_language_version:
   python: python3.12
 
 repos:
   - repo: local
     hooks:
-      # ---- Format / Lint (use system-installed tools) ----
+      # ---- Ruff (new CLI requires `check`) ----
       - id: ruff
         name: Ruff (system)
         entry: ruff check
         language: system
         types: [python]
-        args: [--fix, --force-exclude]
+        args: [--fix, --no-cache]
 
       - id: isort
         name: isort (system)
         entry: isort --profile black
         language: system
         types: [python]
-        exclude: ^migrations/
 
       - id: black
         name: Black (system)
         entry: black
         language: system
         types: [python]
-        exclude: ^migrations/
 
       # ---- Migration linter (SQLite + Multi-Bind) ----
-      # Cross-platform entry; no CMD, no bash. UTF-8 forced via -X.
       - id: alembic-lint
         name: Alembic Migration Linter (SQLite + Multi-Bind)
         entry: python -X utf8 tools/alembic_lint.py
         language: system
         pass_filenames: false
-        files: ^migrations/versions/.*\.py$
-        stages: [pre-commit]
 
-      # ---- DB health (model vs migration drift) ----
-      # Set FLASK_APP inside the process; works on Windows & Linux.
+      # ---- Model vs migration drift check ----
       - id: flask-db-check
         name: Flask DB Check (model vs migration drift)
-        entry: python -X utf8 -c "import os,runpy; os.environ['FLASK_APP']='app:create_app'; runpy.run_path('hooks/flask_db_check.py')"
+        entry: python -X utf8 tools/flask_db_check.py
         language: system
         pass_filenames: false
-        stages: [pre-commit]

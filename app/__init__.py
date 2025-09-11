@@ -117,7 +117,7 @@ def create_app(test_config=None):
         for _cls in filter(None, _classes):
             _t = getattr(_cls, "__table__", None)
             if _t is not None and _t.metadata is not db.metadata:
-                _cls.__table__ = _t.tometadata(db.metadata)
+                _cls.__table__ = _t.to_metadata(db.metadata)
     except Exception:
         # best-effort remap; don't crash app startup
         pass
