@@ -6,17 +6,15 @@
 {% block title %}Szignálási Ügyek – CaseTracker{% endblock %}
 
 {% block content %}
-<div class="container page-szignal-cases py-3">
-  <h3 class="h4 mb-3">Szignálási Ügyek</h3>
+<div class="container-fluid page-szignal-cases py-3 px-2">
+  <h3 class="h4 mb-3 text-center">Szignálandó</h3>
   {# --- Top: Unassigned (side-by-side layout) --- #}
   <div class="row g-3">
     <!-- Szignálandó (no expert assigned) -->
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-md-6">
       <section id="examinations-unassigned" class="card shadow-sm">
-        <div class="card-header d-flex align-items-center gap-2">
-          <h2 class="h5 mb-0">
-            <span class="badge bg-primary me-2">Szignálandó</span> Boncolások
-          </h2>
+        <div class="card-header">
+          <h5 class="card-title">Boncolások</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -58,12 +56,10 @@
     </div>
 
     <!-- Vizsgálatok – szakértő nélkül -->
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-md-6">
       <section id="investigations-unassigned" class="card shadow-sm">
-        <div class="card-header d-flex align-items-center gap-2">
-          <h2 class="h5 mb-0">
-            <span>Szignálandó Vizsgálatok</span>
-          </h2>
+        <div class="card-header">
+          <h5 class="card-title">Vizsgálatok</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -101,16 +97,16 @@
         </div>
       </section>
     </div>
-  </div> {# /.row g-3 #}
+</div> {# /.row g-3 #}
+
+<h3 class="h5 my-3 text-center">Szakértők szerkesztése</h3>
   {# --- Bottom: With expert (side-by-side layout) --- #}
   <div class="row g-3 mt-4">
     <!-- Szakértők szerkesztése (with any expert) -->
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-md-6">
       <section id="examinations-with-expert" class="card shadow-sm">
-        <div class="card-header d-flex align-items-center gap-2">
-          <h2 class="h5 mb-0">
-            <span class="badge bg-secondary me-2">Szakértők szerkesztése</span> Boncolások
-          </h2>
+        <div class="card-header">
+          <h5 class="card-title">Boncolások</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -152,12 +148,10 @@
     </div>
 
     <!-- Vizsgálatok — szakértővel -->
-    <div class="col-12 col-lg-6">
+    <div class="col-12 col-md-6">
       <section id="investigations-with-expert" class="card shadow-sm">
-        <div class="card-header d-flex align-items-center gap-2">
-          <h2 class="h5 mb-0">
-            <span>Szakértők szerkesztése Vizsgálatok</span>
-          </h2>
+        <div class="card-header">
+          <h5 class="card-title">Vizsgálatok</h5>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
