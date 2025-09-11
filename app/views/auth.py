@@ -897,8 +897,12 @@ def szignal_cases():
 
     return render_template(
         "szignal_cases.html",
+        # Examinations (boncolások)
         szignalando_cases=szignalando_cases,
         szerkesztheto_cases=szerkesztheto_cases,
+        examinations_unassigned=szignalando_cases,
+        examinations_with_expert=szerkesztheto_cases,
+        # Investigations (vizsgálatok)
         investigations_unassigned=investigations_unassigned,
         investigations_with_expert=investigations_with_expert,
     )
