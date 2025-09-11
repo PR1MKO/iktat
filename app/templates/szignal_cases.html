@@ -34,14 +34,14 @@
               <tbody>
                 {% for case in examinations_unassigned %}
                   <tr>
-                    <td>{{ case.case_number or case.boncszam or "-" }}</td>
+                    <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number or case.boncszam or "-" }}</a></td>
                     <td>{{ case.external_case_number or "-" }}</td>
                     <td>{{ case.deceased_name or "-" }}</td>
                     <td class="d-none">{{ case.status or "-" }}</td>
                     <td class="d-none">{{ case.registration_time or "-" }}</td>
                     <td class="d-none">{{ case.deadline or "-" }}</td>
                     <td>
-                      <a href="#" class="btn btn-sm btn-outline-primary">Hozzárendelés</a>
+                      <a href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}" class="btn btn-sm btn-outline-primary">Szakértő kijelölése</a>
                     </td>
                   </tr>
                 {% else %}
