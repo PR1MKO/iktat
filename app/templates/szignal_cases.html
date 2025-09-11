@@ -8,8 +8,6 @@
 {% block content %}
 <div class="container page-szignal-cases py-3">
   <h3 class="h4 mb-3">Szignálási Ügyek</h3>
-
-  <!-- ===== Boncolások (Examinations) ===== -->
   <div class="row g-4">
     <!-- Szignálandó (no expert assigned) -->
     <div class="col-12 col-lg-6">
@@ -58,6 +56,52 @@
       </section>
     </div>
 
+    <!-- Vizsgálatok – szakértő nélkül -->
+    <div class="col-12 col-lg-6">
+      <section id="investigations-unassigned" class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <h2 class="h5 mb-0">
+            <span>Szignálandó Vizsgálatok</span>
+          </h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Ügyszám</th>
+                  <th>Külső ügyirat szám</th>
+                  <th>Vizsgálandó neve</th>
+                  <th class="d-none">Állapot</th>
+                  <th class="d-none">Regisztrálva</th>
+                  <th class="d-none">Határidő</th>
+                  <th>Műveletek</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in investigations_unassigned %}
+                  <tr>
+                    <td><a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}">{{ inv.case_number }}</a></td>
+                    <td>{{ inv.external_case_number or inv.other_identifier or '–' }}</td>
+                    <td>{{ inv.subject_name }}</td>
+                    <td class="d-none">–</td>
+                    <td class="d-none">{{ inv.registration_time }}</td>
+                    <td class="d-none">{{ inv.deadline or '–' }}</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="">Szakértő kijelölése</a></td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-3">Nincs megjeleníthető vizsgálat.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <div class="row g-4 mt-0">
     <!-- Szakértők szerkesztése (with any expert) -->
     <div class="col-12 col-lg-6">
       <section id="examinations-with-expert" class="card shadow-sm">
@@ -104,63 +148,13 @@
         </div>
       </section>
     </div>
-  </div>
-
-  <hr class="my-4">
-
-  <!-- ===== Vizsgálatok (Investigations) ===== -->
-  <div class="row g-4">
-    <!-- Vizsgálatok – szakértő nélkül -->
-    <div class="col-12 col-lg-6">
-      <section id="investigations-unassigned" class="card shadow-sm">
-        <div class="card-header d-flex align-items-center gap-2">
-          <h2 class="h5 mb-0">
-            <span>Vizsgálatok</span>
-          </h2>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Ügyszám</th>
-                  <th>Külső ügyirat szám</th>
-                  <th>Vizsgálandó neve</th>
-                  <th class="d-none">Állapot</th>
-                  <th class="d-none">Regisztrálva</th>
-                  <th class="d-none">Határidő</th>
-                  <th>Műveletek</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for inv in investigations_unassigned %}
-                  <tr>
-                    <td><a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}">{{ inv.case_number }}</a></td>
-                    <td>{{ inv.external_case_number or inv.other_identifier or '–' }}</td>
-                    <td>{{ inv.subject_name }}</td>
-                    <td class="d-none">–</td>
-                    <td class="d-none">{{ inv.registration_time }}</td>
-                    <td class="d-none">{{ inv.deadline or '–' }}</td>
-                    <td><a class="btn btn-sm btn-outline-primary" href="">Szakértő kijelölése</a></td>
-                  </tr>
-                {% else %}
-                  <tr>
-                    <td colspan="7" class="text-center text-muted py-3">Nincs megjeleníthető vizsgálat.</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-    </div>
 
     <!-- Vizsgálatok — szakértővel -->
     <div class="col-12 col-lg-6">
       <section id="investigations-with-expert" class="card shadow-sm">
         <div class="card-header d-flex align-items-center gap-2">
           <h2 class="h5 mb-0">
-            <span>Vizsgálatok — szakértővel</span>
+            <span>Szakértők szerkesztése Vizsgálatok</span>
           </h2>
         </div>
         <div class="card-body p-0">
