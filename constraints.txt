@@ -1,4 +1,4 @@
-# Pin exact versions known-good in your env to avoid upgrade/downgrade churn.
+﻿# Pin exact versions known-good in your env to avoid upgrade/downgrade churn.
 # Quick path: run tools/bootstrap_constraints.ps1 once to generate this file.
 # Example (edit to your actuals):
 Flask==3.0.3
