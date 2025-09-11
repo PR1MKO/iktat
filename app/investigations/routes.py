@@ -498,3 +498,22 @@ def download_investigation_file(id, filename):
         return send_safe(root, filename, as_attachment=True)
     except (exceptions.BadRequest, FileNotFoundError):
         abort(404)
+
+
+# ---------------------------------------------------------------------------
+# Minimal safe stub to satisfy links like 'investigations.assign_expert'
+# ---------------------------------------------------------------------------
+
+
+@investigations_bp.route("/<int:inv_id>/assign", methods=["GET", "POST"])
+@login_required
+@roles_required("szignáló")
+def assign_expert(inv_id: int):
+    """Temporary stub: redirect to details until real assignment UI is wired."""
+    inv = db.session.get(Investigation, inv_id)
+    if inv is None:
+        abort(404)
+    flash(
+        "Hozzárendelés oldal még fejlesztés alatt – átirányítva a részletekhez.", "info"
+    )
+    return redirect(url_for("investigations.detail_investigation", id=inv.id))

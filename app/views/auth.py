@@ -842,7 +842,7 @@ def download_file(case_id, filename):
 
 @auth_bp.route("/szignal_cases")
 @login_required
-@roles_required("szignáló")
+@roles_required("szignáló", "szig")
 def szignal_cases():
     # Cases where both experts are missing (szignálandó)
     szignalando_cases = (

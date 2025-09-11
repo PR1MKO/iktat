@@ -1,175 +1,208 @@
 {% extends "base.html" %}
 
-{% block title %}Szignálandó – CaseTracker{% endblock %}
-
-{# remove the usual dashboard sidebar entirely #}
+{# Hide sidebar on this page only #}
 {% block sidebar %}{% endblock %}
 
+{% block title %}Szignálási Ügyek – CaseTracker{% endblock %}
+
 {% block content %}
-  <div class="card-body d-flex align-items-center py-3">
-    <i class="bi bi-folder2-open fs-3 me-3 text-primary"></i>
-    <div>
-      <h3 class="h4 mb-0">Szignálandó</h3>
-    </div>
-  </div>
+<div class="container page-szignal-cases py-3">
+  <h3 class="h4 mb-3">Szignálási Ügyek</h3>
 
-  <div class="row row-cols-1 row-cols-lg-2 g-4">
-    <div class="col">
-      <section id="examinations-unassigned" class="mb-4">
-        <div class="card shadow-sm mb-4">
-          <div class="card-header fw-bold">Boncolások</div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table id="exams-table" class="table table-sm align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Boncszám</th>
-                    <th>Külső ügyirat szám</th>
-                    <th>Elhunyt neve</th>
-                    <th class="d-none">Állapot</th>
-                    <th class="d-none">Regisztrálva</th>
-                    <th class="d-none">Határidő</th>
-                    <th>Műveletek</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% set ns1 = namespace(count=0) %}
-                  {% for case in szignalando_cases %}
-                    {% set ns1.count = ns1.count + 1 %}
-                    <tr>
-                      <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number }}</a></td>
-                      <td>{{ case.external_case_number or case.temp_id or '–' }}</td>
-                      <td>{{ case.deceased_name }}</td>
-                      <td class="d-none">{{ case.status }}</td>
-                      <td class="d-none">{{ case.registration_time_str }}</td>
-                      <td class="d-none">{{ case.formatted_deadline }}</td>
-                      <td>
-                        {# Megtekintés button removed — Boncszám is now the link #}
-                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">
-                          Szakértő kijelölése
-                        </a>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                  {% if ns1.count == 0 %}
-                    <tr>
-                      <td colspan="7" class="text-center fst-italic">Nincs szignálandó ügy.</td>
-                    </tr>
-                  {% endif %}
-                </tbody>
-              </table>
-            </div>
-          </div>
+  <!-- ===== Boncolások (Examinations) ===== -->
+  <div class="row g-4">
+    <!-- Szignálandó (no expert assigned) -->
+    <div class="col-12 col-lg-6">
+      <section id="examinations-unassigned" class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <h2 class="h5 mb-0">
+            <span class="badge bg-primary me-2">Szignálandó</span> Boncolások
+          </h2>
         </div>
-      </section>
-
-        <div class="card shadow-sm mb-4">
-          <div class="card-header fw-bold">Szakértők szerkesztése</div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-sm align-middle">
-                <thead class="table-light">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Boncszám</th>
+                  <th>Külső ügyirat szám</th>
+                  <th>Elhunyt neve</th>
+                  <th class="d-none">Állapot</th>
+                  <th class="d-none">Regisztrálva</th>
+                  <th class="d-none">Határidő</th>
+                  <th>Műveletek</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for case in examinations_unassigned %}
                   <tr>
-                    <th>Boncszám</th>
-                    <th>Külső ügyirat szám</th>
-                    <th>Elhunyt neve</th>
-                    <th>Szakértő 1</th>
-                    <th>Műveletek</th>
+                    <td>{{ case.case_number or case.boncszam or "-" }}</td>
+                    <td>{{ case.external_case_number or "-" }}</td>
+                    <td>{{ case.deceased_name or "-" }}</td>
+                    <td class="d-none">{{ case.status or "-" }}</td>
+                    <td class="d-none">{{ case.registration_time or "-" }}</td>
+                    <td class="d-none">{{ case.deadline or "-" }}</td>
+                    <td>
+                      <a href="#" class="btn btn-sm btn-outline-primary">Hozzárendelés</a>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {% set ns2 = namespace(count=0) %}
-                  {% for case in szerkesztheto_cases %}
-                    {% set ns2.count = ns2.count + 1 %}
-                    <tr>
-                      <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number }}</a></td>
-                      <td>{{ case.external_case_number or case.temp_id or '–' }}</td>
-                      <td>{{ case.deceased_name }}</td>
-                      <td>{{ case.expert_1 or '–' }}</td>
-                      <td>
-                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}">Szerkesztés/Hozzáadás</a>
-                      </td>
-                    </tr>
-                  {% endfor %}
-                  {% if ns2.count == 0 %}
-                    <tr>
-                      <td colspan="5" class="text-center fst-italic">Nincs szerkeszthető szakértős ügy.</td>
-                    </tr>
-                  {% endif %}
-                </tbody>
-              </table>
-            </div>
+                {% else %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-3">Nincs találat.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
     </div>
 
-    <div class="col">
-      <section id="investigations-unassigned">
-        <h2><span class="badge bg-danger">Vizsgálatok</span></h2>
-        <table class="table table-hover mb-5">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Ügyszám</th>
-              <th>Státusz</th>
-              <th>Regisztráció</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if investigations_unassigned %}
-              {% for inv in investigations_unassigned %}
+    <!-- Szakértők szerkesztése (with any expert) -->
+    <div class="col-12 col-lg-6">
+      <section id="examinations-with-expert" class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <h2 class="h5 mb-0">
+            <span class="badge bg-secondary me-2">Szakértők szerkesztése</span> Boncolások
+          </h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
                 <tr>
-                  <td>{{ inv.id }}</td>
-                  <td>{{ inv.case_number }}</td>
-                  <td>{{ inv.status or '-' }}</td>
-                  <td>{{ inv.registration_time_str }}</td>
+                  <th>Boncszám</th>
+                  <th>Külső ügyirat szám</th>
+                  <th>Elhunyt neve</th>
+                  <th class="d-none">Állapot</th>
+                  <th class="d-none">Regisztrálva</th>
+                  <th class="d-none">Határidő</th>
+                  <th>Műveletek</th>
                 </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="4" class="text-center fst-italic">Nincs találat.</td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
-      </section>
-
-      <section id="investigations-with-expert">
-        <h2><span class="badge bg-primary">Vizsgálatok — szakértővel</span></h2>
-        <table class="table table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Ügyszám</th>
-              <th>Státusz</th>
-              <th>Regisztráció</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% if investigations_with_expert %}
-              {% for inv in investigations_with_expert %}
-                <tr>
-                  <td>{{ inv.id }}</td>
-                  <td>{{ inv.case_number }}</td>
-                  <td>{{ inv.status or '-' }}</td>
-                  <td>{{ inv.registration_time_str }}</td>
-                </tr>
-              {% endfor %}
-            {% else %}
-              <tr>
-                <td colspan="4" class="text-center fst-italic">Nincs találat.</td>
-              </tr>
-            {% endif %}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {% for case in examinations_with_expert %}
+                  <tr>
+                    <td>{{ case.case_number or case.boncszam or "-" }}</td>
+                    <td>{{ case.external_case_number or "-" }}</td>
+                    <td>{{ case.deceased_name or "-" }}</td>
+                    <td class="d-none">{{ case.status or "-" }}</td>
+                    <td class="d-none">{{ case.registration_time or "-" }}</td>
+                    <td class="d-none">{{ case.deadline or "-" }}</td>
+                    <td>
+                      <a href="#" class="btn btn-sm btn-outline-primary">Szerkesztés</a>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-3">Nincs találat.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
     </div>
   </div>
-  
-  <div class="mb-3">
-    <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-secondary">Vissza</a>
+
+  <hr class="my-4">
+
+  <!-- ===== Vizsgálatok (Investigations) ===== -->
+  <div class="row g-4">
+    <!-- Vizsgálatok – szakértő nélkül -->
+    <div class="col-12 col-lg-6">
+      <section id="investigations-unassigned" class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <h2 class="h5 mb-0">
+            <span>Vizsgálatok</span>
+          </h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Külső azonosító</th>
+                  <th>Vizsgálat típusa</th>
+                  <th class="d-none">Állapot</th>
+                  <th class="d-none">Regisztrálva</th>
+                  <th class="d-none">Határidő</th>
+                  <th>Műveletek</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in investigations_unassigned %}
+                  <tr>
+                    <td>{{ inv.id }}</td>
+                    <td>{{ inv.external_id or "-" }}</td>
+                    <td>{{ inv.type or inv.vizsgalat_tipus or "-" }}</td>
+                    <td class="d-none">{{ inv.status or "-" }}</td>
+                    <td class="d-none">{{ inv.created_at or "-" }}</td>
+                    <td class="d-none">{{ inv.deadline or "-" }}</td>
+                    <td>
+                      <a href="{{ url_for('investigations.detail_investigation', id=inv.id) if inv.id else '#' }}" class="btn btn-sm btn-outline-primary">Hozzárendelés</a>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-3">Nincs találat.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Vizsgálatok — szakértővel -->
+    <div class="col-12 col-lg-6">
+      <section id="investigations-with-expert" class="card shadow-sm">
+        <div class="card-header d-flex align-items-center gap-2">
+          <h2 class="h5 mb-0">
+            <span>Vizsgálatok — szakértővel</span>
+          </h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Külső azonosító</th>
+                  <th>Vizsgálat típusa</th>
+                  <th class="d-none">Állapot</th>
+                  <th class="d-none">Regisztrálva</th>
+                  <th class="d-none">Határidő</th>
+                  <th>Műveletek</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in investigations_with_expert %}
+                  <tr>
+                    <td>{{ inv.id }}</td>
+                    <td>{{ inv.external_id or "-" }}</td>
+                    <td>{{ inv.type or inv.vizsgalat_tipus or "-" }}</td>
+                    <td class="d-none">{{ inv.status or "-" }}</td>
+                    <td class="d-none">{{ inv.created_at or "-" }}</td>
+                    <td class="d-none">{{ inv.deadline or "-" }}</td>
+                    <td>
+                      <a href="{{ url_for('investigations.detail_investigation', id=inv.id) if inv.id else '#' }}" class="btn btn-sm btn-outline-primary">Szerkesztés</a>
+                    </td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-3">Nincs találat.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
-  
+</div>
 {% endblock %}
- 
