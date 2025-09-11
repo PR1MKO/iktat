@@ -45,7 +45,7 @@
                   </tr>
                 {% else %}
                   <tr>
-                    <td colspan="8" class="text-center text-muted py-3">Nincs találat.</td>
+                    <td colspan="7" class="text-center text-muted py-3">Nincs találat.</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -97,9 +97,9 @@
         </div>
       </section>
     </div>
-</div> {# /.row g-3 #}
+  </div> {# /.row g-3 #}
 
-<h3 class="h5 my-3 text-center">Szakértők szerkesztése</h3>
+  <h3 class="h4 mb-3 text-center">Szakértők szerkesztése</h3>
   {# --- Bottom: With expert (side-by-side layout) --- #}
   <div class="row g-3 mt-4">
     <!-- Szakértők szerkesztése (with any expert) -->
@@ -119,6 +119,7 @@
                   <th class="d-none">Állapot</th>
                   <th class="d-none">Regisztrálva</th>
                   <th class="d-none">Határidő</th>
+                  <th>Szakértő</th>
                   <th>Műveletek</th>
                 </tr>
               </thead>
@@ -131,6 +132,17 @@
                     <td class="d-none">{{ case.status or "-" }}</td>
                     <td class="d-none">{{ case.registration_time or "-" }}</td>
                     <td class="d-none">{{ case.deadline or "-" }}</td>
+                    <td>
+                      {% if case.expert_1 and case.expert_2 %}
+                        {{ case.expert_1 }}, {{ case.expert_2 }}
+                      {% elif case.expert_1 %}
+                        {{ case.expert_1 }}
+                      {% elif case.expert_2 %}
+                        {{ case.expert_2 }}
+                      {% else %}
+                        –
+                      {% endif %}
+                    </td>
                     <td>
                       <a href="#" class="btn btn-sm btn-outline-primary">Szerkesztés</a>
                     </td>
@@ -164,6 +176,7 @@
                   <th class="d-none">Állapot</th>
                   <th class="d-none">Regisztrálva</th>
                   <th class="d-none">Határidő</th>
+                  <th>Szakértő</th>
                   <th>Műveletek</th>
                 </tr>
               </thead>
@@ -176,11 +189,12 @@
                     <td class="d-none">–</td>
                     <td class="d-none">{{ inv.registration_time }}</td>
                     <td class="d-none">{{ inv.deadline or '–' }}</td>
-                    <td><a class="btn btn-sm btn-outline-primary" href="">Szakértő kijelölése</a></td>
+                    <td>{{ inv.expert_names or '–' }}</td>
+                    <td><a class="btn btn-sm btn-outline-primary" href="">Szerkesztő</a></td>
                   </tr>
                 {% else %}
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-3">Nincs megjeleníthető vizsgálat.</td>
+                    <td colspan="8" class="text-center text-muted py-3">Nincs megjeleníthető vizsgálat.</td>
                   </tr>
                 {% endfor %}
               </tbody>

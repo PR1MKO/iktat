@@ -892,6 +892,16 @@ def szignal_cases():
         .all()
     )
 
+    # Precompute expert display names to avoid Jinja-side DB lookups
+    for inv in investigations_with_expert:
+        names = []
+        for uid in (inv.expert1_id, inv.expert2_id):
+            if uid:
+                user = get_user_safe(uid)
+                if user:
+                    names.append(user_display_name(user))
+        inv.expert_names = ", ".join(names) if names else None
+
     for inv in investigations_unassigned + investigations_with_expert:
         inv.registration_time_str = fmt_date(inv.registration_time)
 
