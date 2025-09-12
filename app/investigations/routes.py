@@ -311,7 +311,16 @@ def view_investigation(id):
 
 @investigations_bp.route("/<int:id>")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
+@roles_required(
+    "admin",
+    "iroda",
+    "szakértő",
+    "leíró",
+    "szignáló",
+    "toxi",
+    "pénzügy",
+    "szig",
+)
 def detail_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -482,21 +491,38 @@ def upload_investigation_file(id):
     return redirect(url_for("investigations.documents", id=id))
 
 
-@investigations_bp.route("/<int:id>/files/<path:filename>")
+@investigations_bp.route("/<int:inv_id>/download/<int:file_id>")
 @login_required
-@roles_required("admin", "iroda", "szakértő")
-def download_investigation_file(id, filename):
-    inv = db.session.get(Investigation, id)
-    if inv is None:
+@roles_required(
+    "admin",
+    "iroda",
+    "szakértő",
+    "leíró",
+    "szignáló",
+    "toxi",
+    "pénzügy",
+    "szig",
+)
+def download_investigation_file(inv_id, file_id):
+    inv = db.session.get(Investigation, inv_id) or abort(404)
+    att = db.session.get(InvestigationAttachment, file_id) or abort(404)
+    if att.investigation_id != inv_id:
         abort(404)
-    if not _can_note_or_upload(inv, current_user):
-        abort(403)
 
     subdir = investigation_subdir_from_case_number(inv.case_number)
     root = Path(current_app.config["UPLOAD_INVESTIGATIONS_ROOT"]) / subdir
+    filename = att.filename
     try:
         return send_safe(root, filename, as_attachment=True)
-    except (exceptions.BadRequest, FileNotFoundError):
+    except exceptions.BadRequest:
+        current_app.logger.warning(
+            "Path traversal attempt for investigation %s: %s", inv_id, filename
+        )
+        abort(400)
+    except FileNotFoundError:
+        current_app.logger.warning(
+            "File not found for investigation %s: %s", inv_id, filename
+        )
         abort(404)
 
 

@@ -2,12 +2,13 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
   lint-test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -15,27 +16,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-          cache: "pip"
+          python-version: '3.12'
 
-      - name: Install dependencies (dev + prod)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements-dev.txt ]; then
             python -m pip install -r requirements-dev.txt
           fi
           python -m pip install -r requirements.txt
-          # Backfill CI tooling in case requirements-dev.txt has win32 markers
-          python -m pip install ruff isort black pytest
 
-      - name: Lint (ruff)
+      - name: Run Ruff
         run: ruff .
 
-      - name: Format check (black)
+      - name: Run Black (check)
         run: black --check .
 
-      - name: Import order (isort)
+      - name: Run isort (check-only)
         run: isort --check-only .
 
-      - name: Run tests
+      - name: Run pytest
         run: python -m pytest -q
