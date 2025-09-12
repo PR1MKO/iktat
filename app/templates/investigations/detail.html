@@ -7,8 +7,19 @@
     <div class="card-body p-0">
       <table class="table mb-0">
         <tbody>
-          <tr><th>Végrehajtás módja</th><td>{{ assignment_type_label or '–' }}</td></tr>
-          <tr><th>Intézeti Szakértői</th><td>{{ assignment_type_label or '–' }}</td></tr>
+          {# Single canonical rendering from the radio button selection #}
+          {% set _exec_map = {
+          'INTEZETI': 'Intézeti',
+          'intézeti': 'Intézeti',
+          'intezeti': 'Intézeti',
+          'Intézeti': 'Intézeti',
+          'SZAKÉRTŐI': 'Szakértői',
+          'szakértői': 'Szakértői',
+          'SZAKERTOI': 'Szakértői',
+          'szakertoi': 'Szakértői',
+          'Szakértői': 'Szakértői'
+          } %}
+          <tr><th>Végrehajtás módja</th><td>{{ _exec_map.get(investigation.assignment_type, investigation.assignment_type or '–') }}</td></tr>
           <tr><th>Szakértő</th><td>{{ assigned_expert_display or '–' }}</td></tr>
           <tr><th>Vizsgálat típusa</th><td>{{ investigation_type_label or '–' }}</td></tr>
           <tr><th>Külső ügyirat szám</th><td>{{ investigation.external_case_number or '–' }}</td></tr>
