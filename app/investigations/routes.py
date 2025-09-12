@@ -354,6 +354,18 @@ def detail_investigation(id):
     for log in changelog:
         log.timestamp_str = log.timestamp.strftime("%Y.%m.%d %H:%M")
         log.editor = get_user_safe(log.edited_by)
+    assignment_type_label = dict(form.assignment_type.choices).get(
+        inv.assignment_type, inv.assignment_type
+    )
+    investigation_type_label = dict(form.investigation_type.choices).get(
+        inv.investigation_type, inv.investigation_type
+    )
+    assigned_expert_display = None
+    if inv.assigned_expert_id:
+        assigned_expert_display = user_display_name(
+            get_user_safe(inv.assigned_expert_id)
+        )
+
     return render_template(
         "investigations/detail.html",
         investigation=inv,
@@ -365,6 +377,9 @@ def detail_investigation(id):
         changelog=changelog,
         user_display_name=user_display_name,
         caps=capabilities_for(current_user),
+        assignment_type_label=assignment_type_label,
+        investigation_type_label=investigation_type_label,
+        assigned_expert_display=assigned_expert_display,
     )
 
 

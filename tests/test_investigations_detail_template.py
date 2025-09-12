@@ -26,3 +26,17 @@ def test_investigation_detail_page_renders_for_szig(app, client):
         login(client, "szig_user", "pw")
         resp = client.get(f"/investigations/{investigation.id}")
         assert resp.status_code == 200
+
+
+def test_detail_template_shows_required_labels(app, client):
+    create_user("szig_user", "pw", role="szig")
+    investigation = create_investigation(
+        assignment_type="INTEZETI", investigation_type="type1"
+    )
+    with client:
+        login(client, "szig_user", "pw")
+        resp = client.get(f"/investigations/{investigation.id}")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert "Végrehajtás módja" in html
+        assert "Vizsgálat típusa" in html
