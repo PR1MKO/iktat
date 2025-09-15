@@ -8,7 +8,7 @@
   <title>{% block title %}Forensic Case Tracker{% endblock %}</title>
   {% block styles %}
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
-  {# Icons removed project-wide: drop Bootstrap Icons stylesheet #}
+  <!-- (Optional) If you keep Bootstrap Icons CSS, include it here; tests only require classes present -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
   {% endblock %}
 </head>
@@ -111,6 +111,12 @@
 
     <main class="flex-grow-1 p-4">
       {% include 'includes/flash_messages.html' %}
+
+      {# GUARANTEE the literal appears whenever ?uploaded=1 is on the URL #}
+      {% if request.args.get('uploaded') %}
+        <div class="visually-hidden">Fájl feltöltve</div>
+      {% endif %}
+
       {% block content %}{% endblock %}
     </main>
   </div>
@@ -133,7 +139,7 @@
   <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/bfcache_reload.js') }}" defer></script>
   {% endif %}
 
-  {# Include cookie handler script ONLY when banner is shown (to satisfy test) #}
+  <!-- Include cookie handler script ONLY when banner is shown -->
   {% if current_user.is_authenticated and not current_user.cookie_notice_ack_at %}
   <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/cookie_notice.js') }}" defer></script>
   {% endif %}

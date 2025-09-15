@@ -1,14 +1,22 @@
+{# Shared flash renderer (Bootstrap 5) #}
+{% set _cat_map = {
+  'message':'secondary',
+  'info':'info',
+  'success':'success',
+  'warning':'warning',
+  'error':'danger',
+  'danger':'danger'
+} %}
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    {% for category, message in messages %}
-      {% set category = 'danger' if category == 'error' else category %}
-      {% if category not in ['primary','secondary','success','danger','warning','info','light','dark'] %}
-        {% set category = 'info' %}
-      {% endif %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message|safe }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
+    <div class="container mb-3">
+      {% for category, message in messages %}
+        {% set bs = _cat_map.get(category, 'secondary') %}
+        <div class="alert alert-{{ bs }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
   {% endif %}
 {% endwith %}

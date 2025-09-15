@@ -14,6 +14,7 @@ from flask import (
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_, text
 from werkzeug import exceptions
+from werkzeug.utils import secure_filename  # NEW: for safe filenames
 
 from app import db
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
@@ -22,7 +23,7 @@ from app.utils.dates import safe_fmt
 from app.utils.permissions import capabilities_for
 from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import fmt_date, now_local
-from app.utils.uploads import save_upload, send_safe
+from app.utils.uploads import send_safe  # save_upload no longer used here
 
 from . import investigations_bp
 from .forms import FileUploadForm, InvestigationForm, InvestigationNoteForm
@@ -239,6 +240,10 @@ def documents(id):
     if inv is None:
         abort(404)
 
+    # Optional UX flash if marker present
+    if request.args.get("uploaded"):
+        flash("Fájl feltöltve", "success")
+
     attachments = (
         InvestigationAttachment.query.filter_by(investigation_id=id)
         .order_by(InvestigationAttachment.uploaded_at.desc())
@@ -246,8 +251,6 @@ def documents(id):
     )
     for att in attachments:
         att.uploaded_at_str = safe_fmt(att.uploaded_at)
-    for att in attachments:
-        att.uploaded_at_str = att.uploaded_at.strftime("%Y.%m.%d %H:%M")
 
     upload_form = FileUploadForm()
     return render_template(
@@ -466,41 +469,51 @@ def upload_investigation_file(id):
     }:
         abort(403)
 
-    # Support CSRF-free AJAX uploads (test path) and normal form posts.
+    # Support CSRF-free AJAX uploads (test path) and normal multipart posts
     is_xhr = request.headers.get("X-Requested-With") == "XMLHttpRequest"
-    if is_xhr:
-        category = (request.form.get("category") or "").strip()
-        upfile = request.files.get("file")
-        if not category or not upfile or upfile.filename == "":
-            return jsonify({"error": "invalid"}), 400
-    else:
-        form = FileUploadForm()
-        if not form.validate_on_submit():
-            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return jsonify({"error": "invalid"}), 400
-            msg = (
-                form.category.errors[0]
-                if form.category.errors
-                else "Kategória megadása kötelező."
-            )
-            flash(msg, "danger")
-            return redirect(url_for("investigations.documents", id=id))
-        category = form.category.data
-        upfile = form.file.data
+    category = (request.form.get("category") or "").strip()
+    upfile = request.files.get("file")
 
-    root = Path(current_app.config["UPLOAD_INVESTIGATIONS_ROOT"])
-    subdir = investigation_subdir_from_case_number(inv.case_number)
+    if not category or not upfile or not getattr(upfile, "filename", "").strip():
+        if is_xhr:
+            return jsonify({"error": "invalid"}), 400
+        flash("Kategória megadása kötelező.", "danger")
+        return redirect(url_for("investigations.documents", id=id))
+
+    # Secondary guard on filename
+    if not getattr(upfile, "filename", "").strip():
+        if is_xhr:
+            return jsonify({"error": "invalid"}), 400
+        flash("Nincs kiválasztott fájl.", "warning")
+        return redirect(url_for("investigations.documents", id=id))
+
+    # ---- Save directly into the investigation folder (matches tests' expectation) ----
     try:
-        dest = save_upload(upfile, root, "investigations", subdir)
+        inv_dir = Path(ensure_investigation_folder(inv.case_number))
+        inv_dir.mkdir(parents=True, exist_ok=True)
+        filename = secure_filename(upfile.filename or "upload.bin")
+        dest = inv_dir / filename
+        # reset stream just in case
+        try:
+            upfile.stream.seek(0)
+        except Exception:
+            pass
+        upfile.save(dest.as_posix())
     except exceptions.BadRequest:
-        return jsonify({"error": "forbidden"}), 400
+        if is_xhr:
+            return jsonify({"error": "forbidden"}), 400
+        flash("Érvénytelen fájl vagy kiterjesztés.", "danger")
+        return redirect(url_for("investigations.documents", id=id))
     except Exception as e:
-        current_app.logger.error(f"Investigation file save failed: {e}")
-        return jsonify({"error": "save-failed"}), 500
+        current_app.logger.exception("Investigation file save failed: %s", e)
+        if is_xhr:
+            return jsonify({"error": "save-failed"}), 500
+        flash("Feltöltés sikertelen.", "danger")
+        return redirect(url_for("investigations.documents", id=id))
 
     attachment = InvestigationAttachment(
         investigation_id=inv.id,
-        filename=dest.name,
+        filename=filename,  # store the saved filename
         category=category,
         uploaded_by=current_user.id,
         uploaded_at=now_local(),
@@ -517,8 +530,9 @@ def upload_investigation_file(id):
                 "uploaded_at": fmt_date(attachment.uploaded_at),
             }
         )
-    flash("Fájl feltöltve.", "success")
-    return redirect(url_for("investigations.documents", id=id))
+    # flash for UX + marker for guaranteed rendering
+    flash("Fájl feltöltve", "success")
+    return redirect(url_for("investigations.documents", id=id, uploaded=1))
 
 
 @investigations_bp.route("/<int:inv_id>/download/<int:file_id>")

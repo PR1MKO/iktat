@@ -27,7 +27,7 @@
       </select>
       <div id="category-help-file-upload-form" class="invalid-feedback category-warning d-none" role="alert">
         Kategória megadása kötelező.
-      </div
+      </div>
       <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
     </form>
   </div>
@@ -39,7 +39,7 @@
     {% for a in attachments %}
       <li class="list-group-item d-flex justify-content-between align-items-center">
         <span>
-          <a href="{{ url_for('investigations.download_investigation_file', id=investigation.id, filename=a.filename) }}">
+          <a href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=a.id) }}">
             {{ a.filename }}
           </a>
           <small class="text-muted">({{ a.category }})</small>
