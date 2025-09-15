@@ -7,7 +7,7 @@ from sqlalchemy.orm import synonym
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
-from app.utils.time_utils import now_local
+from app.utils.time_utils import BUDAPEST_TZ, now_local
 
 
 class User(db.Model, UserMixin):
@@ -181,8 +181,6 @@ class Case(db.Model):
             return ""
         dt = self.deadline
         if dt.tzinfo is None:
-            from app.utils.time_utils import BUDAPEST_TZ
-
             dt = dt.replace(tzinfo=BUDAPEST_TZ)
         return dt.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d")
 

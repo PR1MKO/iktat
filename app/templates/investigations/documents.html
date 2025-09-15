@@ -12,19 +12,23 @@
 <div class="card mb-4">
   <div class="card-header">Fájl feltöltése</div>
   <div class="card-body">
-    <form id="upload-form" class="file-upload-form" action="{{ upload_url }}" method="post" enctype="multipart/form-data">
+    <form id="file-upload-form"
+          class="file-upload-form needs-validation d-flex align-items-center"
+          method="post" enctype="multipart/form-data"
+          action="{{ upload_url }}">
       {{ upload_form.csrf_token }}
-      <div class="row g-2">
-        <div class="col-md-3">
-          {{ upload_form.category(class="form-select") }}
-        </div>
-        <div class="col-md-6">
-          {{ upload_form.file(class="form-control") }}
-        </div>
-        <div class="col-md-3">
-          <button type="submit" class="btn btn-primary w-100 upload-btn">Feltöltés</button>
-        </div>
-      </div>
+      <label for="file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
+      <input type="file" id="file" name="file" class="form-control me-2" multiple required aria-label="Fájl feltöltése" title="Fájl feltöltése">
+      <select name="category" id="upload-category-file-upload-form" class="form-select me-2 category-select" required aria-invalid="false" aria-describedby="category-help-file-upload-form">
+        <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
+        {% for val, label in upload_form.category.choices %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+      <div id="category-help-file-upload-form" class="invalid-feedback category-warning d-none" role="alert">
+        Kategória megadása kötelező.
+      </div
+      <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
     </form>
   </div>
 </div>
@@ -46,10 +50,10 @@
       <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
     {% endfor %}
   </ul>
-</div
+</div>
 {% endblock %}
 
 {% block scripts %}
   {{ super() }}
-  <script type="module" nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigations_documents.js') }}"></script>
+  {# No page-specific upload JS; global upload validators bind to .file-upload-form #}
 {% endblock %}

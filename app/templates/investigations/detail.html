@@ -96,11 +96,24 @@
     <div class="card-header">Dokumentumok</div>
     <div class="card-body">
       {% if caps['can_upload_investigation'] %}
-      <form id="upload-form" class="mb-3" enctype="multipart/form-data" action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
+      <form id="file-upload-form"
+            action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="needs-validation d-flex align-items-center file-upload-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        {{ upload_form.category(class='form-select d-inline w-auto') }}
-        {{ upload_form.file(class='form-control d-inline w-auto') }}
-        <button type="button" id="upload-btn" class="btn btn-secondary">Feltöltés</button>
+        <label for="file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
+        <input type="file" id="file" name="file" class="form-control me-2" multiple required aria-label="Fájl feltöltése" title="Fájl feltöltése">
+        <select name="category" id="upload-category-file-upload-form" class="form-select me-2 category-select" required aria-invalid="false" aria-describedby="category-help-file-upload-form">
+          <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
+          {% for val, label in upload_form.category.choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div id="category-help-file-upload-form" class="invalid-feedback category-warning d-none" role="alert">
+          Kategória megadása kötelező.
+        </div>
+        <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
       </form>
       {% endif %}
       <div id="attachments">
@@ -167,6 +180,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/investigation_upload.js') }}"></script>
-<script src="{{ url_for('static', filename='js/investigation_detail.js') }}"></script>
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/investigation_detail.js') }}"></script>
 {% endblock %}

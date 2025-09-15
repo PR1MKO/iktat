@@ -1,6 +1,5 @@
-# app/investigations/forms.py
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField
+from flask_wtf.file import FileField, FileRequired
 from wtforms import (
     DateField,
     RadioField,
@@ -73,17 +72,22 @@ class InvestigationForm(FlaskForm):
             raise ValidationError("Szakértő kiválasztása kötelező.")
 
 
+INV_CATEGORY_CHOICES = [
+    ("végzés", "Végzés"),
+    ("jegyzőkönyv", "Jegyzőkönyv"),
+    ("egyéb", "Egyéb"),
+]
+
+
 class FileUploadForm(FlaskForm):
+    # Allow arbitrary values server-side while keeping UI suggestions
     category = SelectField(
         "Kategória",
-        choices=[
-            ("option1", "Opció 1"),
-            ("option2", "Opció 2"),
-            ("option3", "Opció 3"),
-        ],
-        validators=[DataRequired()],
+        choices=INV_CATEGORY_CHOICES,
+        validators=[DataRequired(message="Kategória megadása kötelező.")],
+        validate_choice=False,
     )
-    file = FileField("Fájl", validators=[DataRequired()])
+    file = FileField("Fájl", validators=[FileRequired()])
 
 
 class InvestigationNoteForm(FlaskForm):

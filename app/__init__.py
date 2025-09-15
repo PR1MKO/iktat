@@ -22,7 +22,8 @@ from app.utils.time_utils import BUDAPEST_TZ, fmt_date  # noqa: E402
 from config import Config  # noqa: E402
 
 # Instantiate extensions
-db = SQLAlchemy()
+# ✅ Keep attributes loaded after commit to avoid DetachedInstanceError in tests
+db = SQLAlchemy(session_options={"expire_on_commit": False})
 mail = Mail()
 csrf = CSRFProtect()
 login_manager = LoginManager()
@@ -213,28 +214,36 @@ def create_app(test_config=None):
     )
     flask_app.jinja_env.filters["getattr"] = lambda obj, name: getattr(obj, name, "")
 
+    def _ensure_localized(dt: datetime) -> datetime:
+        """Attach Budapest tz to naive dt safely (pytz or zoneinfo)."""
+        if getattr(dt, "tzinfo", None) is None:
+            if hasattr(BUDAPEST_TZ, "localize"):
+                # pytz path
+                dt = BUDAPEST_TZ.localize(dt)
+            else:
+                # zoneinfo path
+                dt = dt.replace(tzinfo=BUDAPEST_TZ)
+        return dt
+
     def localtime(value: datetime | None):
         if not value:
             return ""
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=BUDAPEST_TZ)
-        return value.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d %H:%M")
+        dt = _ensure_localized(value)
+        return dt.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d %H:%M")
 
     flask_app.jinja_env.filters["localtime"] = localtime
 
     def local_dt(value: datetime | None, fmt: str = "%Y-%m-%d %H:%M"):
         if not value:
             return ""
-        if getattr(value, "tzinfo", None) is None:
-            value = value.replace(tzinfo=BUDAPEST_TZ)
-        return value.astimezone(BUDAPEST_TZ).strftime(fmt)
+        dt = _ensure_localized(value)
+        return dt.astimezone(BUDAPEST_TZ).strftime(fmt)
 
     def iso_dt(value: datetime | None):
         if not value:
             return ""
-        if getattr(value, "tzinfo", None) is None:
-            value = value.replace(tzinfo=BUDAPEST_TZ)
-        return value.astimezone(BUDAPEST_TZ).isoformat()
+        dt = _ensure_localized(value)
+        return dt.astimezone(BUDAPEST_TZ).isoformat()
 
     flask_app.jinja_env.filters["local_dt"] = local_dt
     flask_app.jinja_env.filters["iso_dt"] = iso_dt
@@ -246,13 +255,8 @@ def create_app(test_config=None):
         if not val:
             return ""
         try:
-            dt = val
-            try:
-                if dt.tzinfo is None:
-                    dt = BUDAPEST_TZ.localize(dt)
-                dt = dt.astimezone(BUDAPEST_TZ)
-            except Exception:  # pragma: no cover - best effort
-                pass
+            dt = _ensure_localized(val)
+            dt = dt.astimezone(BUDAPEST_TZ)
             return dt.strftime("%Y-%m-%dT%H:%M")
         except Exception:  # pragma: no cover - best effort
             return ""
@@ -302,18 +306,19 @@ def create_app(test_config=None):
             "Referrer-Policy", "strict-origin-when-cross-origin"
         )
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
-        response.headers.setdefault("X-Frame-Options", "DENY")
-        response.headers.setdefault(
+        response_headers = response.headers
+        response_headers.setdefault("X-Frame-Options", "DENY")
+        response_headers.setdefault(
             "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
         )
         if flask_app.config.get(
             "PREFERRED_URL_SCHEME", ""
         ).lower() == "https" or flask_app.config.get("ENABLE_HSTS", False):
-            response.headers.setdefault(
+            response_headers.setdefault(
                 "Strict-Transport-Security", "max-age=15552000; includeSubDomains"
             )
         nonce = getattr(g, "csp_nonce", "")
-        response.headers["Content-Security-Policy"] = (
+        response_headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}' 'strict-dynamic'; "
             "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; "
