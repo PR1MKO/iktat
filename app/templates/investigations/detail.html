@@ -5,82 +5,101 @@
   <div class="card mb-4">
     <div class="card-header">Adatok</div>
     <div class="card-body p-0">
-      <table class="table mb-0 align-middle">
-        <tbody>
-          {# Single canonical rendering from the radio button selection #}
-          {% set _exec_map = {
-            'INTEZETI': 'Intézeti',
-            'intézeti': 'Intézeti',
-            'intezeti': 'Intézeti',
-            'Intézeti': 'Intézeti',
-            'SZAKÉRTŐI': 'Szakértői',
-            'szakértői': 'Szakértői',
-            'SZAKERTOI': 'Szakértői',
-            'szakertoi': 'Szakértői',
-            'Szakértői': 'Szakértői'
-          } %}
-		  
-          <!-- Row 1: Ügyszám + Végrehajtás módja + Szakértő -->
-          <tr>
-            <th>Ügyszám</th>
-            <td>{{ investigation.case_number or investigation.id }}</td>
-            <th>Végrehajtás módja</th>
-            <td>{{ assignment_type_label or _exec_map.get(investigation.assignment_type, investigation.assignment_type or '–') }}</td>
-            <th>Szakértő</th>
-            <td>{{ assigned_expert_display or '–' }}</td>
-          </tr>
+      {% set _exec_map = {
+        'INTEZETI': 'Intézeti',
+        'intézeti': 'Intézeti',
+        'intezeti': 'Intézeti',
+        'Intézeti': 'Intézeti',
+        'SZAKÉRTŐI': 'Szakértői',
+        'szakértői': 'Szakértői',
+        'szakertoi': 'Szakértői',
+        'Szakértői': 'Szakértői'
+      } %}
+      <div class="container-fluid py-2">
+        <!-- Row 1: Ügyszám | Végrehajtás módja | Szakértő -->
+        <div class="row g-3">
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Ügyszám</div>
+            <div>{{ investigation.case_number or investigation.id }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Végrehajtás módja</div>
+            <div>{{ assignment_type_label or _exec_map.get(investigation.assignment_type, investigation.assignment_type or '–') }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Szakértő</div>
+            <div>{{ assigned_expert_display or '–' }}</div>
+          </div>
+        </div>
 
-          <!-- Row 2: Vizsgálat típusa + Külső ügyirat szám -->
-          <tr>
-            <th>Vizsgálat típusa</th>
-            <td>{{ investigation_type_label or '–' }}</td>
-            <th>Külső ügyirat szám</th>
-            <td>{{ investigation.external_case_number or '–' }}</td>
-          </tr>
+        <!-- Row 2: Vizsgálat típusa | Külső ügyirat szám | Egyéb azonosító (4/4/4) -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Vizsgálat típusa</div>
+            <div>{{ investigation_type_label or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Külső ügyirat szám</div>
+            <div>{{ investigation.external_case_number or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Egyéb azonosító</div>
+            <div>{{ investigation.other_identifier or '–' }}</div>
+          </div>
+        </div>
 
-          <!-- Row 3: Beküldő intézmény + Egyéb azonosító -->
-          <tr>
-            <th>Beküldő intézmény</th>
-            <td>{{ investigation.institution_name or '–' }}</td>
-            <th>Egyéb azonosító</th>
-            <td>{{ investigation.other_identifier or '–' }}</td>
-          </tr>
+        <!-- Row 3: Vizsgált személy neve (left) | Beküldő intézmény (6/6) -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Vizsgált személy neve</div>
+            <div>{{ investigation.subject_name or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Beküldő intézmény</div>
+            <div>{{ investigation.institution_name or '–' }}</div>
+          </div>
+        </div>
 
-          <!-- Row 4: Vizsgált személy neve -->
-          <tr>
-            <th>Vizsgált személy neve</th>
-            <td colspan="5" class="text-center fw-bold bg-success-subtle">
-              {{ investigation.subject_name or '–' }}
-            </td>
-          </tr>
+        <!-- Row 4: Leánykori neve | Anyja neve | TAJ szám (4/4/4) -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Leánykori neve</div>
+            <div>{{ investigation.maiden_name or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">Anyja neve</div>
+            <div>{{ investigation.mother_name or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="text-muted small">TAJ szám</div>
+            <div>{{ investigation.taj_number or '–' }}</div>
+          </div>
+        </div>
 
-          <!-- Row 5: Leánykori neve + Anyja neve -->
-          <tr>
-            <th>Leánykori neve</th>
-            <td>{{ investigation.maiden_name or '–' }}</td>
-            <th>Anyja neve</th>
-            <td>{{ investigation.mother_name or '–' }}</td>
-          </tr>
+        <!-- Row 5: Születési hely | Születési idő (6/6) -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Születési hely</div>
+            <div>{{ investigation.birth_place or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Születési idő</div>
+            <div>{{ investigation.birth_date_str or '–' }}</div>
+          </div>
+        </div>
 
-          <!-- Row 6: Születési hely + Születési idő -->
-          <tr>
-            <th>Születési hely</th>
-            <td>{{ investigation.birth_place or '–' }}</td>
-            <th>Születési idő</th>
-            <td>{{ investigation.birth_date_str or '–' }}</td>
-          </tr>
-
-          <!-- Row 7: TAJ szám + Lakcíme + Állampolgársága -->
-          <tr>
-            <th>TAJ szám</th>
-            <td>{{ investigation.taj_number or '–' }}</td>
-            <th>Lakcíme</th>
-            <td>{{ investigation.residence or '–' }}</td>
-            <th>Állampolgársága</th>
-            <td>{{ investigation.citizenship or '–' }}</td>
-          </tr>
-        </tbody>
-      </table>
+        <!-- Row 6: Lakcíme | Állampolgársága (6/6) -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Lakcíme</div>
+            <div>{{ investigation.residence or '–' }}</div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="text-muted small">Állampolgársága</div>
+            <div>{{ investigation.citizenship or '–' }}</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

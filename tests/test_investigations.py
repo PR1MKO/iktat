@@ -4,12 +4,26 @@ import shutil
 from datetime import date, datetime
 
 import pytest
+from sqlalchemy import inspect
 
 from app import db
 from app.investigations import utils as inv_utils
 from app.investigations.models import Investigation, InvestigationNote
 from app.models import Case
 from tests.helpers import create_investigation, create_user, login
+
+
+@pytest.fixture(autouse=True)
+def _ensure_main_schema_autouse(app):
+    """
+    Ensure the default (main) bind has its schema before any tests in this module run.
+    This prevents OperationalError: no such table: user when only the 'examination' bind
+    was initialized by a preceding fixture.
+    """
+    with app.app_context():
+        insp = inspect(db.engine)
+        if "user" not in insp.get_table_names():
+            db.create_all(bind_key=None)
 
 
 def _base_form_data():
