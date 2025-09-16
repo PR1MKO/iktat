@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% import 'includes/case_macros.html' as cm with context %}
+{% block sidebar %}{% endblock %}
+{% block title %}Szakértő kijelölése – {{ investigation.case_number or investigation.id }}{% endblock %}
+
+{% block content %}
+<div class="container pt-2 pb-4">
+
+  <div class="row mb-4">
+    <div class="col-12 mb-3">
+      <div class="card mb-4 mb-md-0">
+        <div class="card-header">Adatok</div>
+        <div class="card-body p-0">
+          {% set _exec_map = {
+            'INTEZETI': 'Intézeti',
+            'intézeti': 'Intézeti',
+            'intezeti': 'Intézeti',
+            'Intézeti': 'Intézeti',
+            'SZAKÉRTŐI': 'Szakértői',
+            'szakértői': 'Szakértői',
+            'szakertoi': 'Szakértői',
+            'Szakértői': 'Szakértői'
+          } %}
+          <div class="container-fluid py-2">
+            <div class="row g-3">
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Ügyszám</div>
+                <div>{{ investigation.case_number or investigation.id }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Végrehajtás módja</div>
+                <div>{{ assignment_type_label or _exec_map.get(investigation.assignment_type, investigation.assignment_type or '–') }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Szakértő</div>
+                <div>{{ assigned_expert_display or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Vizsgálat típusa</div>
+                <div>{{ investigation_type_label or '–' }}</div>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Külső ügyirat szám</div>
+                <div>{{ investigation.external_case_number or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Egyéb azonosító</div>
+                <div>{{ investigation.other_identifier or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Vizsgált személy neve</div>
+                <div>{{ investigation.subject_name or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Beküldő intézmény</div>
+                <div>{{ investigation.institution_name or '–' }}</div>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Leánykori neve</div>
+                <div>{{ investigation.maiden_name or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Anyja neve</div>
+                <div>{{ investigation.mother_name or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">TAJ szám</div>
+                <div>{{ investigation.taj_number or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Állampolgársága</div>
+                <div>{{ investigation.citizenship or '–' }}</div>
+              </div>
+            </div>
+
+            <div class="row g-3 mt-1">
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Születési hely</div>
+                <div>{{ investigation.birth_place or '–' }}</div>
+              </div>
+              <div class="col-12 col-lg-3">
+                <div class="text-muted small">Születési idő</div>
+                <div>{{ investigation.birth_date_str or '–' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 mb-3">
+      {% set can_upload = caps['can_upload_investigation'] %}
+      <form id="file-upload-form"
+            action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
+            method="post"
+            enctype="multipart/form-data"
+            class="needs-validation d-flex align-items-center file-upload-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="investigation-file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
+        <input type="file"
+               id="investigation-file"
+               name="file"
+               class="form-control me-2"
+               required
+               {% if not can_upload %}disabled{% endif %}
+               aria-label="Fájl feltöltése"
+               title="Fájl feltöltése">
+        <select name="category"
+                id="upload-category-file-upload-form"
+                class="form-select me-2 category-select"
+                required
+                {% if not can_upload %}disabled{% endif %}
+                aria-invalid="false"
+                aria-describedby="category-help-file-upload-form">
+          <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
+          {% for val, label in upload_form.category.choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div id="category-help-file-upload-form"
+             class="invalid-feedback category-warning d-none"
+             role="alert">
+          Kategória megadása kötelező.
+        </div>
+        {% if can_upload %}
+        <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
+        {% else %}
+        <button type="button" class="btn btn-outline-secondary" disabled>Feltöltés</button>
+        {% endif %}
+      </form>
+      {% if not can_upload %}
+      <div class="form-text text-muted mt-1">Nincs jogosultság fájl feltöltésére.</div>
+      {% endif %}
+    </div>
+
+    <div class="col-12">
+      <div class="card h-100">
+        <div class="card-header">Feltöltött fájlok</div>
+        <div class="card-body">
+          {% if attachments %}
+          <ul class="list-group list-group-flush mb-0">
+            {% for att in attachments %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                {{ att.filename }}
+                <span class="badge bg-secondary ms-2">{{ att.category }}</span>
+              </div>
+              <div class="text-nowrap">
+                <small class="text-muted">{{ att.uploaded_at_str }}</small>
+                <a href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=att.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2">Letöltés</a>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-muted p-3">Nincs feltöltött fájl.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6 d-flex flex-column">
+      <div class="card flex-fill d-flex flex-column h-100">
+        <div class="card-header">Megjegyzések</div>
+        <div class="card-body flex-fill d-flex flex-column">
+          <ul id="notes-list" class="list-group list-group-flush mb-3 flex-grow-1">
+            {% if notes %}
+              {% for note in notes %}
+                {% set author = note.author %}
+                {% include 'investigations/_note.html' %}
+              {% endfor %}
+            {% else %}
+              <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
+            {% endif %}
+          </ul>
+          {% if caps['can_post_investigation_notes'] %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea name="text" class="form-control mb-2" rows="2"></textarea>
+          <button type="button"
+                  id="add-note-btn"
+                  class="btn btn-primary align-self-start"
+                  data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">
+            Hozzáadás
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 d-flex">
+      <div class="card flex-fill d-flex flex-column h-100">
+        <div class="card-header">Változásnapló</div>
+        <div class="card-body flex-fill overflow-auto p-3">
+          {% if changelog_entries %}
+          <ul class="list-group list-group-flush mb-0">
+            {% for entry in changelog_entries %}
+            <li class="list-group-item py-2">
+              <span class="text-muted small">[{{ entry.timestamp_str }} – {{ user_display_name(entry.editor) }}]</span>
+              {{ entry.field_name }}: {{ entry.old_value or '–' }} → {{ entry.new_value or '–' }}
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="text-center text-muted p-3">Nincs rögzített változás.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="row g-3 needs-validation" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="assign">
+    <input type="hidden" name="form_version" value="{{ form_version }}">
+
+    <div class="col-md-6">
+      {{ cm.select_block(
+          'expert_1',
+          'expert_1',
+          szakerto_choices,
+          'Szakértő 1 *',
+          '-- Válasszon --',
+          selected=expert1_selected,
+          required=True
+      ) }}
+      <div class="invalid-feedback">Kérjük, válassza ki az 1. szakértőt.</div>
+    </div>
+
+    <div class="col-md-6">
+      {{ cm.select_block(
+          'expert_2',
+          'expert_2',
+          szakerto_choices_2,
+          'Szakértő 2 (opcionális)',
+          '-- Válasszon --',
+          selected=expert2_selected
+      ) }}
+    </div>
+
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Hozzárendelés</button>
+      <a href="{{ url_for('auth.szignal_cases') }}" class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </form>
+
+</div>
+
+<script>
+  (function() {
+    'use strict';
+    document.querySelectorAll('.needs-validation').forEach(function(form) {
+      form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const expert1Select = document.getElementById('expert_1');
+    const expert2Select = document.getElementById('expert_2');
+    if (!expert1Select || !expert2Select) return;
+
+    const originalExpert2Options = Array.from(expert2Select.options);
+
+    function updateExpert2Options() {
+      const selected1 = expert1Select.value;
+      expert2Select.innerHTML = '';
+      originalExpert2Options.forEach(function(opt) {
+        if (!opt.value || opt.value !== selected1) {
+          expert2Select.appendChild(opt.cloneNode(true));
+        }
+      });
+      if (expert2Select.value === selected1) {
+        expert2Select.value = '';
+      }
+    }
+
+    expert1Select.addEventListener('change', updateExpert2Options);
+    updateExpert2Options();
+  });
+</script>
+
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
+{% endblock %}

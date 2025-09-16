@@ -8,11 +8,14 @@
       textarea.classList.add('is-invalid');
       return;
     }
-    fetch(window.location.pathname + '/notes', {
+    const basePath = window.location.pathname.replace(/\/$/, '');
+    const targetUrl = btn.dataset.notesUrl || basePath + '/notes';
+    const csrfInput = document.querySelector('input[name="csrf_token"]');
+    fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        'X-CSRFToken': csrfInput ? csrfInput.value : ''
       },
       body: JSON.stringify({ text: textarea.value.trim() })
     })

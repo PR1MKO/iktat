@@ -84,7 +84,12 @@
                     <td class="d-none">–</td>
                     <td class="d-none">{{ inv.registration_time }}</td>
                     <td class="d-none">{{ inv.deadline or '–' }}</td>
-                    <td><a class="btn btn-sm btn-outline-primary" href="">Szakértő kijelölése</a></td>
+                    <td>
+                      <a class="btn btn-sm btn-outline-primary"
+                         href="{{ url_for('investigations.assign_investigation_expert', id=inv.id) }}">
+                        Szakértő kijelölése
+                      </a>
+                    </td>
                   </tr>
                 {% else %}
                   <tr>

@@ -17,6 +17,7 @@ from werkzeug import exceptions
 from werkzeug.utils import secure_filename  # NEW: for safe filenames
 
 from app import db
+from app.models import User
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
 from app.services.core_user_read import get_user_safe
 from app.utils.dates import safe_fmt
@@ -571,19 +572,228 @@ def download_investigation_file(inv_id, file_id):
 
 
 # ---------------------------------------------------------------------------
-# Minimal safe stub to satisfy links like 'investigations.assign_expert'
+# Assignment view (szignáló expert allocation)
 # ---------------------------------------------------------------------------
 
 
-@investigations_bp.route("/<int:inv_id>/assign", methods=["GET", "POST"])
+@investigations_bp.route("/<int:id>/assign", methods=["GET", "POST"])
 @login_required
 @roles_required("szignáló")
-def assign_expert(inv_id: int):
-    """Temporary stub: redirect to details until real assignment UI is wired."""
-    inv = db.session.get(Investigation, inv_id)
+def assign_investigation_expert(id):
+    inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    flash(
-        "Hozzárendelés oldal még fejlesztés alatt – átirányítva a részletekhez.", "info"
+
+    caps = capabilities_for(current_user)
+    if not caps.get("can_assign"):
+        flash("Nincs jogosultság", "danger")
+        return redirect(url_for("investigations.detail_investigation", id=id))
+
+    form = InvestigationForm(obj=inv)
+    note_form = InvestigationNoteForm()
+    upload_form = FileUploadForm()
+
+    inv.birth_date_str = fmt_date(inv.birth_date)
+    inv.registration_time_str = fmt_date(inv.registration_time)
+    inv.deadline_str = fmt_date(inv.deadline)
+
+    notes = (
+        InvestigationNote.query.filter_by(investigation_id=id)
+        .order_by(InvestigationNote.timestamp.desc())
+        .all()
     )
-    return redirect(url_for("investigations.detail_investigation", id=inv.id))
+    for note in notes:
+        note.timestamp_str = fmt_budapest(note.timestamp)
+        note.author = get_user_safe(note.author_id)
+
+    attachments = (
+        InvestigationAttachment.query.filter_by(investigation_id=id)
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .all()
+    )
+    for att in attachments:
+        att.uploaded_at_str = fmt_budapest(att.uploaded_at)
+
+    changelog_entries = (
+        InvestigationChangeLog.query.filter_by(investigation_id=id)
+        .order_by(InvestigationChangeLog.timestamp.desc())
+        .all()
+    )
+    for entry in changelog_entries:
+        entry.timestamp_str = fmt_budapest(entry.timestamp)
+        entry.editor = get_user_safe(entry.edited_by)
+
+    assignment_type_label = dict(form.assignment_type.choices).get(
+        inv.assignment_type, inv.assignment_type
+    )
+    investigation_type_label = dict(form.investigation_type.choices).get(
+        inv.investigation_type, inv.investigation_type
+    )
+    assigned_expert_display = None
+    if inv.assigned_expert_id:
+        assigned_expert_display = user_display_name(
+            get_user_safe(inv.assigned_expert_id)
+        )
+
+    szakerto_users = (
+        User.query.filter(User.role.in_(("szakértő", "szak")))
+        .order_by(User.screen_name, User.username)
+        .all()
+    )
+
+    def _user_label(user):
+        return user_display_name(user)
+
+    option_items = [(str(u.id), _user_label(u)) for u in szakerto_users]
+    option_map = {str(u.id): u for u in szakerto_users}
+
+    assigned_expert_display = None
+    if inv.assigned_expert_id:
+        expert_user = get_user_safe(inv.assigned_expert_id) or option_map.get(
+            str(inv.assigned_expert_id)
+        )
+        assigned_expert_display = user_display_name(expert_user)
+
+    if request.method == "POST":
+        expert1_selected = (request.form.get("expert_1") or "").strip()
+        expert2_selected = (request.form.get("expert_2") or "").strip()
+    else:
+        expert1_selected = str(inv.expert1_id) if inv.expert1_id else ""
+        expert2_selected = str(inv.expert2_id) if inv.expert2_id else ""
+
+    szakerto_choices = [("", "-- Válasszon --")] + option_items
+    szakerto_choices_2 = [("", "-- Válasszon (opcionális)")] + [
+        opt for opt in option_items if opt[0] != expert1_selected
+    ]
+
+    latest_log = changelog_entries[0] if changelog_entries else None
+    form_version = ""
+    if latest_log and latest_log.timestamp:
+        form_version = latest_log.timestamp.isoformat()
+    elif inv.registration_time:
+        form_version = inv.registration_time.isoformat()
+
+    if request.method == "POST" and request.form.get("action") == "assign":
+        expert1_raw = expert1_selected
+        expert2_raw = expert2_selected
+
+        if not expert1_raw:
+            flash("Szakértő 1 kitöltése kötelező.", "warning")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        if expert1_raw not in option_map:
+            flash("Érvénytelen szakértő választás.", "danger")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        if expert2_raw and expert2_raw not in option_map:
+            flash("Érvénytelen második szakértő.", "danger")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        if expert2_raw and expert2_raw == expert1_raw:
+            flash("A két szakértő nem lehet azonos.", "warning")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        submitted_version = (request.form.get("form_version") or "").strip()
+        current_version = form_version
+        if submitted_version and submitted_version != current_version:
+            flash("Az űrlap időközben frissült. Kérjük, töltse be újra.", "warning")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        expert1_id = int(expert1_raw)
+        expert2_id = int(expert2_raw) if expert2_raw else None
+
+        old_expert1 = inv.expert1_id
+        old_expert2 = inv.expert2_id
+        old_assigned = inv.assigned_expert_id
+
+        if (
+            old_expert1 == expert1_id
+            and (old_expert2 or None) == expert2_id
+            and old_assigned == expert1_id
+        ):
+            flash("Nincs változás.", "info")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        inv.expert1_id = expert1_id
+        inv.expert2_id = expert2_id
+        inv.assigned_expert_id = expert1_id
+
+        timestamp = now_utc()
+
+        def _log_change(field_name, old_val, new_val):
+            if old_val == new_val:
+                return None
+
+            def _display(uid):
+                if uid is None:
+                    return None
+                user = get_user_safe(uid) or option_map.get(str(uid))
+                return user_display_name(user) if user else str(uid)
+
+            return InvestigationChangeLog(
+                investigation_id=inv.id,
+                field_name=field_name,
+                old_value=_display(old_val),
+                new_value=_display(new_val),
+                edited_by=current_user.id,
+                timestamp=timestamp,
+            )
+
+        logs = list(
+            filter(
+                None,
+                [
+                    _log_change("expert1_id", old_expert1, expert1_id),
+                    _log_change("expert2_id", old_expert2, expert2_id),
+                    _log_change("assigned_expert_id", old_assigned, expert1_id),
+                ],
+            )
+        )
+
+        if logs:
+            db.session.add_all(logs)
+
+        try:
+            db.session.commit()
+        except Exception:  # noqa: BLE001
+            db.session.rollback()
+            flash("Nem sikerült kijelölni a szakértőt.", "danger")
+            return redirect(
+                url_for("investigations.assign_investigation_expert", id=id)
+            )
+
+        flash("Szakértő kijelölve.", "success")
+        return redirect(url_for("auth.szignal_cases"))
+
+    return render_template(
+        "assign_investigation_expert.html",
+        investigation=inv,
+        attachments=attachments,
+        notes=notes,
+        changelog_entries=changelog_entries,
+        form=form,
+        note_form=note_form,
+        upload_form=upload_form,
+        assignment_type_label=assignment_type_label,
+        investigation_type_label=investigation_type_label,
+        assigned_expert_display=assigned_expert_display,
+        szakerto_choices=szakerto_choices,
+        szakerto_choices_2=szakerto_choices_2,
+        expert1_selected=expert1_selected,
+        expert2_selected=expert2_selected,
+        form_version=form_version,
+        caps=caps,
+        user_display_name=user_display_name,
+    )
