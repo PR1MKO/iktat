@@ -94,8 +94,9 @@
       </div>
     </div>
 
+    {# Upload controls — inputs always rendered; button only if allowed #}
+    {% set _can_upload = (can_upload if can_upload is defined else caps.get('can_upload_investigation', False)) %}
     <div class="col-12 mb-3">
-      {% set can_upload = caps['can_upload_investigation'] %}
       <form id="file-upload-form"
             action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
             method="post"
@@ -108,14 +109,14 @@
                name="file"
                class="form-control me-2"
                required
-               {% if not can_upload %}disabled{% endif %}
+               {% if not _can_upload %}disabled{% endif %}
                aria-label="Fájl feltöltése"
                title="Fájl feltöltése">
         <select name="category"
                 id="upload-category-file-upload-form"
                 class="form-select me-2 category-select"
                 required
-                {% if not can_upload %}disabled{% endif %}
+                {% if not _can_upload %}disabled{% endif %}
                 aria-invalid="false"
                 aria-describedby="category-help-file-upload-form">
           <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
@@ -128,14 +129,19 @@
              role="alert">
           Kategória megadása kötelező.
         </div>
-        {% if can_upload %}
-        <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
-        {% else %}
-        <button type="button" class="btn btn-outline-secondary" disabled>Feltöltés</button>
+
+        {# Render the upload button ONLY when capability allows. #}
+        {% if _can_upload %}
+        <button type="submit" class="btn btn-outline-success upload-btn">
+          Feltöltés
+        </button>
         {% endif %}
+
       </form>
-      {% if not can_upload %}
-      <div class="form-text text-muted mt-1">Nincs jogosultság fájl feltöltésére.</div>
+      {% if not _can_upload %}
+      <div class="alert alert-warning small mt-2">
+        Nincs jogosultság fájlfeltöltéshez ezen az oldalon.
+      </div>
       {% endif %}
     </div>
 

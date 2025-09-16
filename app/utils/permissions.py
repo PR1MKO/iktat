@@ -44,7 +44,7 @@ _BASE_ROLE_CAPS: Dict[str, Dict[str, bool]] = {
         "can_post_notes": True,
         "can_download_files": True,
         "can_edit_investigation": False,
-        "can_upload_investigation": False,
+        "can_upload_investigation": True,
         "can_post_investigation_notes": False,
     },
     "szakértő": {
@@ -99,9 +99,28 @@ def _intersection_caps(matrix: Dict[str, Dict[str, bool]]) -> Dict[str, bool]:
 _ROLE_CAPS = dict(_BASE_ROLE_CAPS)
 _ROLE_CAPS["pénzügy"] = _intersection_caps(_BASE_ROLE_CAPS)
 
+_INVESTIGATION_UPLOAD_ROLES = {"admin", "iroda", "szakértő", "leíró", "szignáló"}
+
+
+def can_upload_investigation(user) -> bool:
+    """Return True if the user may upload investigation files."""
+    if user is None:
+        return False
+
+    has_any_role = getattr(user, "has_any_role", None)
+    if callable(has_any_role):
+        try:
+            return bool(has_any_role(_INVESTIGATION_UPLOAD_ROLES))
+        except TypeError:
+            return bool(has_any_role(*_INVESTIGATION_UPLOAD_ROLES))
+
+    role = getattr(user, "role", None)
+    return role in _INVESTIGATION_UPLOAD_ROLES
+
 
 def capabilities_for(user) -> Dict[str, bool]:
     """Return capability flags for the given user."""
     role = getattr(user, "role", None)
-    caps = _ROLE_CAPS.get(role) or _ROLE_CAPS["pénzügy"]
-    return dict(caps)
+    caps = dict(_ROLE_CAPS.get(role) or _ROLE_CAPS["pénzügy"])
+    caps["can_upload_investigation"] = can_upload_investigation(user)
+    return caps

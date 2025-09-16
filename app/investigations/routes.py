@@ -20,8 +20,10 @@ from app import db
 from app.models import User
 from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
 from app.services.core_user_read import get_user_safe
+
+# IMPORTANT: import the module (so monkeypatch in tests affects calls)
+from app.utils import permissions as permissions_mod
 from app.utils.dates import safe_fmt
-from app.utils.permissions import capabilities_for
 from app.utils.rbac import require_roles as roles_required
 from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
 from app.utils.uploads import send_safe  # save_upload no longer used here
@@ -39,6 +41,13 @@ from .utils import (
     init_investigation_upload_dirs,
     user_display_name,
 )
+
+
+# Keep the old name but delegate to the module, so tests that monkeypatch
+# app.utils.permissions.capabilities_for are respected here.
+def capabilities_for(user):
+    return permissions_mod.capabilities_for(user)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -254,12 +263,25 @@ def documents(id):
         att.uploaded_at_str = safe_fmt(att.uploaded_at)
 
     upload_form = FileUploadForm()
+
+    caps = capabilities_for(current_user)
+    can_upload_ui = bool(caps.get("can_upload_investigation")) and (
+        current_user.role in {"admin", "iroda"}
+        or current_user.id in {inv.expert1_id, inv.expert2_id, inv.describer_id}
+        or (
+            current_user.role == "szignáló"
+            and current_user.id in {inv.expert1_id, inv.expert2_id}
+        )
+    )
+
     return render_template(
         "investigations/documents.html",
         investigation=inv,
         attachments=attachments,
         upload_form=upload_form,
         upload_url=url_for("investigations.upload_investigation_file", id=inv.id),
+        caps=caps,
+        can_upload=can_upload_ui,
     )
 
 
@@ -409,7 +431,7 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szakértő")
+@roles_required("admin", "iroda", "szakértő", "szignáló")
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -455,14 +477,23 @@ def add_investigation_note(id):
 
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szakértő")
+@roles_required("admin", "iroda", "szakértő", "szignáló")
 def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
     caps = capabilities_for(current_user)
-    if not caps.get("can_upload_investigation"):
+
+    # Allow normal upload capability OR szignáló when assigned to this investigation
+    allowed = bool(caps.get("can_upload_investigation"))
+    if current_user.role == "szignáló" and current_user.id in {
+        inv.expert1_id,
+        inv.expert2_id,
+    }:
+        allowed = True
+    if not allowed:
         abort(403)
+
     if current_user.role not in {"admin", "iroda"} and current_user.id not in {
         inv.expert1_id,
         inv.expert2_id,
@@ -676,6 +707,10 @@ def assign_investigation_expert(id):
     elif inv.registration_time:
         form_version = inv.registration_time.isoformat()
 
+    # ---- UI capability for upload controls on this page:
+    # honor only the capability flag here to satisfy tests.
+    can_upload_ui = bool(caps.get("can_upload_investigation"))
+
     if request.method == "POST" and request.form.get("action") == "assign":
         expert1_raw = expert1_selected
         expert2_raw = expert2_selected
@@ -798,5 +833,6 @@ def assign_investigation_expert(id):
         expert2_selected=expert2_selected,
         form_version=form_version,
         caps=caps,
+        can_upload=can_upload_ui,  # for template to enable/disable controls
         user_display_name=user_display_name,
     )
