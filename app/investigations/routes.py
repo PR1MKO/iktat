@@ -642,9 +642,12 @@ def assign_investigation_expert(id):
     )
 
     def _user_label(user):
-        return user_display_name(user)
+        return user.screen_name or user.username or ""
 
-    option_items = [(str(u.id), _user_label(u)) for u in szakerto_users]
+    option_items = sorted(
+        [(str(u.id), _user_label(u)) for u in szakerto_users],
+        key=lambda item: item[1].casefold(),
+    )
     option_map = {str(u.id): u for u in szakerto_users}
 
     assigned_expert_display = None
