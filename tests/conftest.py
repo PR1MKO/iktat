@@ -1,18 +1,8 @@
-import pathlib as _p
-
-import pytest
-
-if _p.Path.cwd().as_posix().startswith("/workspace/"):
-    pytest.skip(
-        "Skipping tests inside Codex maintenance/setup", allow_module_level=True
-    )
-
-# tests/conftest.py
-
 # --- Imports first to satisfy E402 ---
 import itertools
 import os
 import pathlib
+import pathlib as _p
 import random
 import sys
 import uuid
@@ -22,6 +12,9 @@ import flask as _fl
 import pytest
 from markupsafe import Markup as _MSM
 from sqlalchemy.pool import StaticPool
+
+# tests/conftest.py
+
 
 # --- Test-only fix for Flask-WTF<=1.1.x Markup import ---
 _fl.Markup = _MSM  # ensure any "from flask import Markup" resolves safely
@@ -64,12 +57,17 @@ def _seed_random(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _fixed_now(monkeypatch):
-    fixed = time_utils.BUDAPEST_TZ.localize(datetime(2020, 1, 1, 12, 0))
+    fixed = datetime(2020, 1, 1, 12, 0, tzinfo=time_utils.BUDAPEST_TZ)
+    fixed_utc = fixed.astimezone(timezone.utc)
     monkeypatch.setattr(time_utils, "now_local", lambda: fixed)
-    monkeypatch.setattr(dates_util, "now_utc", lambda: fixed.astimezone(timezone.utc))
+    monkeypatch.setattr(time_utils, "now_utc", lambda: fixed_utc)
+    monkeypatch.setattr(dates_util, "now_utc", lambda: fixed_utc)
     for name, mod in list(sys.modules.items()):
-        if name.startswith("tests.") and hasattr(mod, "now_local"):
-            monkeypatch.setattr(mod, "now_local", lambda: fixed, raising=False)
+        if name.startswith("tests."):
+            if hasattr(mod, "now_local"):
+                monkeypatch.setattr(mod, "now_local", lambda: fixed, raising=False)
+            if hasattr(mod, "now_utc"):
+                monkeypatch.setattr(mod, "now_utc", lambda: fixed_utc, raising=False)
 
 
 @pytest.fixture(autouse=True)

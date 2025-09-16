@@ -22,7 +22,7 @@ from app.services.core_user_read import get_user_safe
 from app.utils.dates import safe_fmt
 from app.utils.permissions import capabilities_for
 from app.utils.rbac import require_roles as roles_required
-from app.utils.time_utils import fmt_date, now_local
+from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
 from app.utils.uploads import send_safe  # save_upload no longer used here
 
 from . import investigations_bp
@@ -82,7 +82,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
                     old_value=str(old_val) if old_val is not None else None,
                     new_value=str(new_val) if new_val is not None else None,
                     edited_by=current_user.id,
-                    timestamp=now_local(),
+                    timestamp=now_utc(),
                 )
             )
     return logs
@@ -209,7 +209,7 @@ def new_investigation():
             assigned_expert_id=assigned_expert_id,
         )
         inv.case_number = generate_case_number(db.session)  # V-####-YYYY
-        inv.registration_time = now_local()
+        inv.registration_time = now_utc()
         inv.deadline = inv.registration_time + timedelta(days=30)
 
         db.session.add(inv)
@@ -343,17 +343,17 @@ def detail_investigation(id):
         .all()
     )
     for note in notes:
-        note.timestamp_str = note.timestamp.strftime("%Y.%m.%d %H:%M")
+        note.timestamp_str = fmt_budapest(note.timestamp)
         note.author = get_user_safe(note.author_id)
     for att in attachments:
-        att.uploaded_at_str = att.uploaded_at.strftime("%Y.%m.%d %H:%M")
+        att.uploaded_at_str = fmt_budapest(att.uploaded_at)
     changelog = (
         InvestigationChangeLog.query.filter_by(investigation_id=id)
         .order_by(InvestigationChangeLog.timestamp.desc())
         .all()
     )
     for log in changelog:
-        log.timestamp_str = log.timestamp.strftime("%Y.%m.%d %H:%M")
+        log.timestamp_str = fmt_budapest(log.timestamp)
         log.editor = get_user_safe(log.edited_by)
     assignment_type_label = dict(form.assignment_type.choices).get(
         inv.assignment_type, inv.assignment_type
@@ -441,7 +441,7 @@ def add_investigation_note(id):
 
     # ensure author is available for the partial
     author = get_user_safe(note.author_id)
-    note.timestamp_str = note.timestamp.strftime("%Y.%m.%d %H:%M")
+    note.timestamp_str = fmt_budapest(note.timestamp)
 
     html = render_template(
         "investigations/_note.html",
@@ -516,7 +516,7 @@ def upload_investigation_file(id):
         filename=filename,  # store the saved filename
         category=category,
         uploaded_by=current_user.id,
-        uploaded_at=now_local(),
+        uploaded_at=now_utc(),
     )
     db.session.add(attachment)
     db.session.commit()

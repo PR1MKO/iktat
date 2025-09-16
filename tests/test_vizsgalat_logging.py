@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models import Case, db
-from app.utils.time_utils import BUDAPEST_TZ
+from app.utils.time_utils import fmt_budapest
 from tests.helpers import create_user, login
 
 
@@ -13,9 +13,9 @@ def test_empty_tox_field_is_logged(client, app, monkeypatch):
         db.session.commit()
         cid = case.id
 
-    fixed = datetime(2024, 1, 1, 12, 0, tzinfo=BUDAPEST_TZ)
+    fixed = datetime(2024, 1, 1, 11, 0, tzinfo=timezone.utc)
 
-    monkeypatch.setattr("app.routes.now_local", lambda: fixed)
+    monkeypatch.setattr("app.routes.now_utc", lambda: fixed)
 
     with client:
         login(client, "doc", "pw")
@@ -26,7 +26,5 @@ def test_empty_tox_field_is_logged(client, app, monkeypatch):
     with app.app_context():
         case = db.session.get(Case, cid)
         assert case.alkohol_vizelet_ordered is True
-        assert (
-            case.tox_orders.strip()
-            == f"Alkohol vizelet rendelve: {fixed.strftime('%Y-%m-%d %H:%M')} – doc"
-        )
+        expected = fmt_budapest(fixed)
+        assert case.tox_orders.strip() == f"Alkohol vizelet rendelve: {expected} – doc"

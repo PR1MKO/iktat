@@ -1,5 +1,5 @@
 from app import db
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc
 
 
 class Investigation(db.Model):
@@ -30,7 +30,7 @@ class Investigation(db.Model):
     assigned_expert_id = db.Column(db.Integer, index=True)
 
     registration_time = db.Column(
-        db.DateTime(timezone=True), default=now_local, nullable=False
+        db.DateTime(timezone=True), default=now_utc, nullable=False
     )
     deadline = db.Column(db.DateTime(timezone=True))
 
@@ -74,7 +74,7 @@ class InvestigationNote(db.Model):
     )
     author_id = db.Column(db.Integer, index=True, nullable=False)  # plain int
     text = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)
 
     investigation = db.relationship("Investigation", back_populates="notes")
 
@@ -90,9 +90,7 @@ class InvestigationAttachment(db.Model):
     filename = db.Column(db.String(255), nullable=False)
     category = db.Column(db.String(64), nullable=False)
     uploaded_by = db.Column(db.Integer, index=True, nullable=False)  # plain int
-    uploaded_at = db.Column(
-        db.DateTime(timezone=True), default=now_local, nullable=False
-    )
+    uploaded_at = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)
 
     investigation = db.relationship("Investigation", back_populates="attachments")
 
@@ -109,6 +107,6 @@ class InvestigationChangeLog(db.Model):
     old_value = db.Column(db.Text)
     new_value = db.Column(db.Text)
     edited_by = db.Column(db.Integer, index=True, nullable=False)  # plain int
-    timestamp = db.Column(db.DateTime(timezone=True), default=now_local, nullable=False)
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)
 
     investigation = db.relationship("Investigation", back_populates="change_logs")

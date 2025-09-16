@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import secrets
-from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -165,7 +164,10 @@ def create_app(test_config=None):
 
     @flask_app.before_request
     def _set_csp_nonce():
-        g.csp_nonce = secrets.token_urlsafe(16)
+        nonce = secrets.token_urlsafe(16)
+        if not nonce[0].isalnum():
+            nonce = "A" + nonce  # ensure leading alphanumeric
+        g.csp_nonce = nonce
 
     @flask_app.context_processor
     def _inject_csp_nonce():
@@ -209,59 +211,10 @@ def create_app(test_config=None):
         view_func=_list_investigations,
     )
 
-    flask_app.jinja_env.filters["datetimeformat"] = lambda value: (
-        value.strftime("%Y-%m-%dT%H:%M") if value else ""
-    )
     flask_app.jinja_env.filters["getattr"] = lambda obj, name: getattr(obj, name, "")
-
-    def _ensure_localized(dt: datetime) -> datetime:
-        """Attach Budapest tz to naive dt safely (pytz or zoneinfo)."""
-        if getattr(dt, "tzinfo", None) is None:
-            if hasattr(BUDAPEST_TZ, "localize"):
-                # pytz path
-                dt = BUDAPEST_TZ.localize(dt)
-            else:
-                # zoneinfo path
-                dt = dt.replace(tzinfo=BUDAPEST_TZ)
-        return dt
-
-    def localtime(value: datetime | None):
-        if not value:
-            return ""
-        dt = _ensure_localized(value)
-        return dt.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d %H:%M")
-
-    flask_app.jinja_env.filters["localtime"] = localtime
-
-    def local_dt(value: datetime | None, fmt: str = "%Y-%m-%d %H:%M"):
-        if not value:
-            return ""
-        dt = _ensure_localized(value)
-        return dt.astimezone(BUDAPEST_TZ).strftime(fmt)
-
-    def iso_dt(value: datetime | None):
-        if not value:
-            return ""
-        dt = _ensure_localized(value)
-        return dt.astimezone(BUDAPEST_TZ).isoformat()
-
-    flask_app.jinja_env.filters["local_dt"] = local_dt
-    flask_app.jinja_env.filters["iso_dt"] = iso_dt
     flask_app.jinja_env.filters["fmt_date"] = fmt_date
     flask_app.jinja_env.globals["fmt_date"] = fmt_date
     flask_app.jinja_env.globals["BUDAPEST_TZ"] = BUDAPEST_TZ
-
-    def _datetime_local(val):
-        if not val:
-            return ""
-        try:
-            dt = _ensure_localized(val)
-            dt = dt.astimezone(BUDAPEST_TZ)
-            return dt.strftime("%Y-%m-%dT%H:%M")
-        except Exception:  # pragma: no cover - best effort
-            return ""
-
-    flask_app.jinja_env.filters["datetime_local"] = _datetime_local
 
     TOX_ORDER_RE = re.compile(
         r"^(?P<name>.+?) rendelve: (?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>.+)$"

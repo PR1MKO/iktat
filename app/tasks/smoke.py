@@ -1,7 +1,7 @@
 # app/tasks/smoke.py
-from datetime import datetime, timezone
+from app.utils.time_utils import fmt_budapest, now_utc
 
 
 def ping_db():
-    # simple health payload; tests just need a dict with ok + timestamp
-    return {"ok": True, "ts": datetime.now(timezone.utc).isoformat()}
+    """Simple health payload with human-friendly timestamp."""
+    return {"ok": True, "ts": fmt_budapest(now_utc())}

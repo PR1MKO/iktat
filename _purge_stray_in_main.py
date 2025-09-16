@@ -1,9 +1,9 @@
 import pathlib
 import shutil
 import sqlite3
-from datetime import datetime
 
 from app import create_app
+from app.utils.time_utils import now_utc
 
 EXAM_TABLES_ORDERED = (
     "investigation_attachment",
@@ -20,7 +20,7 @@ with app.app_context():
         "test_examination.db" if app.config.get("TESTING") else "examination.db"
     )
 
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    ts = now_utc().strftime("%Y%m%d-%H%M%S")
     for p in (main, exam):
         if p.exists():
             dst = p.with_name(f"{p.stem}.bak.{ts}{p.suffix}")

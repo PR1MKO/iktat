@@ -4,7 +4,7 @@ from flask import flash, redirect, url_for
 from app.models import ChangeLog
 
 from .case_status import is_final_status
-from .time_utils import BUDAPEST_TZ
+from .time_utils import fmt_budapest
 
 
 def build_case_context(case):
@@ -29,10 +29,7 @@ def build_case_context(case):
 
     formatted_ts = ""
     if case.certificate_generated_at:
-        ts = case.certificate_generated_at
-        if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=BUDAPEST_TZ)
-        formatted_ts = ts.astimezone(BUDAPEST_TZ).strftime("%Y.%m.%d %H:%M")
+        formatted_ts = fmt_budapest(case.certificate_generated_at)
 
     return {
         "grouped_orders": grouped_orders,

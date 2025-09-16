@@ -1,7 +1,7 @@
 from sqlalchemy import and_, func, or_
 
 from app.models import Case, User
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc
 
 from .dates import attach_case_dates
 
@@ -60,7 +60,7 @@ def build_cases_and_users_map(request_args, base_query=None):
         ordering = [col.desc() if sort_order == "desc" else col.asc()]
 
     # split expired vs active to surface overdue first
-    now = now_local()
+    now = now_utc()
     expired_cases = q.filter(Case.deadline < now).order_by(*ordering).all()
     active_cases = (
         q.filter(or_(Case.deadline >= now, Case.deadline.is_(None)))

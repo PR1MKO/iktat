@@ -1,12 +1,12 @@
 from sqlalchemy import func
 
 from app.models import Case
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc, to_budapest
 
 
 def generate_case_number_for_year(session, year: int | None = None) -> str:
     """Return next case number in format 'B:0001/YYYY'."""
-    y = year or now_local().year
+    y = year or to_budapest(now_utc()).year
     count_for_year = (
         session.query(func.count(Case.id))
         .filter(func.strftime("%Y", Case.registration_time) == str(y))

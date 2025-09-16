@@ -1,7 +1,7 @@
 from flask import current_app, flash, has_request_context
 from flask_login import current_user
 
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc
 
 from .models import AuditLog, db
 
@@ -11,7 +11,7 @@ def log_action(action: str, details: str = None):
         return  # Skip logging if no user is logged in
 
     log_entry = AuditLog(
-        timestamp=now_local(),
+        timestamp=now_utc(),
         user_id=current_user.id,
         username=current_user.username,
         role=current_user.role,

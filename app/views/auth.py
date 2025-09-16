@@ -1,5 +1,4 @@
 # app/views/auth.py
-
 import codecs
 import csv
 import hashlib
@@ -41,7 +40,13 @@ from app.utils.idempotency import claim_idempotency, make_default_key
 from app.utils.permissions import capabilities_for
 from app.utils.query_helpers import apply_case_filters, build_cases_and_users_map
 from app.utils.rbac import require_roles as roles_required
-from app.utils.time_utils import BUDAPEST_TZ, fmt_date, now_local
+from app.utils.time_utils import (
+    BUDAPEST_TZ,
+    fmt_budapest,
+    fmt_date,
+    now_utc,
+    to_budapest,
+)
 from app.utils.uploads import (
     get_upload_categories,
     is_valid_category,
@@ -122,8 +127,9 @@ def export_changelog_csv(case_id):
     )
 
     for group in grouped:
-        ts = group[0].timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        ts = fmt_budapest(group[0].timestamp, "%Y-%m-%d %H:%M:%S")
         user = group[0].edited_by
+
         fields = []
         old_vals = []
         new_vals = []
@@ -174,7 +180,7 @@ def logout():
 @auth_bp.route("/ack_cookie_notice", methods=["POST"])
 @login_required
 def ack_cookie_notice():
-    current_user.cookie_notice_ack_at = now_local()
+    current_user.cookie_notice_ack_at = now_utc()
     db.session.commit()
     return "", 204
 
@@ -182,7 +188,7 @@ def ack_cookie_notice():
 @auth_bp.route("/dashboard")
 @login_required
 def dashboard():
-    now = now_local()
+    now = to_budapest(now_utc())
     today_start = datetime(now.year, now.month, now.day, tzinfo=BUDAPEST_TZ)
     week_start = today_start - timedelta(days=now.weekday())
     month_start = datetime(now.year, now.month, 1, tzinfo=BUDAPEST_TZ)
@@ -206,7 +212,7 @@ def dashboard():
         .all()
     )
 
-    today = now_local().date()
+    today = to_budapest(now_utc()).date()
     threshold = today + timedelta(days=14)
     upcoming_deadlines = (
         Case.query.filter(
@@ -482,7 +488,7 @@ def create_case():
         birth_date = None
         if request.form.get("birth_date"):
             birth_date = datetime.strptime(request.form["birth_date"], "%Y-%m-%d")
-        registration_time = now_local()
+        registration_time = now_utc()
         case_number = generate_case_number_for_year(db.session)
         notes = request.form.get("notes", "").strip() or None
 
@@ -546,7 +552,7 @@ def create_case():
             old_value="",
             new_value="ügy érkeztetve",
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=now_local(),
+            timestamp=now_utc(),
         )
         db.session.add(log)
         db.session.commit()
@@ -692,7 +698,7 @@ def edit_case_basic(case_id):
             old_value="",
             new_value="alapadat(ok) szerkesztve",
             edited_by=current_user.screen_name or current_user.username,
-            timestamp=now_local(),
+            timestamp=now_utc(),
         )
         db.session.add(log)
         try:
@@ -786,7 +792,7 @@ def upload_file(case_id):
             case_id=case.id,
             filename=dest.name,
             uploader=current_user.username,
-            upload_time=now_local(),
+            upload_time=now_utc(),
             category=category,
         )
         db.session.add(upload_rec)
@@ -1003,7 +1009,7 @@ def assign_pathologist(case_id):
                 recipient=assigned_user.username,
                 case_id=case.id,
                 message=f"{case.case_number} has been signalled to you",
-                timestamp=now_local(),
+                timestamp=now_utc(),
             )
             db.session.add(msg)
 
@@ -1262,7 +1268,7 @@ def add_note_universal(case_id):
         return jsonify({"error": "Empty note"}), 400
 
     case = db.session.get(Case, case_id) or abort(404)
-    ts = now_local().strftime("%Y-%m-%d %H:%M")
+    ts = fmt_budapest(now_utc())
     author = current_user.screen_name or current_user.username
     entry = f"[{ts} – {author}] {note_text}"
 
@@ -1354,7 +1360,7 @@ def generate_tox_doc(case_id):
             "external_case_number": case.external_case_number or "",
         },
         "intezmeny": case.institution_name or "",
-        "today": now_local().strftime("%Y.%m.%d"),
+        "today": fmt_budapest(now_utc(), "%Y.%m.%d"),
         "current_user": current_user.screen_name or current_user.username,
         "alkohol_minta_count": safe_int(request.form.get("alkohol_minta_count")),
         "alkohol_minta_ara": safe_float(request.form.get("alkohol_minta_ara")),
@@ -1409,7 +1415,7 @@ def generate_tox_doc(case_id):
             doc.save(str(output_path))
 
         case.tox_doc_generated = True
-        case.tox_doc_generated_at = now_local()
+        case.tox_doc_generated_at = now_utc()
         case.tox_doc_generated_by = current_user.screen_name or current_user.username
 
         db.session.add(
@@ -1417,7 +1423,7 @@ def generate_tox_doc(case_id):
                 case_id=case.id,
                 filename=output_path.name,
                 uploader=current_user.username,
-                upload_time=now_local(),
+                upload_time=now_utc(),
                 category="Toxikológiai kirendelő",
             )
         )

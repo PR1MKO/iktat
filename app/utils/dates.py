@@ -1,18 +1,18 @@
 from datetime import date, datetime, timezone
 from typing import Dict, Optional
 
+from app.utils.time_utils import HUMAN_TIME_FMT, fmt_budapest, to_budapest
 
-def now_utc() -> datetime:
+
+def now_utc() -> datetime:  # pragma: no cover - thin wrapper for monkeypatching
     return datetime.now(timezone.utc)
 
 
-def safe_fmt(dt: Optional[datetime], pattern: str = "%Y.%m.%d %H:%M") -> str:
+def safe_fmt(dt: Optional[datetime], pattern: str = HUMAN_TIME_FMT) -> str:
     if not dt:
         return ""
     try:
-        from app.utils.time_utils import BUDAPEST_TZ
-
-        return dt.astimezone(BUDAPEST_TZ).strftime(pattern)
+        return fmt_budapest(dt, pattern)
     except Exception:
         return dt.strftime(pattern)
 
@@ -32,10 +32,8 @@ def compute_deadline_flags(
             "days_left": None,
         }
     try:
-        from app.utils.time_utils import now_local
-
-        today = now_local().date()
-        d = deadline.date()
+        today = to_budapest(now_utc()).date()
+        d = to_budapest(deadline).date()
     except Exception:
         today = date.today()
         d = deadline.date()

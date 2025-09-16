@@ -25,7 +25,7 @@ from app.utils.case_status import is_final_status
 from app.utils.dates import attach_case_dates, safe_fmt
 from app.utils.idempotency import claim_idempotency, make_default_key
 from app.utils.rbac import require_roles as roles_required
-from app.utils.time_utils import now_local
+from app.utils.time_utils import fmt_budapest, now_utc
 from app.utils.uploads import is_valid_category, resolve_safe, save_upload
 
 main_bp = Blueprint("main", __name__)
@@ -33,7 +33,7 @@ main_bp = Blueprint("main", __name__)
 
 def append_note(case, note_text, author=None):
     """Appends a note to the case.notes field with timestamp and author."""
-    ts = now_local().strftime("%Y-%m-%d %H:%M")
+    ts = fmt_budapest(now_utc())
     if author is None:
         author = current_user.screen_name or current_user.username
     entry = f"[{ts} – {author}] {note_text}"
@@ -59,7 +59,7 @@ def handle_file_upload(case, file, category="egyéb"):
         case_id=case.id,
         filename=dest.name,
         uploader=current_user.screen_name or current_user.username,
-        upload_time=now_local(),
+        upload_time=now_utc(),
         category=category,
     )
     db.session.add(rec)
@@ -163,7 +163,7 @@ def mark_tox_viewed(case_id):
         return redirect(url_for("auth.case_detail", case_id=case.id))
 
     case.tox_viewed_by_expert = True
-    ts = now_local()
+    ts = now_utc()
     case.tox_viewed_at = ts
 
     log = ChangeLog(
@@ -320,7 +320,7 @@ def vizsgalat_elrendelese(case_id):
 
     if request.method == "POST":
         # Use local Budapest time and the username for logging toxicology orders
-        now = now_local().strftime("%Y-%m-%d %H:%M")
+        now = fmt_budapest(now_utc())
         author = current_user.username
         redirect_target = (
             url_for("auth.edit_case", case_id=case.id)
@@ -717,7 +717,7 @@ def generate_certificate(case_id):
         fh.write("\n".join(lines))
 
     case.certificate_generated = True
-    case.certificate_generated_at = now_local()
+    case.certificate_generated_at = now_utc()
     db.session.commit()
 
     flash("Bizonyítvány generálva.", "success")

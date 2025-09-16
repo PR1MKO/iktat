@@ -1,7 +1,7 @@
 import io
 import os
 import shutil
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import pytest
 from sqlalchemy import inspect
@@ -54,17 +54,15 @@ def test_case_number_sequential_and_year_reset(app, monkeypatch):
     with app.app_context():
 
         def fake_now(year):
-            from app.utils.time_utils import BUDAPEST_TZ
+            return datetime(year, 1, 1, tzinfo=timezone.utc)
 
-            return datetime(year, 1, 1, tzinfo=BUDAPEST_TZ)
-
-        monkeypatch.setattr(inv_utils, "now_local", lambda: fake_now(2023))
+        monkeypatch.setattr(inv_utils, "now_utc", lambda: fake_now(2023))
         cn1 = inv_utils.generate_case_number(db.session)
         create_investigation(case_number=cn1)
         cn2 = inv_utils.generate_case_number(db.session)
         assert cn2 == "V:0002/2023"
         create_investigation(case_number=cn2)
-        monkeypatch.setattr(inv_utils, "now_local", lambda: fake_now(2024))
+        monkeypatch.setattr(inv_utils, "now_utc", lambda: fake_now(2024))
         cn3 = inv_utils.generate_case_number(db.session)
         assert cn3 == "V:0001/2024"
 

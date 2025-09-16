@@ -76,31 +76,27 @@ def test_logout_post_with_csrf_clears_session(client, app):
         assert session.get("_user_id") is None
 
 
-def test_dashboard_deadline_uses_now_local(client, app, monkeypatch):
-    """
-    The dashboard should derive 'today' using a timezone-aware helper.
-    We monkeypatch the module's now_local() to ensure it's actually called.
-    """
+def test_dashboard_deadline_uses_now_utc(client, app, monkeypatch):
+    """Dashboard should derive 'today' via UTC helper."""
     with app.app_context():
         create_user()
     import app.views.auth as auth_module
 
-    called = {"now_local": False}
-    real_now_local = auth_module.now_local
+    called = {"now_utc": False}
+    real_now_utc = auth_module.now_utc
 
-    def dummy_now_local():
-        called["now_local"] = True
-        return real_now_local()
+    def dummy_now_utc():
+        called["now_utc"] = True
+        return real_now_utc()
 
-    # Patch exactly what the view uses
-    monkeypatch.setattr(auth_module, "now_local", dummy_now_local, raising=True)
+    monkeypatch.setattr(auth_module, "now_utc", dummy_now_utc, raising=True)
 
     with client:
         login(client, "admin", "secret")
         resp = client.get("/dashboard")
         assert resp.status_code == 200
 
-    assert called["now_local"] is True
+    assert called["now_utc"] is True
 
 
 # --- Registration via admin ---

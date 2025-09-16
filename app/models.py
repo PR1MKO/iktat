@@ -7,7 +7,7 @@ from sqlalchemy.orm import synonym
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
-from app.utils.time_utils import BUDAPEST_TZ, now_local
+from app.utils.time_utils import fmt_budapest, now_utc
 
 
 class User(db.Model, UserMixin):
@@ -55,13 +55,13 @@ class Case(db.Model):
     residence = db.Column(db.String(255), nullable=True)
     citizenship = db.Column(db.String(255), nullable=True)
 
-    registration_time = db.Column(db.DateTime(timezone=True), default=now_local)
+    registration_time = db.Column(db.DateTime(timezone=True), default=now_utc)
 
     # Auto-maintained last-change timestamp (added by migration 1e8b2f0d4b1c)
     updated_at = db.Column(
         db.DateTime(timezone=True),
-        default=now_local,
-        onupdate=now_local,
+        default=now_utc,
+        onupdate=now_utc,
         nullable=False,
     )
 
@@ -179,10 +179,7 @@ class Case(db.Model):
         """Deadline formatted for display in templates."""
         if not self.deadline:
             return ""
-        dt = self.deadline
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=BUDAPEST_TZ)
-        return dt.astimezone(BUDAPEST_TZ).strftime("%Y-%m-%d")
+        return fmt_budapest(self.deadline, "%Y-%m-%d")
 
     def __repr__(self):
         return f"<Case {self.case_number} - {self.deceased_name}>"
@@ -191,7 +188,7 @@ class Case(db.Model):
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     timestamp = db.Column(
-        db.DateTime(timezone=True), default=now_local, index=True, nullable=False
+        db.DateTime(timezone=True), default=now_utc, index=True, nullable=False
     )
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     username = db.Column(db.String(64), nullable=False)
@@ -212,7 +209,7 @@ class ChangeLog(db.Model):
     old_value = db.Column(db.Text)
     new_value = db.Column(db.Text)
     edited_by = db.Column(db.String(64), nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), default=now_local)
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_utc)
 
     case = db.relationship("Case", backref=db.backref("change_logs", lazy="dynamic"))
 
@@ -245,7 +242,7 @@ _TRACKED_FIELDS = [
 @event.listens_for(Case, "before_update")
 def _audit_case_changes(mapper, connection, target):
     """Record changes to Case fields in ChangeLog without using Session.add."""
-    from app.utils.time_utils import now_local  # ensure function is available
+    from app.utils.time_utils import now_utc  # ensure function is available
 
     state = inspect(target)
     log_entries = []
@@ -273,7 +270,7 @@ def _audit_case_changes(mapper, connection, target):
                             getattr(current_user, "screen_name", None)
                             or getattr(current_user, "username", "system")
                         ),
-                        "timestamp": now_local(),
+                        "timestamp": now_utc(),
                     }
                 )
             continue
@@ -289,7 +286,7 @@ def _audit_case_changes(mapper, connection, target):
                         getattr(current_user, "screen_name", None)
                         or getattr(current_user, "username", "system")
                     ),
-                    "timestamp": now_local(),
+                    "timestamp": now_utc(),
                 }
             )
 
@@ -302,9 +299,7 @@ class UploadedFile(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     case_id = db.Column(db.Integer, db.ForeignKey("case.id"), nullable=False)
     filename = db.Column(db.String(256), nullable=False)
-    upload_time = db.Column(
-        db.DateTime(timezone=True), default=now_local, nullable=False
-    )
+    upload_time = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)
     uploader = db.Column(db.String(64), nullable=False)
     category = db.Column(db.String(50), nullable=False)
 
@@ -324,7 +319,7 @@ class TaskMessage(db.Model):
     recipient = db.Column(db.String(128))
     case_id = db.Column(db.Integer, db.ForeignKey("case.id"), nullable=False)
     message = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime(timezone=True), default=now_local)
+    timestamp = db.Column(db.DateTime(timezone=True), default=now_utc)
     seen = db.Column(db.Boolean, default=False)
 
     user = db.relationship("User", backref="task_messages")
@@ -351,6 +346,4 @@ class IdempotencyToken(db.Model):
     route = db.Column(db.String(255), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     case_id = db.Column(db.Integer, db.ForeignKey("case.id"))
-    created_at = db.Column(
-        db.DateTime(timezone=True), default=now_local, nullable=False
-    )
+    created_at = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)

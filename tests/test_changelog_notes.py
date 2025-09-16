@@ -1,14 +1,12 @@
-from datetime import datetime, timedelta
-
-import pytz
+from datetime import datetime, timedelta, timezone
 
 from app.models import Case, ChangeLog, db
 from app.routes import append_note
 
 
 def test_note_changelog_records_incrementally(app, monkeypatch):
-    base_time = datetime(2024, 1, 1, 10, 0, tzinfo=pytz.timezone("Europe/Budapest"))
-    monkeypatch.setattr("app.routes.now_local", lambda: base_time)
+    base_time = datetime(2024, 1, 1, 9, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr("app.routes.now_utc", lambda: base_time)
     with app.app_context():
         case = Case(case_number="NOTE1")
         db.session.add(case)
@@ -22,7 +20,7 @@ def test_note_changelog_records_incrementally(app, monkeypatch):
         assert logs[0].new_value == first
 
         monkeypatch.setattr(
-            "app.routes.now_local", lambda: base_time + timedelta(minutes=1)
+            "app.routes.now_utc", lambda: base_time + timedelta(minutes=1)
         )
         second = append_note(case, "second", author="U1")
         db.session.commit()
@@ -38,8 +36,8 @@ def test_note_changelog_records_incrementally(app, monkeypatch):
 
 
 def test_duplicate_note_entries_create_separate_logs(app, monkeypatch):
-    base_time = datetime(2024, 1, 1, 10, 0, tzinfo=pytz.timezone("Europe/Budapest"))
-    monkeypatch.setattr("app.routes.now_local", lambda: base_time)
+    base_time = datetime(2024, 1, 1, 9, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr("app.routes.now_utc", lambda: base_time)
     with app.app_context():
         case = Case(case_number="NOTE2")
         db.session.add(case)

@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from app.paths import ensure_investigation_folder as ensure_invest_path
 from app.paths import investigation_root as invest_root_path
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc, to_budapest
 
 from .models import Investigation
 
@@ -63,7 +63,7 @@ def generate_case_number(session) -> str:
     Investigation case number format (legacy, for tests): V:####/YYYY
     - #### is 1-based, zero-padded to 4, unique per calendar year.
     """
-    year = now_local().year
+    year = to_budapest(now_utc()).year
 
     # Seed: count existing in this year (registration_time), then ensure uniqueness by case_number.
     count_for_year = (

@@ -5,12 +5,12 @@ from datetime import timedelta
 
 from app.models import Case
 from app.utils.case_status import CASE_STATUS_FINAL
-from app.utils.time_utils import now_local
+from app.utils.time_utils import now_utc
 
 
 def send_deadline_warning_email() -> int:
     """Return how many non-final cases are due within 14 days."""
-    today = now_local()
+    today = now_utc()
     upcoming = today + timedelta(days=14)
 
     cases_due = (
