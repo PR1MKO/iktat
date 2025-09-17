@@ -1,5 +1,6 @@
 import re
 
+from app import db
 from app.utils import permissions as permissions_mod
 from tests.helpers import create_investigation, create_user, login
 
@@ -23,7 +24,9 @@ def test_assign_page_requires_login(client, app):
 def test_assign_page_allows_szignal_upload_controls(client, app):
     with app.app_context():
         inv = create_investigation()
-        create_user("signer", "secret", "szignáló")
+        user = create_user("signer", "secret", "szignáló")
+        inv.expert1_id = user.id
+        db.session.commit()
 
     login(client, "signer", "secret")
     resp = client.get(f"/investigations/{inv.id}/assign")

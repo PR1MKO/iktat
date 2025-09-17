@@ -708,8 +708,12 @@ def assign_investigation_expert(id):
         form_version = inv.registration_time.isoformat()
 
     # ---- UI capability for upload controls on this page:
-    # honor only the capability flag here to satisfy tests.
-    can_upload_ui = bool(caps.get("can_upload_investigation"))
+    is_member = current_user.role in {"admin", "iroda"} or current_user.id in {
+        inv.expert1_id,
+        inv.expert2_id,
+        inv.describer_id,
+    }
+    can_upload_ui = bool(caps.get("can_upload_investigation")) and is_member
 
     if request.method == "POST" and request.form.get("action") == "assign":
         expert1_raw = expert1_selected

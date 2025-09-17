@@ -95,7 +95,7 @@
     </div>
 
     {# Upload controls — inputs always rendered; button only if allowed #}
-    {% set _can_upload = (can_upload if can_upload is defined else caps.get('can_upload_investigation', False)) %}
+    {% set _can_upload = can_upload %}
     <div class="col-12 mb-3">
       <form id="file-upload-form"
             action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
