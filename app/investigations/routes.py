@@ -25,6 +25,7 @@ from app.services.core_user_read import get_user_safe
 from app.utils import permissions as permissions_mod
 from app.utils.dates import safe_fmt
 from app.utils.rbac import require_roles as roles_required
+from app.utils.roles import canonical_role
 from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
 from app.utils.uploads import send_safe  # save_upload no longer used here
 
@@ -53,16 +54,12 @@ def capabilities_for(user):
 ALWAYS_UPLOAD_ROLES = {
     "admin",
     "iroda",
-    "szig",
-    "penz",
+    "szignáló",
     "pénzügy",
 }
 CONDITIONAL_UPLOAD_ROLES = {
-    "szak",
     "szakértő",
-    "leir",
     "leíró",
-    "szignáló",
     "toxi",
 }
 
@@ -77,7 +74,7 @@ def _is_assigned_member(inv, u):
 
 
 def can_upload_investigation_now(inv, u):
-    role = getattr(u, "role", None)
+    role = canonical_role(getattr(u, "role", None))
     if role in ALWAYS_UPLOAD_ROLES:
         return True
     if role in CONDITIONAL_UPLOAD_ROLES:
@@ -86,7 +83,7 @@ def can_upload_investigation_now(inv, u):
 
 
 def cannot_upload_reason(inv, u):
-    role = getattr(u, "role", None)
+    role = canonical_role(getattr(u, "role", None))
     if role in CONDITIONAL_UPLOAD_ROLES and not _is_assigned_member(inv, u):
         return "Csak a kijelölt szakértő vagy leíró tölthet fel a vizsgálathoz."
     return "Nincs jogosultság a feltöltéshez."

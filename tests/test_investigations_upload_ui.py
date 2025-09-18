@@ -4,6 +4,7 @@ import pytest
 
 from app import db
 from app.investigations.models import Investigation
+from app.utils.roles import canonical_role
 from tests.helpers import create_investigation, create_user, login
 
 
@@ -21,14 +22,14 @@ def make_investigation_with_assignment(app):
     def _make(**kwargs):
         with app.app_context():
             inv = create_investigation(**kwargs)
-            assigned_users = {
-                "szak": create_user("assigned_szak", "secret", "szak"),
-                "leir": create_user("assigned_leir", "secret", "leir"),
-                "toxi": create_user("assigned_toxi", "secret", "toxi"),
-            }
-            inv.expert1_id = assigned_users["szak"].id
+            roles = ["szak", "szakértő", "leir", "leíró", "toxi"]
+            assigned_users = {}
+            for idx, role in enumerate(roles):
+                assigned_users[role] = create_user(f"assigned_{idx}", "secret", role)
+
+            inv.expert1_id = assigned_users["szakértő"].id
             inv.expert2_id = assigned_users["toxi"].id
-            inv.describer_id = assigned_users["leir"].id
+            inv.describer_id = assigned_users["leíró"].id
             db.session.commit()
             return inv, assigned_users
 
@@ -42,18 +43,21 @@ def login_as_role(app, client):
         with app.app_context():
             user = None
             if assigned_to and assigned_users:
-                user = assigned_users.get(role)
+                user = assigned_users.get(role) or assigned_users.get(
+                    canonical_role(role)
+                )
             if user is None:
                 user = create_user(username, "secret", role)
             if assigned_to:
                 inv = db.session.get(Investigation, assigned_to.id)
                 if inv is None:
                     raise AssertionError("Investigation not found for assignment")
-                if role in {"szak", "szakértő"}:
+                canon = canonical_role(role)
+                if canon == "szakértő":
                     inv.expert1_id = user.id
-                elif role in {"leir", "leíró"}:
+                elif canon == "leíró":
                     inv.describer_id = user.id
-                elif role == "toxi":
+                elif canon == "toxi":
                     inv.expert2_id = user.id
                 db.session.commit()
         login(client, user.username, "secret")
@@ -128,10 +132,16 @@ def test_forbidden_upload_renders_styled_page(
     [
         ("admin", False, True),
         ("iroda", False, True),
+        ("szignáló", False, True),
         ("szig", False, True),
+        ("pénzügy", False, True),
         ("penz", False, True),
+        ("szakértő", True, True),
+        ("szakértő", False, False),
         ("szak", True, True),
         ("szak", False, False),
+        ("leíró", True, True),
+        ("leíró", False, False),
         ("leir", True, True),
         ("leir", False, False),
         ("toxi", True, True),

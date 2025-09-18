@@ -128,7 +128,7 @@ def test_investigation_documents_allows_szignalo(client, setup):
         assert client.get(f"/investigations/{inv_id}/documents").status_code == 200
 
 
-def test_investigation_posts_forbid_szignalo(client, setup):
+def test_investigation_posts_allow_szignalo_upload(client, setup):
     inv_id = setup["inv_id"]
     with client:
         login(client, "szignalo", "pw")
@@ -139,14 +139,12 @@ def test_investigation_posts_forbid_szignalo(client, setup):
             ).status_code
             == 403
         )
-        assert (
-            client.post(
-                f"/investigations/{inv_id}/upload",
-                data={},
-                content_type="multipart/form-data",
-            ).status_code
-            == 403
+        resp = client.post(
+            f"/investigations/{inv_id}/upload",
+            data={},
+            content_type="multipart/form-data",
         )
+        assert resp.status_code in (302, 200)
 
 
 def test_szignal_cases_forbidden_for_non_szignalo(client, setup):
