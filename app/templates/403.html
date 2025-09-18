@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Hozzáférés megtagadva (403){% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="alert alert-danger" role="alert">
+    Hozzáférés megtagadva. Nincs jogosultság a kért művelethez.
+  </div>
+  <a href="{{ request.referrer or url_for('investigations.list_investigations') }}" class="btn btn-secondary">Vissza</a>
+</div>
+{% endblock %}

@@ -49,6 +49,34 @@ def capabilities_for(user):
     return permissions_mod.capabilities_for(user)
 
 
+# Permission helpers for upload UI
+def _is_admin_or_iroda(u):
+    return getattr(u, "role", None) in {"admin", "iroda"}
+
+
+def _is_assigned_member(inv, u):
+    uid = getattr(u, "id", None)
+    return uid and uid in {
+        getattr(inv, "expert1_id", None),
+        getattr(inv, "expert2_id", None),
+        getattr(inv, "describer_id", None),
+    }
+
+
+def _can_upload_ui(inv, u):
+    caps = capabilities_for(u)
+    return bool(
+        caps.get("can_upload_investigation")
+        and (_is_admin_or_iroda(u) or _is_assigned_member(inv, u))
+    )
+
+
+def _cannot_upload_reason(inv, u):
+    if not capabilities_for(u).get("can_upload_investigation"):
+        return "Nincs jogosultság fájl feltöltésére."
+    return "Csak a kijelölt szakértők vagy a leíró tölthetnek fel fájlokat."
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -265,14 +293,10 @@ def documents(id):
     upload_form = FileUploadForm()
 
     caps = capabilities_for(current_user)
-    can_upload_ui = bool(caps.get("can_upload_investigation")) and (
-        current_user.role in {"admin", "iroda"}
-        or current_user.id in {inv.expert1_id, inv.expert2_id, inv.describer_id}
-        or (
-            current_user.role == "szignáló"
-            and current_user.id in {inv.expert1_id, inv.expert2_id}
-        )
-    )
+    can_upload_ui = _can_upload_ui(inv, current_user)
+    cannot_upload_reason = None
+    if not can_upload_ui:
+        cannot_upload_reason = _cannot_upload_reason(inv, current_user)
 
     return render_template(
         "investigations/documents.html",
@@ -282,6 +306,8 @@ def documents(id):
         upload_url=url_for("investigations.upload_investigation_file", id=inv.id),
         caps=caps,
         can_upload=can_upload_ui,
+        can_upload_ui=can_upload_ui,
+        cannot_upload_reason=cannot_upload_reason,
     )
 
 
@@ -390,6 +416,12 @@ def detail_investigation(id):
             get_user_safe(inv.assigned_expert_id)
         )
 
+    caps = capabilities_for(current_user)
+    can_upload_ui = _can_upload_ui(inv, current_user)
+    cannot_upload_reason = (
+        None if can_upload_ui else _cannot_upload_reason(inv, current_user)
+    )
+
     return render_template(
         "investigations/detail.html",
         investigation=inv,
@@ -400,7 +432,9 @@ def detail_investigation(id):
         attachments=attachments,
         changelog=changelog,
         user_display_name=user_display_name,
-        caps=capabilities_for(current_user),
+        caps=caps,
+        can_upload_ui=can_upload_ui,
+        cannot_upload_reason=cannot_upload_reason,
         assignment_type_label=assignment_type_label,
         investigation_type_label=investigation_type_label,
         assigned_expert_display=assigned_expert_display,

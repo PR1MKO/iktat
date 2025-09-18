@@ -7,10 +7,10 @@ from app import db
 
 def register_error_handlers(app):
     @app.errorhandler(403)
-    def forbidden_error(e):
+    def forbidden(e):
         try:
             return render_template("403.html"), 403
-        except TemplateNotFound:
+        except Exception:
             return "403 Forbidden", 403
 
     @app.errorhandler(404)

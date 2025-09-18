@@ -94,13 +94,13 @@
   <div class="card mb-4">
     <div class="card-header">Dokumentumok</div>
     <div class="card-body">
-      {% if caps['can_upload_investigation'] %}
+      {% if can_upload_ui %}
       <form id="file-upload-form"
             action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
             method="post"
             enctype="multipart/form-data"
             class="needs-validation d-flex align-items-center file-upload-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ upload_form.hidden_tag() }}
         <label for="file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
         <input type="file" id="file" name="file" class="form-control me-2" multiple required aria-label="Fájl feltöltése" title="Fájl feltöltése">
         <select name="category" id="upload-category-file-upload-form" class="form-select me-2 category-select" required aria-invalid="false" aria-describedby="category-help-file-upload-form">
@@ -114,6 +114,10 @@
         </div>
         <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
       </form>
+      {% else %}
+      <div class="alert alert-info mb-3" role="alert">
+        {{ cannot_upload_reason or "Nincs jogosultság a feltöltéshez." }}
+      </div>
       {% endif %}
       <div id="attachments">
         {% if attachments %}
