@@ -95,7 +95,6 @@
     </div>
 
     {# Upload controls — inputs always rendered; button only if allowed #}
-    {% set _can_upload = can_upload %}
     <div class="col-12 mb-3">
       <form id="file-upload-form"
             action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}"
@@ -109,14 +108,14 @@
                name="file"
                class="form-control me-2"
                required
-               {% if not _can_upload %}disabled{% endif %}
+               {% if not can_upload_ui %}disabled{% endif %}
                aria-label="Fájl feltöltése"
                title="Fájl feltöltése">
         <select name="category"
                 id="upload-category-file-upload-form"
                 class="form-select me-2 category-select"
                 required
-                {% if not _can_upload %}disabled{% endif %}
+                {% if not can_upload_ui %}disabled{% endif %}
                 aria-invalid="false"
                 aria-describedby="category-help-file-upload-form">
           <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
@@ -131,16 +130,16 @@
         </div>
 
         {# Render the upload button ONLY when capability allows. #}
-        {% if _can_upload %}
+        {% if can_upload_ui %}
         <button type="submit" class="btn btn-outline-success upload-btn">
           Feltöltés
         </button>
         {% endif %}
 
       </form>
-      {% if not _can_upload %}
+      {% if not can_upload_ui %}
       <div class="alert alert-warning small mt-2">
-        Nincs jogosultság fájlfeltöltéshez ezen az oldalon.
+        {{ cannot_upload_reason or "Nincs jogosultság a feltöltéshez." }}
       </div>
       {% endif %}
     </div>

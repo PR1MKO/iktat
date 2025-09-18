@@ -761,12 +761,10 @@ def assign_investigation_expert(id):
         form_version = inv.registration_time.isoformat()
 
     # ---- UI capability for upload controls on this page:
-    is_member = current_user.role in {"admin", "iroda"} or current_user.id in {
-        inv.expert1_id,
-        inv.expert2_id,
-        inv.describer_id,
-    }
-    can_upload_ui = bool(caps.get("can_upload_investigation")) and is_member
+    can_upload_ui = bool(caps.get("can_upload_investigation")) and (
+        can_upload_investigation_now(inv, current_user)
+    )
+    deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
 
     if request.method == "POST" and request.form.get("action") == "assign":
         expert1_raw = expert1_selected
@@ -890,6 +888,7 @@ def assign_investigation_expert(id):
         expert2_selected=expert2_selected,
         form_version=form_version,
         caps=caps,
-        can_upload=can_upload_ui,  # for template to enable/disable controls
+        can_upload_ui=can_upload_ui,
+        cannot_upload_reason=deny_reason,
         user_display_name=user_display_name,
     )

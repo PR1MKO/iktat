@@ -47,6 +47,30 @@ def test_assign_page_allows_szignal_upload_controls(client, app):
     assert "alert alert-warning" not in html
 
 
+def test_assign_page_allows_unassigned_szignal_upload_controls(client, app):
+    with app.app_context():
+        inv = create_investigation()
+        create_user("unassigned", "secret", "szignáló")
+
+    login(client, "unassigned", "secret")
+    resp = client.get(f"/investigations/{inv.id}/assign")
+    assert resp.status_code == 200
+
+    html = resp.get_data(as_text=True)
+    file_tag = _find_tag(r'<input[^>]+id="investigation-file"[^>]*>', html)
+    select_tag = _find_tag(
+        r'<select[^>]+id="upload-category-file-upload-form"[^>]*>', html
+    )
+    button_tag = _find_tag(
+        r'<button[^>]+class="btn btn-outline-success upload-btn"[^>]*>', html
+    )
+
+    assert "disabled" not in file_tag
+    assert "disabled" not in select_tag
+    assert 'type="submit"' in button_tag
+    assert "alert alert-warning" not in html
+
+
 def test_assign_page_disables_upload_without_capability(client, app, monkeypatch):
     with app.app_context():
         inv = create_investigation()
@@ -74,4 +98,4 @@ def test_assign_page_disables_upload_without_capability(client, app, monkeypatch
     assert "disabled" in file_tag
     assert "disabled" in select_tag
     assert "btn btn-outline-success upload-btn" not in html
-    assert "Nincs jogosultság fájlfeltöltéshez ezen az oldalon." in html
+    assert "Nincs jogosultság a feltöltéshez." in html
