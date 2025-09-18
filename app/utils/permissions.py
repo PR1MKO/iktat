@@ -99,7 +99,19 @@ def _intersection_caps(matrix: Dict[str, Dict[str, bool]]) -> Dict[str, bool]:
 _ROLE_CAPS = dict(_BASE_ROLE_CAPS)
 _ROLE_CAPS["pénzügy"] = _intersection_caps(_BASE_ROLE_CAPS)
 
-_INVESTIGATION_UPLOAD_ROLES = {"admin", "iroda", "szakértő", "leíró", "szignáló"}
+_INVESTIGATION_UPLOAD_ROLES = {
+    "admin",
+    "iroda",
+    "szakértő",
+    "szak",
+    "leíró",
+    "leir",
+    "szignáló",
+    "szig",
+    "pénzügy",
+    "penz",
+    "toxi",
+}
 
 
 def can_upload_investigation(user) -> bool:

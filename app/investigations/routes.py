@@ -50,8 +50,21 @@ def capabilities_for(user):
 
 
 # Permission helpers for upload UI
-def _is_admin_or_iroda(u):
-    return getattr(u, "role", None) in {"admin", "iroda"}
+ALWAYS_UPLOAD_ROLES = {
+    "admin",
+    "iroda",
+    "szig",
+    "penz",
+    "pénzügy",
+}
+CONDITIONAL_UPLOAD_ROLES = {
+    "szak",
+    "szakértő",
+    "leir",
+    "leíró",
+    "szignáló",
+    "toxi",
+}
 
 
 def _is_assigned_member(inv, u):
@@ -63,18 +76,20 @@ def _is_assigned_member(inv, u):
     }
 
 
-def _can_upload_ui(inv, u):
-    caps = capabilities_for(u)
-    return bool(
-        caps.get("can_upload_investigation")
-        and (_is_admin_or_iroda(u) or _is_assigned_member(inv, u))
-    )
+def can_upload_investigation_now(inv, u):
+    role = getattr(u, "role", None)
+    if role in ALWAYS_UPLOAD_ROLES:
+        return True
+    if role in CONDITIONAL_UPLOAD_ROLES:
+        return _is_assigned_member(inv, u)
+    return False
 
 
-def _cannot_upload_reason(inv, u):
-    if not capabilities_for(u).get("can_upload_investigation"):
-        return "Nincs jogosultság fájl feltöltésére."
-    return "Csak a kijelölt szakértők vagy a leíró tölthetnek fel fájlokat."
+def cannot_upload_reason(inv, u):
+    role = getattr(u, "role", None)
+    if role in CONDITIONAL_UPLOAD_ROLES and not _is_assigned_member(inv, u):
+        return "Csak a kijelölt szakértő vagy leíró tölthet fel a vizsgálathoz."
+    return "Nincs jogosultság a feltöltéshez."
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +148,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 
 @investigations_bp.route("/")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
+@roles_required("admin", "iroda", "szakértő", "pénzügy", "penz", "szignáló", "szig")
 def list_investigations():
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     case_type = request.args.get("case_type", "").strip()
@@ -272,7 +287,19 @@ def new_investigation():
 
 @investigations_bp.route("/<int:id>/documents", methods=["GET"])
 @login_required
-@roles_required("admin", "iroda", "szakértő", "szignáló", "szig")
+@roles_required(
+    "admin",
+    "iroda",
+    "szakértő",
+    "szak",
+    "leíró",
+    "leir",
+    "szignáló",
+    "szig",
+    "pénzügy",
+    "penz",
+    "toxi",
+)
 def documents(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -292,11 +319,8 @@ def documents(id):
 
     upload_form = FileUploadForm()
 
-    caps = capabilities_for(current_user)
-    can_upload_ui = _can_upload_ui(inv, current_user)
-    cannot_upload_reason = None
-    if not can_upload_ui:
-        cannot_upload_reason = _cannot_upload_reason(inv, current_user)
+    can_upload_ui = can_upload_investigation_now(inv, current_user)
+    deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
 
     return render_template(
         "investigations/documents.html",
@@ -304,16 +328,14 @@ def documents(id):
         attachments=attachments,
         upload_form=upload_form,
         upload_url=url_for("investigations.upload_investigation_file", id=inv.id),
-        caps=caps,
-        can_upload=can_upload_ui,
         can_upload_ui=can_upload_ui,
-        cannot_upload_reason=cannot_upload_reason,
+        cannot_upload_reason=deny_reason,
     )
 
 
 @investigations_bp.route("/<int:id>/view")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "szignáló", "szig")
+@roles_required("admin", "iroda", "szakértő", "pénzügy", "penz", "szignáló", "szig")
 def view_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -365,11 +387,14 @@ def view_investigation(id):
     "admin",
     "iroda",
     "szakértő",
+    "szak",
     "leíró",
+    "leir",
     "szignáló",
+    "szig",
     "toxi",
     "pénzügy",
-    "szig",
+    "penz",
 )
 def detail_investigation(id):
     inv = db.session.get(Investigation, id)
@@ -417,10 +442,8 @@ def detail_investigation(id):
         )
 
     caps = capabilities_for(current_user)
-    can_upload_ui = _can_upload_ui(inv, current_user)
-    cannot_upload_reason = (
-        None if can_upload_ui else _cannot_upload_reason(inv, current_user)
-    )
+    can_upload_ui = can_upload_investigation_now(inv, current_user)
+    deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
 
     return render_template(
         "investigations/detail.html",
@@ -434,7 +457,7 @@ def detail_investigation(id):
         user_display_name=user_display_name,
         caps=caps,
         can_upload_ui=can_upload_ui,
-        cannot_upload_reason=cannot_upload_reason,
+        cannot_upload_reason=deny_reason,
         assignment_type_label=assignment_type_label,
         investigation_type_label=investigation_type_label,
         assigned_expert_display=assigned_expert_display,
@@ -465,7 +488,7 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szakértő", "szignáló")
+@roles_required("admin", "iroda", "szakértő", "szak", "szignáló")
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -511,28 +534,24 @@ def add_investigation_note(id):
 
 @investigations_bp.route("/<int:id>/upload", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szakértő", "szignáló")
+@roles_required(
+    "admin",
+    "iroda",
+    "szakértő",
+    "szak",
+    "leíró",
+    "leir",
+    "szignáló",
+    "szig",
+    "toxi",
+    "pénzügy",
+    "penz",
+)
 def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    caps = capabilities_for(current_user)
-
-    # Allow normal upload capability OR szignáló when assigned to this investigation
-    allowed = bool(caps.get("can_upload_investigation"))
-    if current_user.role == "szignáló" and current_user.id in {
-        inv.expert1_id,
-        inv.expert2_id,
-    }:
-        allowed = True
-    if not allowed:
-        abort(403)
-
-    if current_user.role not in {"admin", "iroda"} and current_user.id not in {
-        inv.expert1_id,
-        inv.expert2_id,
-        inv.describer_id,
-    }:
+    if not can_upload_investigation_now(inv, current_user):
         abort(403)
 
     # Support CSRF-free AJAX uploads (test path) and normal multipart posts
@@ -607,10 +626,13 @@ def upload_investigation_file(id):
     "admin",
     "iroda",
     "szakértő",
+    "szak",
     "leíró",
+    "leir",
     "szignáló",
     "toxi",
     "pénzügy",
+    "penz",
     "szig",
 )
 def download_investigation_file(inv_id, file_id):
