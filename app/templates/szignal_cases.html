@@ -131,7 +131,7 @@
               <tbody>
                 {% for case in examinations_with_expert %}
                   <tr>
-                    <td>{{ case.case_number or case.boncszam or "-" }}</td>
+                    <td><a href="{{ url_for('auth.case_detail', case_id=case.id) }}">{{ case.case_number or case.boncszam or "-" }}</a></td>
                     <td>{{ case.external_case_number or case.temp_id or '–' }}</td>
                     <td>{{ case.deceased_name or "-" }}</td>
                     <td class="d-none">{{ case.status or "-" }}</td>
