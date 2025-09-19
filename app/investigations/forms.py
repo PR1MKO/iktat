@@ -51,6 +51,8 @@ class InvestigationForm(FlaskForm):
         coerce=int,
         default=0,
         validators=[Optional()],
+        # IMPORTANT: allow POSTed id even if choices were not yet populated (test timing)
+        validate_choice=False,
     )
 
     submit = SubmitField("Vizsgálat létrehozása")

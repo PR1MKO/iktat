@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {# Hide sidebar on this page only #}
-{% block sidebar %}{% endblock %}
+{% block sidebar %}{{ super() }}{% endblock %}
 
 {% block title %}Szignálási Ügyek – CaseTracker{% endblock %}
 

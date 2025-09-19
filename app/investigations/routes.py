@@ -14,7 +14,7 @@ from flask import (
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_, text
 from werkzeug import exceptions
-from werkzeug.utils import secure_filename  # NEW: for safe filenames
+from werkzeug.utils import secure_filename  # for safe filenames
 
 from app import db
 from app.models import User
@@ -27,7 +27,7 @@ from app.utils.dates import safe_fmt
 from app.utils.rbac import require_roles as roles_required
 from app.utils.roles import canonical_role
 from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
-from app.utils.uploads import send_safe  # save_upload no longer used here
+from app.utils.uploads import send_safe
 
 from . import investigations_bp
 from .forms import FileUploadForm, InvestigationForm, InvestigationNoteForm
@@ -43,6 +43,35 @@ from .utils import (
     user_display_name,
 )
 
+# ---------------------------------------------------------------------------
+# Role helpers
+# ---------------------------------------------------------------------------
+
+
+def normalize_role(raw):
+    """Map legacy/diacritic variants to canonical short codes."""
+    can = canonical_role(raw)
+    if can:
+        return can
+    mapping = {
+        # szignáló → szig
+        "szignáló": "szig",
+        "szignalo": "szig",
+        "szignaló": "szig",
+        # szakértő → szak
+        "szakértő": "szak",
+        "szakerto": "szak",
+        # leíró → leir
+        "leíró": "leir",
+        "leiro": "leir",
+        # pénzügy → penz
+        "pénzügy": "penz",
+        "penzugy": "penz",
+        "pénz": "penz",
+    }
+    key = (raw or "").strip().casefold()
+    return mapping.get(key, (raw or "").strip())
+
 
 # Keep the old name but delegate to the module, so tests that monkeypatch
 # app.utils.permissions.capabilities_for are respected here.
@@ -50,16 +79,22 @@ def capabilities_for(user):
     return permissions_mod.capabilities_for(user)
 
 
-# Permission helpers for upload UI
+# Permission helpers for upload UI — accept canonical AND legacy labels
 ALWAYS_UPLOAD_ROLES = {
     "admin",
     "iroda",
-    "szignáló",
-    "pénzügy",
+    "szig",
+    "szignáló",  # legacy spelling
+    "penz",
+    "pénzügy",  # explicit diacritic alias
 }
 CONDITIONAL_UPLOAD_ROLES = {
-    "szakértő",
-    "leíró",
+    "szak",  # canonical
+    "szakértő",  # legacy with accents
+    "szakerto",  # legacy ascii
+    "leir",  # canonical scribe
+    "leíró",  # legacy with accents
+    "leiro",  # ascii
     "toxi",
 }
 
@@ -74,17 +109,28 @@ def _is_assigned_member(inv, u):
 
 
 def can_upload_investigation_now(inv, u):
-    role = canonical_role(getattr(u, "role", None))
-    if role in ALWAYS_UPLOAD_ROLES:
+    # Normalize but also consider the raw role string to be belt-and-suspenders
+    raw = getattr(u, "role", None) or ""
+    role = normalize_role(raw)
+    candidate = role or raw
+    if candidate in ALWAYS_UPLOAD_ROLES:
         return True
-    if role in CONDITIONAL_UPLOAD_ROLES:
+    if candidate in CONDITIONAL_UPLOAD_ROLES:
         return _is_assigned_member(inv, u)
     return False
 
 
 def cannot_upload_reason(inv, u):
-    role = canonical_role(getattr(u, "role", None))
-    if role in CONDITIONAL_UPLOAD_ROLES and not _is_assigned_member(inv, u):
+    role = normalize_role(getattr(u, "role", None))
+    if role in {
+        "leir",
+        "leíró",
+        "leiro",
+        "szak",
+        "szakértő",
+        "szakerto",
+        "toxi",
+    } and not _is_assigned_member(inv, u):
         return "Csak a kijelölt szakértő vagy leíró tölthet fel a vizsgálathoz."
     return "Nincs jogosultság a feltöltéshez."
 
@@ -95,11 +141,12 @@ def cannot_upload_reason(inv, u):
 
 
 def _can_modify(inv, user) -> bool:
-    return user.role in {"admin", "iroda"}
+    return normalize_role(user.role) in {"admin", "iroda"}
 
 
 def _can_note_or_upload(inv, user) -> bool:
-    if user.role in {"admin", "iroda"}:
+    r = normalize_role(user.role)
+    if r in {"admin", "iroda"}:
         return True
     return user.id in {inv.expert1_id, inv.expert2_id, inv.describer_id}
 
@@ -145,7 +192,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 
 @investigations_bp.route("/")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "penz", "szignáló", "szig")
+@roles_required("admin", "iroda", "szak", "penz", "pénzügy", "szig")
 def list_investigations():
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     case_type = request.args.get("case_type", "").strip()
@@ -223,10 +270,12 @@ def list_investigations():
 def new_investigation():
     form = InvestigationForm()
 
+    # Include canonical and legacy labels so tests using "szakértő" are covered
     experts = db.session.execute(
         text(
             "SELECT id, screen_name, username FROM user "
-            "WHERE role IN ('szakértő', 'szak') ORDER BY screen_name, username"
+            "WHERE role IN ('szak', 'szakértő', 'szakerto') "
+            "ORDER BY screen_name, username"
         )
     ).all()
     form.assigned_expert_id.choices = [(0, "— Válasszon —")] + [
@@ -257,12 +306,47 @@ def new_investigation():
             other_identifier=form.other_identifier.data,
             assignment_type=assignment_type,
             assigned_expert_id=assigned_expert_id,
+            status="beérkezett",
         )
         inv.case_number = generate_case_number(db.session)  # V-####-YYYY
         inv.registration_time = now_utc()
         inv.deadline = inv.registration_time + timedelta(days=30)
 
+        change_log_rows = []
+        if assignment_type == "SZAKÉRTŐI" and assigned_expert_id is not None:
+            selected_expert_id = assigned_expert_id
+            inv.assigned_expert_id = selected_expert_id
+            inv.expert1_id = selected_expert_id
+            previous_status = inv.status
+            inv.status = "szignálva"
+            expert_user = get_user_safe(selected_expert_id)
+            expert_display = user_display_name(expert_user) or str(selected_expert_id)
+            change_log_rows.extend(
+                [
+                    ("expert1_id", None, expert_display),
+                    ("assigned_expert_id", None, expert_display),
+                    ("status", previous_status, "szignálva"),
+                ]
+            )
+
         db.session.add(inv)
+        db.session.flush()
+
+        if change_log_rows:
+            timestamp = now_utc()
+            logs = [
+                InvestigationChangeLog(
+                    investigation_id=inv.id,
+                    field_name=field,
+                    old_value=old_val,
+                    new_value=new_val,
+                    edited_by=current_user.id,
+                    timestamp=timestamp,
+                )
+                for field, old_val, new_val in change_log_rows
+            ]
+            db.session.add_all(logs)
+
         db.session.commit()
 
         # Create per-investigation folder (separate from Cases)
@@ -270,7 +354,6 @@ def new_investigation():
         init_investigation_upload_dirs(inv.case_number)
 
         flash("Vizsgálat létrehozva.", "success")
-        # Go straight to the Investigations Documents page
         return redirect(url_for("investigations.documents", id=inv.id))
     elif request.method == "POST":
         for errs in form.errors.values():
@@ -287,22 +370,20 @@ def new_investigation():
 @roles_required(
     "admin",
     "iroda",
-    "szakértő",
     "szak",
-    "leíró",
+    "szakértő",  # allow legacy expert label
     "leir",
-    "szignáló",
+    "leíró",  # allow legacy scribe label
     "szig",
-    "pénzügy",
-    "penz",
     "toxi",
+    "penz",
+    "pénzügy",  # allow legacy finance label
 )
 def documents(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
 
-    # Optional UX flash if marker present
     if request.args.get("uploaded"):
         flash("Fájl feltöltve", "success")
 
@@ -332,7 +413,7 @@ def documents(id):
 
 @investigations_bp.route("/<int:id>/view")
 @login_required
-@roles_required("admin", "iroda", "szakértő", "pénzügy", "penz", "szignáló", "szig")
+@roles_required("admin", "iroda", "szak", "penz", "pénzügy", "szig")
 def view_investigation(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -383,15 +464,14 @@ def view_investigation(id):
 @roles_required(
     "admin",
     "iroda",
-    "szakértő",
     "szak",
-    "leíró",
+    "szakértő",  # allow legacy expert label
     "leir",
-    "szignáló",
+    "leíró",  # allow legacy scribe label
     "szig",
     "toxi",
-    "pénzügy",
     "penz",
+    "pénzügy",  # allow legacy finance label
 )
 def detail_investigation(id):
     inv = db.session.get(Investigation, id)
@@ -485,7 +565,7 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szakértő", "szak", "szignáló")
+@roles_required("admin", "iroda", "szak", "szig")
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -493,7 +573,10 @@ def add_investigation_note(id):
     caps = capabilities_for(current_user)
     if not caps.get("can_post_investigation_notes"):
         abort(403)
-    if current_user.role not in {"admin", "iroda"} and current_user.id not in {
+    if normalize_role(current_user.role) not in {
+        "admin",
+        "iroda",
+    } and current_user.id not in {
         inv.expert1_id,
         inv.expert2_id,
         inv.describer_id,
@@ -534,15 +617,15 @@ def add_investigation_note(id):
 @roles_required(
     "admin",
     "iroda",
-    "szakértő",
     "szak",
-    "leíró",
+    "szakértő",  # legacy expert label
     "leir",
-    "szignáló",
+    "leíró",  # legacy scribe label
     "szig",
+    "szignáló",
     "toxi",
-    "pénzügy",
     "penz",
+    "pénzügy",  # legacy finance label
 )
 def upload_investigation_file(id):
     inv = db.session.get(Investigation, id)
@@ -575,7 +658,6 @@ def upload_investigation_file(id):
         inv_dir.mkdir(parents=True, exist_ok=True)
         filename = secure_filename(upfile.filename or "upload.bin")
         dest = inv_dir / filename
-        # reset stream just in case
         try:
             upfile.stream.seek(0)
         except Exception:
@@ -595,7 +677,7 @@ def upload_investigation_file(id):
 
     attachment = InvestigationAttachment(
         investigation_id=inv.id,
-        filename=filename,  # store the saved filename
+        filename=filename,
         category=category,
         uploaded_by=current_user.id,
         uploaded_at=now_utc(),
@@ -612,7 +694,6 @@ def upload_investigation_file(id):
                 "uploaded_at": fmt_date(attachment.uploaded_at),
             }
         )
-    # flash for UX + marker for guaranteed rendering
     flash("Fájl feltöltve", "success")
     return redirect(url_for("investigations.documents", id=id, uploaded=1))
 
@@ -622,15 +703,14 @@ def upload_investigation_file(id):
 @roles_required(
     "admin",
     "iroda",
-    "szakértő",
     "szak",
-    "leíró",
+    "szakértő",  # allow legacy expert label
     "leir",
-    "szignáló",
-    "toxi",
-    "pénzügy",
-    "penz",
+    "leíró",  # allow legacy scribe label
     "szig",
+    "toxi",
+    "penz",
+    "pénzügy",  # allow legacy finance label
 )
 def download_investigation_file(inv_id, file_id):
     inv = db.session.get(Investigation, inv_id) or abort(404)
@@ -662,7 +742,7 @@ def download_investigation_file(inv_id, file_id):
 
 @investigations_bp.route("/<int:id>/assign", methods=["GET", "POST"])
 @login_required
-@roles_required("szignáló")
+@roles_required("szig")
 def assign_investigation_expert(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
@@ -720,7 +800,7 @@ def assign_investigation_expert(id):
         )
 
     szakerto_users = (
-        User.query.filter(User.role.in_(("szakértő", "szak")))
+        User.query.filter(User.role.in_(("szak",)))
         .order_by(User.screen_name, User.username)
         .all()
     )
@@ -808,11 +888,13 @@ def assign_investigation_expert(id):
         old_expert1 = inv.expert1_id
         old_expert2 = inv.expert2_id
         old_assigned = inv.assigned_expert_id
+        old_status = getattr(inv, "status", None)
 
         if (
             old_expert1 == expert1_id
             and (old_expert2 or None) == expert2_id
             and old_assigned == expert1_id
+            and (old_status or "") == "szignálva"
         ):
             flash("Nincs változás.", "info")
             return redirect(
@@ -822,6 +904,8 @@ def assign_investigation_expert(id):
         inv.expert1_id = expert1_id
         inv.expert2_id = expert2_id
         inv.assigned_expert_id = expert1_id
+        if hasattr(inv, "status"):
+            inv.status = "szignálva"
 
         timestamp = now_utc()
 
@@ -844,6 +928,18 @@ def assign_investigation_expert(id):
                 timestamp=timestamp,
             )
 
+        def _log_status_change(old_val, new_val):
+            if old_val == new_val:
+                return None
+            return InvestigationChangeLog(
+                investigation_id=inv.id,
+                field_name="status",
+                old_value=old_val,
+                new_value=new_val,
+                edited_by=current_user.id,
+                timestamp=timestamp,
+            )
+
         logs = list(
             filter(
                 None,
@@ -851,6 +947,7 @@ def assign_investigation_expert(id):
                     _log_change("expert1_id", old_expert1, expert1_id),
                     _log_change("expert2_id", old_expert2, expert2_id),
                     _log_change("assigned_expert_id", old_assigned, expert1_id),
+                    _log_status_change(old_status, getattr(inv, "status", None)),
                 ],
             )
         )

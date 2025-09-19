@@ -68,8 +68,12 @@ def create_investigation(**kwargs):
         "residence": "Address",
         "citizenship": "HU",
         "institution_name": "Inst",
+        "status": "beérkezett",
     }
     data.update(kwargs)
+    if data.get("assignment_type") == "SZAKÉRTŐI" and data.get("assigned_expert_id"):
+        data.setdefault("expert1_id", data["assigned_expert_id"])
+        data.setdefault("status", "szignálva")
     inv = Investigation(**data)
     db.session.add(inv)
     db.session.commit()

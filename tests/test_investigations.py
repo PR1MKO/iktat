@@ -303,6 +303,8 @@ def test_post_intezeti_sets_no_expert(client, app):
         inv = Investigation.query.order_by(Investigation.id.desc()).first()
         assert inv.assignment_type == "INTEZETI"
         assert inv.assigned_expert_id is None
+        assert inv.expert1_id is None
+        assert inv.status == "beérkezett"
 
 
 def test_post_szakertoi_requires_expert(client, app):
@@ -345,3 +347,38 @@ def test_post_szakertoi_persists_expert(client, app):
         inv = Investigation.query.order_by(Investigation.id.desc()).first()
         assert inv.assignment_type == "SZAKÉRTŐI"
         assert inv.assigned_expert_id == expert_id
+        assert inv.expert1_id == expert_id
+        assert inv.status == "szignálva"
+
+
+def test_post_szakertoi_auto_assign_skips_szignalo_queue(client, app):
+    with app.app_context():
+        create_user()  # admin
+        expert = create_user(username="exp", role="szakértő")
+        create_user(username="szig", role="szignáló")
+        expert_id = expert.id
+    login(client, "admin", "secret")
+    data = _base_form_data()
+    data.update(
+        {
+            "external_case_number": "EXT1",
+            "assignment_type": "SZAKÉRTŐI",
+            "assigned_expert_id": expert_id,
+        }
+    )
+    resp = client.post("/investigations/new", data=data, follow_redirects=False)
+    assert resp.status_code == 302
+    with app.app_context():
+        inv = Investigation.query.order_by(Investigation.id.desc()).first()
+        inv_id = inv.id
+        case_number = inv.case_number
+        assert inv.expert1_id == expert_id
+        assert inv.assigned_expert_id == expert_id
+        assert inv.status == "szignálva"
+    client.get("/logout", follow_redirects=False)
+    login(client, "szig", "secret")
+    resp = client.get("/szignal_cases")
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert f"/investigations/{inv_id}/assign" not in body
+    assert case_number in body

@@ -28,6 +28,12 @@ class Investigation(db.Model):
         default="INTEZETI",
     )
     assigned_expert_id = db.Column(db.Integer, index=True)
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default="beérkezett",
+        server_default=db.text("'beérkezett'"),
+    )
 
     registration_time = db.Column(
         db.DateTime(timezone=True), default=now_utc, nullable=False
