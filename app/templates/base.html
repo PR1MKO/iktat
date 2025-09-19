@@ -48,6 +48,15 @@
         {% endif %}
         <ul class="navbar-nav ms-auto align-items-center">
           {% if current_user.is_authenticated %}
+            {% if current_user.role in ['szig', 'szignáló'] %}
+            <li class="nav-item me-2">
+              <a
+                class="btn btn-sm bg-success-subtle text-success-emphasis"
+                href="{{ url_for('auth.szignal_cases') }}"
+                aria-label="Szakértő kijelölése"
+              >Szakértő kijelölése</a>
+            </li>
+            {% endif %}
             <li class="nav-item me-3 text-light">{{ current_user.screen_name or current_user.username }}</li>
             <li class="nav-item">
               <form action="{{ url_for('auth.logout') }}" method="post" class="m-0 p-0 d-inline">
