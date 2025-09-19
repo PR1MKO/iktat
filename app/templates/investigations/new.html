@@ -155,5 +155,5 @@
 
 {% block scripts %}
   {{ super() }}
-  <script src="{{ url_for('static', filename='js/investigations_toggle.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/investigations_toggle.js') }}" defer nonce="{{ csp_nonce }}"></script>
 {% endblock %}
