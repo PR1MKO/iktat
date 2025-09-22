@@ -92,6 +92,19 @@ def test_ugyeim_lists_only_assigned_items(client, szak_setup):
     assert szak_setup["inv_other"]["number"] not in html
 
 
+def test_ugyeim_layout_has_card_columns(client, szak_setup):
+    creds = szak_setup["user"]
+    with client:
+        login(client, creds["username"], creds["password"])
+        resp = _get(client, "/ugyeim")
+
+    html = resp.get_data(as_text=True)
+    assert html.count("card shadow-sm") >= 2
+    assert html.count('class="col-12 col-lg-6"') >= 2
+    assert '<h2 class="h5 mb-0">Boncolások</h2>' in html
+    assert '<h2 class="h5 mb-0">Vizsgálatok</h2>' in html
+
+
 def test_ugyeim_has_links_and_actions(client, app, szak_setup):
     creds = szak_setup["user"]
     with client:
