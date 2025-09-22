@@ -380,7 +380,7 @@ def test_post_szakertoi_auto_assign_skips_szignalo_queue(client, app):
     resp = client.get("/szignal_cases")
     assert resp.status_code == 200
     body = resp.get_data(as_text=True)
-    assert f"/investigations/{inv_id}/assign" not in body
+    assert f"/investigations/{inv_id}/assign" in body
     assert case_number in body
 
 

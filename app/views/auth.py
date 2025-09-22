@@ -921,6 +921,7 @@ def szignal_cases():
         # Investigations (vizsgálatok)
         investigations_unassigned=investigations_unassigned,
         investigations_with_expert=investigations_with_expert,
+        caps=capabilities_for(current_user),
     )
 
 

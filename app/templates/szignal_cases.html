@@ -149,7 +149,11 @@
                       {% endif %}
                     </td>
                     <td>
-                      <a href="#" class="btn btn-sm btn-outline-primary">Szerkesztés</a>
+                      {% if caps.get('can_assign') %}
+                        <a href="{{ url_for('auth.assign_pathologist', case_id=case.id) }}" class="btn btn-sm btn-outline-primary">Szerkesztés</a>
+                      {% else %}
+                        <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true">Szerkesztés</span>
+                      {% endif %}
                     </td>
                   </tr>
                 {% else %}
@@ -195,7 +199,13 @@
                     <td class="d-none">{{ inv.registration_time }}</td>
                     <td class="d-none">{{ inv.deadline or '–' }}</td>
                     <td>{{ inv.expert_names or '–' }}</td>
-                    <td><a class="btn btn-sm btn-outline-primary" href="">Szerkesztő</a></td>
+                    <td>
+                      {% if caps.get('can_assign') %}
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.assign_investigation_expert', id=inv.id) }}">Szerkesztő</a>
+                      {% else %}
+                        <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true">Szerkesztő</span>
+                      {% endif %}
+                    </td>
                   </tr>
                 {% else %}
                   <tr>

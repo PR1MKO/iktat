@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Dict
 
+from app.utils.roles import canonical_role
+
 # Define the set of capabilities used across the application.
 _CAP_KEYS = [
     "can_view_cases",
@@ -130,9 +132,17 @@ def can_upload_investigation(user) -> bool:
     return role in _INVESTIGATION_UPLOAD_ROLES
 
 
-def capabilities_for(user) -> Dict[str, bool]:
-    """Return capability flags for the given user."""
-    role = getattr(user, "role", None)
-    caps = dict(_ROLE_CAPS.get(role) or _ROLE_CAPS["pénzügy"])
-    caps["can_upload_investigation"] = can_upload_investigation(user)
+def capabilities_for(user_or_role) -> Dict[str, bool]:
+    """Return capability flags for the given user or role string."""
+
+    role = getattr(user_or_role, "role", None)
+    if role is None:
+        role = str(user_or_role)
+
+    canon = canonical_role(role)
+    caps = dict(_ROLE_CAPS.get(canon) or _ROLE_CAPS["pénzügy"])
+
+    if hasattr(user_or_role, "role"):
+        caps["can_upload_investigation"] = can_upload_investigation(user_or_role)
+
     return caps
