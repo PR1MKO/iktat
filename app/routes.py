@@ -18,6 +18,7 @@ from sqlalchemy import or_
 from werkzeug import exceptions
 
 from app import db
+from app.investigations.models import Investigation
 from app.models import Case, ChangeLog, UploadedFile, User
 from app.paths import file_safe_case_number
 from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
@@ -25,7 +26,8 @@ from app.utils.case_status import is_final_status
 from app.utils.dates import attach_case_dates, safe_fmt
 from app.utils.idempotency import claim_idempotency, make_default_key
 from app.utils.rbac import require_roles as roles_required
-from app.utils.time_utils import fmt_budapest, now_utc
+from app.utils.roles import canonical_role
+from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
 from app.utils.uploads import is_valid_category, resolve_safe, save_upload
 
 main_bp = Blueprint("main", __name__)
@@ -105,13 +107,33 @@ def enforce_upload_size_limit():
 @roles_required("szakértő")
 def ugyeim():
     ident = current_user.screen_name or current_user.username
-    base_q = Case.query.filter(or_(Case.expert_1 == ident, Case.expert_2 == ident))
-    pending = base_q.filter(Case.status != "boncolva-leírónál").all()
-    completed = base_q.filter(Case.status == "boncolva-leírónál").all()
-    for case in pending + completed:
+    cases = (
+        Case.query.filter(or_(Case.expert_1 == ident, Case.expert_2 == ident))
+        .filter(Case.status != "boncolva-leírónál")
+        .order_by(Case.id.desc())
+        .all()
+    )
+    for case in cases:
         attach_case_dates(case)
+
+    investigations = (
+        Investigation.query.filter(
+            or_(
+                Investigation.expert1_id == current_user.id,
+                Investigation.expert2_id == current_user.id,
+            )
+        )
+        .order_by(Investigation.id.desc())
+        .all()
+    )
+    for inv in investigations:
+        inv.deadline_str = fmt_date(getattr(inv, "deadline", None))
+
     return render_template(
-        "ugyeim.html", pending_cases=pending, completed_cases=completed
+        "ugyeim.html",
+        cases=cases,
+        investigations=investigations,
+        page_title="Elvégzendő",
     )
 
 
@@ -190,7 +212,36 @@ def mark_tox_viewed(case_id):
 @login_required
 @roles_required("szakértő", "leíró")
 def elvegzem(case_id):
-    case = db.session.get(Case, case_id) or abort(404)
+    entity = request.args.get("type")
+    if entity == "investigation":
+        inv = db.session.get(Investigation, case_id) or abort(404)
+
+        if canonical_role(getattr(current_user, "role", None)) != "szakértő":
+            abort(403)
+
+        assigned_ids = {inv.expert1_id, inv.expert2_id}
+        if current_user.id not in assigned_ids:
+            flash("Nincs jogosultságod az ügy elvégzéséhez.", "danger")
+            return redirect(url_for("main.ugyeim"))
+
+        return redirect(url_for("investigations.detail_investigation", id=inv.id))
+
+    case = db.session.get(Case, case_id)
+    if case is None:
+        inv = db.session.get(Investigation, case_id)
+        if inv is None:
+            abort(404)
+
+        if canonical_role(getattr(current_user, "role", None)) != "szakértő":
+            abort(403)
+
+        assigned_ids = {inv.expert1_id, inv.expert2_id}
+        if current_user.id not in assigned_ids:
+            flash("Nincs jogosultságod az ügy elvégzéséhez.", "danger")
+            return redirect(url_for("main.ugyeim"))
+
+        return redirect(url_for("investigations.detail_investigation", id=inv.id))
+
     attach_case_dates(case)
 
     # Authorization
