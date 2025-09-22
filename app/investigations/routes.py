@@ -38,6 +38,7 @@ from .models import (
     InvestigationNote,
 )
 from .utils import (
+    display_name,
     generate_case_number,
     init_investigation_upload_dirs,
     user_display_name,
@@ -512,11 +513,31 @@ def detail_investigation(id):
     investigation_type_label = dict(form.investigation_type.choices).get(
         inv.investigation_type, inv.investigation_type
     )
-    assigned_expert_display = None
-    if inv.assigned_expert_id:
-        assigned_expert_display = user_display_name(
-            get_user_safe(inv.assigned_expert_id)
-        )
+    assigned_expert_user = (
+        get_user_safe(inv.assigned_expert_id) if inv.assigned_expert_id else None
+    )
+    assigned_expert_display = (
+        user_display_name(assigned_expert_user) if assigned_expert_user else None
+    )
+
+    expert_user = getattr(inv, "expert", None) or (
+        get_user_safe(getattr(inv, "expert1_id", None))
+        if getattr(inv, "expert1_id", None)
+        else None
+    )
+    if expert_user is None:
+        expert_user = assigned_expert_user
+
+    describer_user = getattr(inv, "describer", None)
+    if describer_user is None and getattr(inv, "describer_id", None):
+        describer_user = get_user_safe(inv.describer_id)
+    if describer_user is None and expert_user is not None:
+        default_leiro_id = getattr(expert_user, "default_leiro_id", None)
+        if default_leiro_id:
+            describer_user = get_user_safe(default_leiro_id)
+
+    expert_display_name = display_name(expert_user)
+    describer_display_name = display_name(describer_user)
 
     caps = capabilities_for(current_user)
     can_upload_ui = can_upload_investigation_now(inv, current_user)
@@ -538,6 +559,8 @@ def detail_investigation(id):
         assignment_type_label=assignment_type_label,
         investigation_type_label=investigation_type_label,
         assigned_expert_display=assigned_expert_display,
+        expert_display_name=expert_display_name,
+        describer_display_name=describer_display_name,
     )
 
 

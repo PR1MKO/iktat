@@ -28,11 +28,18 @@
           </div>
           <div class="col-12 col-lg-3">
             <div class="text-muted small">Szakértő</div>
-            <div>{{ assigned_expert_display or '–' }}</div>
+            <div>{{ expert_display_name }}</div>
           </div>
           <div class="col-12 col-lg-3">
             <div class="text-muted small">Vizsgálat típusa</div>
             <div>{{ investigation_type_label or '–' }}</div>
+          </div>
+        </div>
+		
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-lg-3">
+            <div class="text-muted small">Leíró</div>
+            <div>{{ describer_display_name }}</div>
           </div>
         </div>
 

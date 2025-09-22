@@ -88,3 +88,10 @@ def generate_case_number(session) -> str:
 
 def user_display_name(u):
     return (u.full_name or u.screen_name or u.username) if u else "—"
+
+
+def display_name(user) -> str:
+    """Return a user's preferred display name with sane fallbacks."""
+    if not user:
+        return "–"
+    return getattr(user, "screen_name", None) or getattr(user, "username", None) or "–"
