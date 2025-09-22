@@ -14,7 +14,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import or_
+from sqlalchemy import and_, or_
 from werkzeug import exceptions
 
 from app import db
@@ -526,8 +526,30 @@ def upload_elvegzes_files(case_id):
 @login_required
 @roles_required("leíró")
 def leiro_ugyeim():
-    ident = current_user.screen_name or current_user.username
-    base_q = Case.query.filter_by(describer=ident)
+    ident_screen = (current_user.screen_name or "").strip()
+    ident_username = (current_user.username or "").strip()
+    identifiers = [ident for ident in {ident_screen, ident_username} if ident]
+
+    expert_links = or_(
+        or_(User.screen_name == Case.expert_1, User.username == Case.expert_1),
+        or_(User.screen_name == Case.expert_2, User.username == Case.expert_2),
+    )
+
+    default_leiro_exists = (
+        db.session.query(User.id)
+        .filter(User.default_leiro_id == current_user.id)
+        .filter(expert_links)
+        .exists()
+    )
+
+    empty_describer = or_(Case.describer.is_(None), Case.describer == "")
+
+    filters = [and_(empty_describer, default_leiro_exists)]
+    if identifiers:
+        filters.append(Case.describer.in_(identifiers))
+
+    combined_filter = filters[0] if len(filters) == 1 else or_(*filters)
+    base_q = Case.query.filter(combined_filter)
     pending = base_q.filter(Case.status == "boncolva-leírónál").all()
     completed = base_q.filter(Case.status == "leiktatva").all()
     for case in pending + completed:
