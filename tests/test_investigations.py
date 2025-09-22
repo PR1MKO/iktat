@@ -382,3 +382,27 @@ def test_post_szakertoi_auto_assign_skips_szignalo_queue(client, app):
     body = resp.get_data(as_text=True)
     assert f"/investigations/{inv_id}/assign" not in body
     assert case_number in body
+
+
+def test_assign_intezeti_shows_expert_options_for_szig(client, app):
+    with app.app_context():
+        szig_user = create_user(
+            username="szig_test",
+            role="szignáló",
+            screen_name="Szignáló Teszt",
+        )
+        szak_user = create_user(
+            username="szak_test",
+            role="szakértő",
+            screen_name="Dr. Expert",
+        )
+        inv = create_investigation()
+
+    login(client, szig_user.username, "secret")
+
+    resp = client.get(f"/investigations/{inv.id}/assign")
+    assert resp.status_code == 200
+
+    html = resp.get_data(as_text=True)
+    assert "Dr. Expert" in html
+    assert f'value="{szak_user.id}"' in html

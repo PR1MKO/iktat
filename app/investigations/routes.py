@@ -799,8 +799,11 @@ def assign_investigation_expert(id):
             get_user_safe(inv.assigned_expert_id)
         )
 
+    # Accept both canonical and legacy role labels for experts so existing
+    # accounts with "szakértő" (and ASCII variants) remain visible.
+    expert_role_codes = ("szak", "szakértő", "szakerto")
     szakerto_users = (
-        User.query.filter(User.role.in_(("szak",)))
+        User.query.filter(User.role.in_(expert_role_codes))
         .order_by(User.screen_name, User.username)
         .all()
     )
