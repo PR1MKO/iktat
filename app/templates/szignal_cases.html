@@ -201,9 +201,9 @@
                     <td>{{ inv.expert_names or '–' }}</td>
                     <td>
                       {% if caps.get('can_assign') %}
-                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.assign_investigation_expert', id=inv.id) }}">Szerkesztő</a>
+                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.assign_investigation_expert', id=inv.id) }}">Szerkesztés</a>
                       {% else %}
-                        <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true">Szerkesztő</span>
+                        <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true">Szerkesztés</span>
                       {% endif %}
                     </td>
                   </tr>
