@@ -16,81 +16,72 @@
         'Szakértői': 'Szakértői'
       } %}
       <div class="container-fluid py-2">
-        <!-- Row 1: Ügyszám | Végrehajtás módja | Szakértő | Vizsgálat típusa (3/3/3/3) -->
-        <div class="row g-3">
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Ügyszám</div>
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Ügyszám</div>
             <div>{{ investigation.case_number or investigation.id }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Végrehajtás módja</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Végrehajtás módja</div>
             <div>{{ assignment_type_label or _exec_map.get(investigation.assignment_type, investigation.assignment_type or '–') }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Szakértő</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Szakértő</div>
             <div>{{ expert_display_name }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Vizsgálat típusa</div>
-            <div>{{ investigation_type_label or '–' }}</div>
-          </div>
-        </div>
-		
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Leíró</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Leíró</div>
             <div>{{ describer_display_name }}</div>
           </div>
         </div>
 
-        <!-- Row 2: Külső ügyirat szám | Egyéb azonosító | Vizsgált személy neve | Beküldő intézmény (3/3/3/3) -->
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Külső ügyirat szám</div>
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Vizsgálat típusa</div>
+            <div>{{ investigation_type_label or '–' }}</div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Külső ügyirat szám</div>
             <div>{{ investigation.external_case_number or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Egyéb azonosító</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Egyéb azonosító</div>
             <div>{{ investigation.other_identifier or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Vizsgált személy neve</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Vizsgált személy neve</div>
             <div>{{ investigation.subject_name or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Beküldő intézmény</div>
+        </div>
+
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Beküldő intézmény</div>
             <div>{{ investigation.institution_name or '–' }}</div>
           </div>
-        </div>
-
-        <!-- Row 3: Leánykori neve | Anyja neve | TAJ szám | Állampolgársága (3/3/3/3) -->
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Leánykori neve</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Leánykori neve</div>
             <div>{{ investigation.maiden_name or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Anyja neve</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">Anyja neve</div>
             <div>{{ investigation.mother_name or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">TAJ szám</div>
+          <div class="col-12 col-md-3">
+            <div class="small text-muted fw-semibold">TAJ szám</div>
             <div>{{ investigation.taj_number or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Állampolgársága</div>
+        <div class="row g-2">
+          <div class="col-12 col-md-4">
+            <div class="small text-muted fw-semibold">Állampolgársága</div>
             <div>{{ investigation.citizenship or '–' }}</div>
           </div>
-        </div>
-
-        <!-- Row 4: Születési hely | Születési idő (3/3) -->
-        <div class="row g-3 mt-1">
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Születési hely</div>
+          <div class="col-12 col-md-4">
+            <div class="small text-muted fw-semibold">Születési hely</div>
             <div>{{ investigation.birth_place or '–' }}</div>
           </div>
-          <div class="col-12 col-lg-3">
-            <div class="text-muted small">Születési idő</div>
+          <div class="col-12 col-md-4">
+            <div class="small text-muted fw-semibold">Születési idő</div>
             <div>{{ investigation.birth_date_str or '–' }}</div>
           </div>
         </div>

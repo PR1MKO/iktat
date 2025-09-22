@@ -3,6 +3,8 @@
 import re
 from pathlib import Path
 
+from bs4 import BeautifulSoup
+
 from app import db
 from tests.helpers import create_investigation, create_user, login
 
@@ -121,3 +123,45 @@ def test_detail_shows_dash_when_no_describer_and_no_default(app, client):
     html = resp.get_data(as_text=True)
     assert "Leíró" in html
     assert "–" in html
+
+
+def _adatok_labels_in_order(html: bytes) -> list[str]:
+    soup = BeautifulSoup(html, "html.parser")
+    card = None
+    for header in soup.select(".card-header"):
+        if header.get_text(strip=True) == "Adatok":
+            card = header.find_parent("div", class_="card")
+            break
+    root = card if card else soup
+    return [
+        element.get_text(strip=True)
+        for element in root.select(".small.text-muted.fw-semibold")
+    ]
+
+
+def test_adatok_grid_order(app, client):
+    create_user("szig_user", "pw", role="szig")
+    investigation = create_investigation()
+    with client:
+        login(client, "szig_user", "pw")
+        resp = client.get(f"/investigations/{investigation.id}")
+        assert resp.status_code == 200
+    labels = _adatok_labels_in_order(resp.data)
+    expected = [
+        "Ügyszám",
+        "Végrehajtás módja",
+        "Szakértő",
+        "Leíró",
+        "Vizsgálat típusa",
+        "Külső ügyirat szám",
+        "Egyéb azonosító",
+        "Vizsgált személy neve",
+        "Beküldő intézmény",
+        "Leánykori neve",
+        "Anyja neve",
+        "TAJ szám",
+        "Állampolgársága",
+        "Születési hely",
+        "Születési idő",
+    ]
+    assert labels[: len(expected)] == expected
