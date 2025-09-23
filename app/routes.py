@@ -21,6 +21,7 @@ from app import db
 from app.investigations.models import Investigation
 from app.models import Case, ChangeLog, UploadedFile, User
 from app.paths import file_safe_case_number
+from app.services.case_logic import resolve_effective_describer
 from app.utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from app.utils.case_status import is_final_status
 from app.utils.dates import attach_case_dates, safe_fmt
@@ -74,8 +75,22 @@ def is_expert_for_case(user, case):
 
 
 def is_describer_for_case(user, case):
-    ident = user.screen_name or user.username
-    return ident == case.describer
+    """Return True if *user* is the describer for *case*.
+
+    When ``case.describer`` is empty we fall back to the effective describer
+    derived from the expert's configured default leíró.
+    """
+
+    user_ident = (user.screen_name or user.username or "").strip()
+    explicit = (case.describer or "").strip()
+    if explicit:
+        return user_ident == explicit
+
+    try:
+        effective = (resolve_effective_describer(case) or "").strip()
+    except Exception:  # noqa: BLE001
+        effective = ""
+    return bool(user_ident) and user_ident == effective
 
 
 @main_bp.app_errorhandler(413)
