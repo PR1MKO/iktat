@@ -8,75 +8,103 @@
     </div>
   </div>
 
-  <!-- Pending cases -->
-  <h2><span class="badge bg-danger">Leírandó</span></h2>
-  {% if pending_cases %}
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Boncszám</th>
-          <th>Elhunyt neve</th>
-          <th>Állapot</th>
-          <th>Regisztrálva</th>
-          <th>Határidő</th>
-          <th>Műveletek</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for case in pending_cases %}
-          <tr>
-            <td>{{ case.case_number }}</td>
-            <td>{{ case.deceased_name }}</td>
-            <td>{{ case.status }}</td>
-            <td>{{ case.registration_time_str }}</td>
-            <td>{{ case.deadline_str }}</td>
-            <td>
-              <a class="btn btn-outline-success"
-                href="{{ url_for('main.leiro_elvegzem', case_id=case.id) }}">
-                Elvégzem
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>Nincsenek leírandó ügyeid.</p>
-  {% endif %}
+  <div class="row g-3 mt-3">
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header">
+          <h2 class="h5 mb-0">Boncolások</h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Boncszám</th>
+                  <th scope="col">Elhunyt neve</th>
+                  <th scope="col">Állapot</th>
+                  <th scope="col">Határidő</th>
+                  <th scope="col" class="text-end">Művelet</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if cases %}
+                  {% for case in cases %}
+                    <tr>
+                      <td>{{ case.case_number }}</td>
+                      <td>{{ case.deceased_name or "–" }}</td>
+                      <td>{{ case.status or "–" }}</td>
+                      <td>{{ case.deadline_str or "–" }}</td>
+                      <td class="text-end">
+                        <a
+                          class="btn btn-primary btn-sm"
+                          href="{{ url_for('main.leiro_elvegzem', case_id=case.id) }}"
+                        >
+                          Megnyitás
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="5" class="text-muted text-center">
+                      Nincs leírandó boncolás.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <!-- Completed cases -->
-  <h2><span class="badge bg-success">Leírt</span></h2>
-  {% if completed_cases %}
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Boncszám</th>
-          <th>Elhunyt neve</th>
-          <th>Állapot</th>
-          <th>Regisztrálva</th>
-          <th>Határidő</th>
-          <th>Műveletek</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for case in completed_cases %}
-          <tr>
-            <td>{{ case.case_number }}</td>
-            <td>{{ case.deceased_name }}</td>
-            <td>{{ case.status }}</td>
-            <td>{{ case.registration_time_str }}</td>
-            <td>{{ case.deadline_str }}</td>
-            <td>
-              <a href="{{ url_for('main.leiro_elvegzem', case_id=case.id) }}"
-                 class="btn btn-outline-secondary btn-sm">
-                Szerkeszt
-              </a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>Nincsenek leírt ügyeid.</p>
-  {% endif %}
+    <div class="col-12 col-lg-6">
+      <div class="card shadow-sm h-100">
+        <div class="card-header">
+          <h2 class="h5 mb-0">Vizsgálatok</h2>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+              <thead>
+                <tr>
+                  <th scope="col">Ügyszám</th>
+                  <th scope="col">Vizsgálandó Neve</th>
+                  <th scope="col">Státusz</th>
+                  <th scope="col">Határidő</th>
+                  <th scope="col" class="text-end">Művelet</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if pending_investigations %}
+                  {% for inv in pending_investigations %}
+                    <tr>
+                      <td>{{ inv.case_number or inv.external_case_number or inv.other_identifier or inv.id }}</td>
+                      <td>{{ inv.subject_name or "–" }}</td>
+                      <td>{{ inv.status or "–" }}</td>
+                      <td>{{ inv.deadline_str or "–" }}</td>
+                      <td class="text-end">
+                        <a
+                          class="btn btn-primary btn-sm"
+                          href="{{ url_for('investigations.detail_investigation', id=inv.id) }}"
+                        >
+                          Megnyitás
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="5" class="text-muted text-center">
+                      Nincs hozzád rendelt vizsgálat.
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

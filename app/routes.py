@@ -14,7 +14,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, false, func, or_
 from werkzeug import exceptions
 
 from app import db
@@ -550,6 +550,7 @@ def leiro_ugyeim():
         ),
     )
 
+    # CASES (MAIN bind only) — safe EXISTS against User+Case
     default_leiro_exists = (
         db.session.query(User.id)
         .filter(User.default_leiro_id == current_user.id)
@@ -576,8 +577,47 @@ def leiro_ugyeim():
     )
     for case in pending + completed:
         attach_case_dates(case)
+
+    cases_for_table = pending + completed
+
+    # INVESTIGATIONS (EXAMINATION bind) — avoid cross-bind subqueries.
+    # Step 1: Resolve expert user IDs on MAIN
+    expert_ids = [
+        row.id
+        for row in db.session.query(User.id)
+        .filter(User.default_leiro_id == current_user.id)
+        .all()
+    ]
+
+    # Step 2: Build safe ownership predicate on EXAMINATION using IN()
+    expert_match = or_(
+        Investigation.expert1_id.in_(expert_ids) if expert_ids else false(),
+        Investigation.expert2_id.in_(expert_ids) if expert_ids else false(),
+    )
+
+    inv_ownership = or_(
+        Investigation.describer_id == current_user.id,
+        and_(Investigation.describer_id.is_(None), expert_match),
+    )
+
+    inv_pending_statuses = {"beérkezett", "szignálva"}
+    pending_investigations = (
+        Investigation.query.filter(inv_ownership)
+        .filter(Investigation.status.in_(inv_pending_statuses))
+        .order_by(Investigation.id.desc())
+        .all()
+    )
+    for inv in pending_investigations:
+        inv.deadline_str = fmt_date(getattr(inv, "deadline", None))
+    completed_investigations = []
+
     return render_template(
-        "leiro_ugyeim.html", pending_cases=pending, completed_cases=completed
+        "leiro_ugyeim.html",
+        pending_cases=pending,
+        completed_cases=completed,
+        cases=cases_for_table,
+        pending_investigations=pending_investigations,
+        completed_investigations=completed_investigations,
     )
 
 
