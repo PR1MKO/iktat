@@ -22,6 +22,8 @@
   <div class="card-header fw-bold">Adatok</div>
   <div class="card-body">
     <table class="table table-borderless mb-0">
+      {% set explicit_describer = (case.describer | default('', true)) | trim %}
+      {% set fallback_describer = (effective_describer | default('', true)) | trim %}
       <tr>
         <td><strong>Boncszám:</strong> {{ case.case_number }}</td>
         <td><strong>Elhunyt neve:</strong> {{ case.deceased_name }}</td>
@@ -60,7 +62,7 @@
       <tr>
         <td><strong>Szakértő 1:</strong> {{ case.expert_1 or '–' }}</td>
         <td><strong>Szakértő 2:</strong> {{ case.expert_2 or '–' }}</td>
-        <td colspan="2"><strong>Leíró:</strong> {{ case.describer or '–' }}</td>
+        <td colspan="2"><strong>Leíró:</strong> {{ fallback_describer or explicit_describer or '–' }}</td>
       </tr>
     </table>
   </div>
@@ -465,7 +467,17 @@
 {% macro elvegzem_button(case, current_user) %}
   {% if current_user.role == 'szakértő' and case.expert_1 == current_user.screen_name %}
     <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
-  {% elif current_user.role == 'leíró' and case.describer == current_user.screen_name %}
-    <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
+  {% elif current_user.role == 'leíró' %}
+    {% set screen_name = (current_user.screen_name | default('', true)) | trim %}
+    {% set username = (current_user.username | default('', true)) | trim %}
+    {% set explicit_describer = (case.describer | default('', true)) | trim %}
+    {% set fallback_describer = (effective_describer | default('', true)) | trim %}
+    {% if (
+      explicit_describer and (explicit_describer == screen_name or explicit_describer == username)
+    ) or (
+      fallback_describer and (fallback_describer == screen_name or fallback_describer == username)
+    ) %}
+      <a href="{{ url_for('main.elvegzem', case_id=case.id) }}" class="btn btn-success ms-2">Elvégzem</a>
+    {% endif %}
   {% endif %}
 {% endmacro %}

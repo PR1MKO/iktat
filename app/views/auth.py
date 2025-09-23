@@ -33,6 +33,7 @@ from app.investigations.utils import user_display_name
 from app.models import AuditLog, Case, ChangeLog, TaskMessage, UploadedFile, User
 from app.paths import case_root, ensure_case_folder, file_safe_case_number
 from app.routes import handle_file_upload
+from app.services.case_logic import resolve_effective_describer
 from app.services.core_user_read import get_user_safe
 from app.utils.case_number import generate_case_number_for_year
 from app.utils.dates import attach_case_dates, safe_fmt
@@ -382,6 +383,7 @@ def case_detail(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
     ctx = build_case_context(case)
+    ctx["effective_describer"] = resolve_effective_describer(case)
     ctx["changelog_entries"] = [
         e for e in ctx["changelog_entries"] if e.field_name != "notes"
     ]
@@ -399,6 +401,7 @@ def view_case(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
     ctx = build_case_context(case)
+    ctx["effective_describer"] = resolve_effective_describer(case)
     ctx["changelog_entries"] = [
         e for e in ctx["changelog_entries"] if e.field_name != "notes"
     ]
