@@ -201,8 +201,7 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
 
 
 @investigations_bp.route("/")
-@login_required
-@roles_required("admin", "iroda", "szak", "penz", "pénzügy", "szig")
+@login_required  # Any authenticated user may access the investigations index
 def list_investigations():
     search = (request.args.get("search") or request.args.get("q") or "").strip()
     case_type = request.args.get("case_type", "").strip()

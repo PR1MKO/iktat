@@ -81,7 +81,11 @@ def test_investigation_list_permissions(client, setup):
         assert client.get("/investigations/").status_code == 200
     with client:
         login(client, "norole", "pw")
-        assert client.get("/investigations/").status_code == 403
+        # Policy: any authenticated user can access the investigations index
+        assert client.get("/investigations/").status_code == 200
+    with client:
+        login(client, "leiro", "pw")
+        assert client.get("/investigations/").status_code == 200
 
 
 def test_sidebar_shows_investigations_link_for_szignalo(client, setup):
