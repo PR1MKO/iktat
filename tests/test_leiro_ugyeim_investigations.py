@@ -81,7 +81,7 @@ def test_layout_shows_dual_cards(client):
     assert "Vizsgálatok" in body
 
 
-def test_investigation_case_number_links_when_case_id_present(client):
+def test_investigation_case_number_links_to_investigation_detail(client):
     leiro = create_user("link-leiro", "pw", role="leíró", screen_name="Link")
     expert = create_user(
         "link-szak",
@@ -102,7 +102,30 @@ def test_investigation_case_number_links_when_case_id_present(client):
     login_follow(client, "link-leiro", "pw")
     body = client.get("/leiro/ugyeim").get_data(as_text=True)
 
-    assert f'href="/cases/{inv.case_id}/view"' in body
+    assert f'<a href="/investigations/{inv.id}">{inv.case_number}</a>' in body
+
+
+def test_investigation_case_number_links_without_case_id(client):
+    leiro = create_user("linkless-leiro", "pw", role="leíró", screen_name="Linkless")
+    expert = create_user(
+        "linkless-szak",
+        "pw",
+        role="szakértő",
+        screen_name="Linkless szak",
+        default_leiro_id=leiro.id,
+    )
+    inv = create_investigation(
+        subject_name="Link nélküli ügy",
+        status="szignálva",
+        expert1_id=expert.id,
+        describer_id=None,
+        case_number="INV-1717",
+    )
+
+    login_follow(client, "linkless-leiro", "pw")
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert f'<a href="/investigations/{inv.id}">{inv.case_number}</a>' in body
 
 
 def test_leiro_placeholder_page_accessible(client):

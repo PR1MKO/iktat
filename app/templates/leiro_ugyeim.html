@@ -85,11 +85,7 @@
                     <tr>
                       <td>
                         {%- set ugy = inv.case_number or inv.external_case_number or inv.other_identifier or inv.id -%}
-                        {%- if inv.case_id %}
-                          <a href="{{ url_for('auth.view_case', case_id=inv.case_id) }}">{{ ugy }}</a>
-                        {%- else %}
-                          {{ ugy }}
-                        {%- endif %}
+                        <a href="{{ url_for('investigations.detail_investigation', id=inv.id) }}">{{ ugy }}</a>
                       </td>
                       <td>{{ inv.subject_name or "–" }}</td>
                       <td>{{ inv.status or "–" }}</td>
