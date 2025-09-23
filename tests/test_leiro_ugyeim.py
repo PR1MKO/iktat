@@ -94,3 +94,70 @@ def test_leiro_ugyeim_respects_explicit_describer(client):
     body = client.get("/leiro/ugyeim").get_data(as_text=True)
 
     assert "F-006" not in body
+
+
+def test_leiro_ugyeim_explicit_match_normalizes_identifiers(client):
+    leiro = create_user(
+        "LeIrO1",
+        "pw",
+        role="leíró",
+        screen_name="",
+    )
+    login_follow(client, "LeIrO1", "pw")
+
+    make_case(
+        "WS-101",
+        describer="  leiro1  ",
+        status="boncolva-leírónál",
+    )
+
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert "WS-101" in body
+
+
+def test_leiro_ugyeim_default_mapping_handles_whitespace_and_case(client):
+    leiro = create_user("le1", "pw", role="leíró", screen_name="Leíró One")
+    create_user(
+        "SZAK1",
+        "pw",
+        role="szakértő",
+        screen_name="  Szak One  ",
+        default_leiro_id=leiro.id,
+    )
+
+    login_follow(client, "le1", "pw")
+
+    make_case(
+        "WS-202",
+        expert_1="  szak one  ",
+        status="boncolva-leírónál",
+    )
+
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert "WS-202" in body
+
+
+def test_leiro_ugyeim_excludes_cases_for_other_default_leiro(client):
+    me = create_user("me", "pw", role="leíró", screen_name="Me")
+    other = create_user("other", "pw", role="leíró", screen_name="Other")
+    create_user(
+        "szakx",
+        "pw",
+        role="szakértő",
+        screen_name="Szak X",
+        default_leiro_id=other.id,
+    )
+
+    login_follow(client, "me", "pw")
+
+    make_case(
+        "NEG-303",
+        expert_1="Szak X",
+        status="boncolva-leírónál",
+    )
+
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert "NEG-303" not in body
