@@ -10,7 +10,7 @@ def test_default_leiro_sees_unassigned_investigation(client):
         screen_name="Szakértő",
         default_leiro_id=leiro.id,
     )
-    create_investigation(
+    inv = create_investigation(
         subject_name="Minta Alany",
         status="szignálva",
         expert1_id=expert.id,
@@ -21,6 +21,8 @@ def test_default_leiro_sees_unassigned_investigation(client):
     body = client.get("/leiro/ugyeim").get_data(as_text=True)
 
     assert "Minta Alany" in body
+    assert f'href="/investigations/{inv.id}/leiro/elvegzem"' in body
+    assert "Elvégzem" in body
 
 
 def test_explicit_describer_always_included(client):
@@ -77,3 +79,50 @@ def test_layout_shows_dual_cards(client):
     assert 'class="row g-3 mt-3"' in body
     assert "Boncolások" in body
     assert "Vizsgálatok" in body
+
+
+def test_investigation_case_number_links_when_case_id_present(client):
+    leiro = create_user("link-leiro", "pw", role="leíró", screen_name="Link")
+    expert = create_user(
+        "link-szak",
+        "pw",
+        role="szakértő",
+        screen_name="Link szak",
+        default_leiro_id=leiro.id,
+    )
+    inv = create_investigation(
+        subject_name="Linkelt ügy",
+        status="szignálva",
+        expert1_id=expert.id,
+        describer_id=None,
+        case_number="INV-4242",
+    )
+    inv.case_id = 4242
+
+    login_follow(client, "link-leiro", "pw")
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert f'href="/cases/{inv.case_id}/view"' in body
+
+
+def test_leiro_placeholder_page_accessible(client):
+    leiro = create_user("placeholder-leiro", "pw", role="leíró", screen_name="Holder")
+    expert = create_user(
+        "placeholder-szak",
+        "pw",
+        role="szakértő",
+        screen_name="Holder szak",
+        default_leiro_id=leiro.id,
+    )
+    inv = create_investigation(
+        subject_name="Placeholder vizsgálat",
+        status="szignálva",
+        expert1_id=expert.id,
+        describer_id=None,
+    )
+
+    login_follow(client, "placeholder-leiro", "pw")
+    response = client.get(f"/investigations/{inv.id}/leiro/elvegzem")
+
+    assert response.status_code == 200
+    assert "Leíró — Vizsgálat munkalap" in response.get_data(as_text=True)

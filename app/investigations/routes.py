@@ -136,6 +136,15 @@ def cannot_upload_reason(inv, u):
     return "Nincs jogosultság a feltöltéshez."
 
 
+@investigations_bp.route("/<int:id>/leiro/elvegzem", methods=["GET"])
+@login_required
+@roles_required("leíró", "lei")
+def leiro_elvegzem(id: int):
+    """Temporary placeholder work page for leíró users."""
+
+    return render_template("investigations/elvegzem_leiro_placeholder.html", inv_id=id)
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@ def test_leiro_ugyeim_lists_cases_for_default_leiro(client):
         default_leiro_id=leiro.id,
     )
 
-    make_case(
+    first_case = make_case(
         "A-001",
         describer="Leiro One",
         expert_1="Szak One",
@@ -71,6 +71,8 @@ def test_leiro_ugyeim_lists_cases_for_default_leiro(client):
     assert "C-003" in body
     assert "E-005" in body
     assert "D-004" not in body
+    assert f'href="/cases/{first_case.id}/view"' in body
+    assert "Elvégzem" in body
 
 
 def test_leiro_ugyeim_includes_szignalva_pending_case(client):

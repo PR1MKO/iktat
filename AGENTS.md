@@ -1,24 +1,34 @@
 # AGENT CONTRACT — IKTATAS2.0 (Browser Codex)
 
-## Setup rules (must follow)
-- Install **only** base runtime deps from `requirements.txt`.
-- **Do not** install dev/test/tooling deps (`requirements-dev.txt`) unless explicitly asked.
-- **Do not** run `pytest` (or any tests) during setup or mid-task.
-- If you must validate, use static checks only (imports, ruff/isort/black), no execution of tests.
-- If `constraints.txt` exists, use it: `pip install -r requirements.txt -c constraints.txt`.
-- Pre-commit hooks are configured to run **only on commit stage**; if you invoke `pre-commit run -a` during setup/maintenance it should do nothing.
+## Setup rules
+- Install only base runtime deps from `requirements.txt` (use `-c constraints.txt` if present).
+- Do NOT install dev/test/tooling deps during setup.
+- Do NOT run tests during setup.
 
-## Workflow
-1) **PLAN** → short JSON plan.
-2) **EXEC** → minimal diff patches, JSON-only output (temperature≈0), no tests.
-3)Run before committing: python -m pytest -q . Only commit if all tests pass successfully.
+## Workflow (HARD GATES)
+1) PLAN → output a short JSON plan.
+2) EXEC → propose minimal, surgical diffs as JSON (no file dumps).
+3) VALIDATE (MANDATORY) → run:
+   - python --version
+   - pip --version
+   - python -m pytest -q
+   If tests fail or did not run: STOP and return:
+   {
+     "status": "blocked",
+     "reason": "pytest_failed_or_not_run",
+     "pytest_tail": "<last 80 lines>"
+   }
+4) COMMIT → Only if step 3 passed:
+   - Commit ONLY touched files for this task.
+
+## Test dependency rule
+- If tests error due to missing dev deps (e.g., bs4, pytest plugins), install exactly what’s needed via `requirements-dev.txt` and re-run `python -m pytest -q`. This exception is allowed ONLY inside step 3 (VALIDATE).
 
 ## Context rules
-- Prefer `CONTEXT_PACK.md` + targeted snippets/diffs. Avoid full-file dumps.
-- Keep prompts ≤ ~8k tokens. Ask for missing snippets if needed.
+- Prefer CONTEXT_PACK.md + targeted snippets/diffs; keep prompts ≤ 8k tokens.
 
-## Optional scripts you may call
-- `codex/setup.ps1` — base deps only, **no tests**.
-- `codex/maintenance.ps1` — notes/reminders, **no tests**.
+## Pre-commit
+- Pre-commit hooks run only at commit; do not invoke them manually.
 
-> For human developer setup and tasks, see `README.md`.
+## Always
+- Run `python -m pytest` before committing; if any test fails, repair it and only commit when all tests pass successfully.

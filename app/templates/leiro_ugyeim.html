@@ -30,7 +30,11 @@
                 {% if cases %}
                   {% for case in cases %}
                     <tr>
-                      <td>{{ case.case_number }}</td>
+                      <td>
+                        <a href="{{ url_for('auth.view_case', case_id=case.id) }}">
+                          {{ case.case_number }}
+                        </a>
+                      </td>
                       <td>{{ case.deceased_name or "–" }}</td>
                       <td>{{ case.status or "–" }}</td>
                       <td>{{ case.deadline_str or "–" }}</td>
@@ -39,7 +43,7 @@
                           class="btn btn-primary btn-sm"
                           href="{{ url_for('main.leiro_elvegzem', case_id=case.id) }}"
                         >
-                          Megnyitás
+                          Elvégzem
                         </a>
                       </td>
                     </tr>
@@ -79,16 +83,23 @@
                 {% if pending_investigations %}
                   {% for inv in pending_investigations %}
                     <tr>
-                      <td>{{ inv.case_number or inv.external_case_number or inv.other_identifier or inv.id }}</td>
+                      <td>
+                        {%- set ugy = inv.case_number or inv.external_case_number or inv.other_identifier or inv.id -%}
+                        {%- if inv.case_id %}
+                          <a href="{{ url_for('auth.view_case', case_id=inv.case_id) }}">{{ ugy }}</a>
+                        {%- else %}
+                          {{ ugy }}
+                        {%- endif %}
+                      </td>
                       <td>{{ inv.subject_name or "–" }}</td>
                       <td>{{ inv.status or "–" }}</td>
                       <td>{{ inv.deadline_str or "–" }}</td>
                       <td class="text-end">
                         <a
                           class="btn btn-primary btn-sm"
-                          href="{{ url_for('investigations.detail_investigation', id=inv.id) }}"
+                          href="{{ url_for('investigations.leiro_elvegzem', id=inv.id) }}"
                         >
-                          Megnyitás
+                          Elvégzem
                         </a>
                       </td>
                     </tr>

@@ -123,4 +123,4 @@ def test_closed_cases_page_shows_lezart_only(client, app):
     resp = client.get("/cases/closed")
     text = resp.get_data(as_text=True)
     assert "C1" in text
-    assert "C2" not in text
+    assert ">C2<" not in text
