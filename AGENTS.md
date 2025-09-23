@@ -11,7 +11,7 @@
 ## Workflow
 1) **PLAN** → short JSON plan.
 2) **EXEC** → minimal diff patches, JSON-only output (temperature≈0), no tests.
-3) Humans run `FLASK.bat` (which runs `pytest`) at the end, then fix failures if any.
+3)Run before committing: python -m pytest -q . Only commit if all tests pass successfully.
 
 ## Context rules
 - Prefer `CONTEXT_PACK.md` + targeted snippets/diffs. Avoid full-file dumps.
