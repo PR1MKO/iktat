@@ -563,8 +563,9 @@ def leiro_ugyeim():
 
     combined_filter = or_(*filters) if len(filters) > 1 else filters[0]
     base_q = Case.query.filter(combined_filter)
+    pending_statuses = {"szignálva", "boncolva-leírónál"}
     pending = (
-        base_q.filter(Case.status == "boncolva-leírónál")
+        base_q.filter(Case.status.in_(pending_statuses))
         .order_by(Case.case_number.desc())
         .all()
     )

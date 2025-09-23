@@ -73,6 +73,30 @@ def test_leiro_ugyeim_lists_cases_for_default_leiro(client):
     assert "D-004" not in body
 
 
+def test_leiro_ugyeim_includes_szignalva_pending_case(client):
+    leiro = create_user("leiro", "pw", role="leíró", screen_name="Leíró")
+    create_user(
+        "szak",
+        "pw",
+        role="szakértő",
+        screen_name="Szak One",
+        default_leiro_id=leiro.id,
+    )
+
+    login_follow(client, "leiro", "pw")
+
+    make_case(
+        "SZ-1001",
+        expert_1="Szak One",
+        describer=None,
+        status="szignálva",
+    )
+
+    body = client.get("/leiro/ugyeim").get_data(as_text=True)
+
+    assert "SZ-1001" in body
+
+
 def test_leiro_ugyeim_respects_explicit_describer(client):
     leiro = create_user("leiro1", "pw", role="leíró", screen_name="Leiro One")
     create_user(
