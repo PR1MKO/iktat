@@ -82,38 +82,87 @@
       {% endif %}
     </div>
     <div class="card-body">
-      {% if attachments and attachments|length %}
-      <div class="list-group">
-        {% for att in attachments %}
-        <div class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <div class="fw-semibold">{{ att.filename }}</div>
-            <div class="small text-muted">{{ att.category }} • {{ att.uploaded_at_str }}</div>
-          </div>
-          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=att.id) }}">Letöltés</a>
+      {% if can_upload_ui %}
+      <form id="file-upload-form"
+            class="file-upload-form needs-validation d-flex align-items-center flex-wrap gap-2"
+            method="post"
+            enctype="multipart/form-data"
+            action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
+        {{ upload_form.hidden_tag() }}
+        <label for="file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
+        <input type="file"
+               id="file"
+               name="file"
+               class="form-control"
+               multiple
+               required
+               aria-label="Fájl feltöltése"
+               title="Fájl feltöltése">
+        <select name="category"
+                id="upload-category-file-upload-form"
+                class="form-select category-select"
+                required
+                aria-describedby="category-help-file-upload-form">
+          <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
+          {% for val, label in upload_form.category.choices %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div id="category-help-file-upload-form"
+             class="invalid-feedback category-warning d-none"
+             role="alert">
+          Kategória megadása kötelező.
         </div>
-        {% endfor %}
-      </div>
+        <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
+      </form>
       {% else %}
-      <div class="text-muted">Nincs csatolt dokumentum.</div>
+      <div class="alert alert-info mb-3" role="alert">
+        {{ cannot_upload_reason or "Nincs jogosultság a feltöltéshez." }}
+      </div>
       {% endif %}
+
+      <div class="mt-4">
+        {% if attachments and attachments|length %}
+        <div class="list-group">
+          {% for att in attachments %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold">{{ att.filename }}</div>
+              <div class="small text-muted">{{ att.category }} • {{ att.uploaded_at_str }}</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=att.id) }}">Letöltés</a>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-muted">Nincs csatolt dokumentum.</div>
+        {% endif %}
+      </div>
     </div>
   </div>
 
   <div class="card mb-3">
     <div class="card-header fw-bold">Megjegyzések</div>
     <div class="card-body">
-      {% if notes and notes|length %}
-      <div class="list-group">
-        {% for note in notes %}
-        <div class="list-group-item">
-          <div class="small text-muted">{{ user_display_name(note.author) }} • {{ note.timestamp_str }}</div>
-          <div>{{ note.text }}</div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="text-muted">Nincs megjegyzés.</div>
+      <ul id="notes-list" class="list-group list-group-flush mb-3">
+        {% if notes and notes|length %}
+          {% for note in notes %}
+            {% set author = note.author %}
+            {% include 'investigations/_note.html' %}
+          {% endfor %}
+        {% else %}
+          <li class="list-group-item text-muted empty-state">Nincs megjegyzés.</li>
+        {% endif %}
+      </ul>
+      {% if caps and caps.get('can_post_investigation_notes') %}
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <textarea name="text" class="form-control mb-2" rows="2" aria-label="Új megjegyzés"></textarea>
+      <button type="button"
+              id="add-note-btn"
+              class="btn btn-primary"
+              data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">
+        Hozzáadás
+      </button>
       {% endif %}
     </div>
   </div>
@@ -136,4 +185,10 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigations_documents.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
 {% endblock %}

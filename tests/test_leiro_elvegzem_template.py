@@ -4,6 +4,7 @@ import pytest
 from bs4 import BeautifulSoup
 
 from app import db
+from app.investigations.forms import INV_CATEGORY_CHOICES
 from app.investigations.models import (
     InvestigationAttachment,
     InvestigationChangeLog,
@@ -66,7 +67,9 @@ def sample_investigation_with_data(app):
         return investigation, leiro_user
 
 
-def test_leiro_elvegzem_renders_readonly_blocks(client, sample_investigation_with_data):
+def test_leiro_elvegzem_assigned_sees_upload_and_notes(
+    client, sample_investigation_with_data
+):
     investigation, leiro_user = sample_investigation_with_data
     login_follow(client, leiro_user.username, "secret")
 
@@ -75,24 +78,29 @@ def test_leiro_elvegzem_renders_readonly_blocks(client, sample_investigation_wit
 
     soup = BeautifulSoup(response.data, "html.parser")
 
-    for label in [
-        "Ügyszám",
-        "Végrehajtás módja",
-        "Szakértő",
-        "Leíró",
-        "Vizsgálat típusa",
-        "Születési idő",
-    ]:
-        assert soup.find(string=label), f"Missing label: {label}"
+    upload_form = soup.select_one("form#file-upload-form")
+    assert upload_form is not None, "Upload form should be visible for assigned leíró"
 
-    assert soup.find(string="Dokumentumok")
-    assert soup.find(string="Feltöltés letiltva")
-    assert not soup.select("form[action*='upload']"), "Upload form must be hidden"
+    category_select = upload_form.select_one("select.category-select")
+    assert category_select is not None
+    option_values = {
+        option.get("value")
+        for option in category_select.find_all("option")
+        if option.get("value")
+    }
+    expected_values = {choice[0] for choice in INV_CATEGORY_CHOICES if choice[0]}
+    assert expected_values.issubset(option_values)
 
-    assert soup.find(string="Megjegyzések")
-    assert not soup.select("form[action*='note']"), "Add-note form must be hidden"
+    notes_textarea = soup.select_one("textarea[name='text']")
+    assert notes_textarea is not None
+    add_btn = soup.select_one("button#add-note-btn")
+    assert add_btn is not None
+    assert f"/investigations/{investigation.id}/notes" in add_btn.get(
+        "data-notes-url", ""
+    )
 
-    assert soup.find(string="Változások")
+    notes_list = soup.select_one("#notes-list")
+    assert notes_list is not None
 
 
 @pytest.mark.parametrize("role_alias", ["leir", "LEIRO", "lei"])
@@ -114,3 +122,25 @@ def test_leiro_elvegzem_allows_legacy_role_alias(
     login(client, alias_user.username, "secret")
     response = client.get(f"/investigations/{investigation.id}/leiro/elvegzem")
     assert response.status_code == 200
+
+
+def test_leiro_elvegzem_unassigned_hides_controls(
+    app, client, sample_investigation_with_data
+):
+    investigation, _ = sample_investigation_with_data
+    with app.app_context():
+        other_user = create_user(
+            "leiro_unassigned",
+            "secret",
+            "leíró",
+            screen_name="Másik Leíró",
+        )
+
+    login_follow(client, other_user.username, "secret")
+    response = client.get(f"/investigations/{investigation.id}/leiro/elvegzem")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    assert soup.select_one("form#file-upload-form") is None
+    assert soup.select_one("button#add-note-btn") is None
+    assert soup.find(string="Feltöltés letiltva")

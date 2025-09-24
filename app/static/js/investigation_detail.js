@@ -5,7 +5,9 @@
   btn.addEventListener('click', function() {
     const textarea = document.querySelector('textarea[name="text"]');
     if (!textarea || !textarea.value.trim()) {
-      textarea.classList.add('is-invalid');
+      if (textarea) {
+        textarea.classList.add('is-invalid');
+      }
       return;
     }
     const basePath = window.location.pathname.replace(/\/$/, '');
@@ -25,6 +27,10 @@
       })
       .then(html => {
         const list = document.getElementById('notes-list');
+        if (!list) {
+          window.location.reload();
+          return;
+        }
         const empty = list.querySelector('.empty-state');
         if (empty) empty.remove();
         list.insertAdjacentHTML('afterbegin', html);

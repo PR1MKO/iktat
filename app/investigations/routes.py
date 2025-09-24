@@ -18,7 +18,11 @@ from werkzeug.utils import secure_filename  # for safe filenames
 
 from app import db
 from app.models import User
-from app.paths import ensure_investigation_folder, investigation_subdir_from_case_number
+from app.paths import (
+    ensure_investigation_folder,
+    investigation_root,
+    investigation_subdir_from_case_number,
+)
 from app.services.core_user_read import get_user_safe
 
 # IMPORTANT: import the module (so monkeypatch in tests affects calls)
@@ -211,7 +215,13 @@ def leiro_elvegzem(id: int):
     describer_display = display_name(describer_user)
 
     caps = dict(capabilities_for(current_user) or {})
-    caps["can_post_investigation_notes"] = False
+
+    is_assigned = _is_assigned_member(inv, current_user)
+    can_upload_ui = (
+        can_upload_investigation_now(inv, current_user) if is_assigned else False
+    )
+    deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
+    caps["can_post_investigation_notes"] = bool(is_assigned)
 
     return render_template(
         "investigations/leiro_elvegzem.html",
@@ -221,8 +231,9 @@ def leiro_elvegzem(id: int):
         changelog=changelog,
         user_display_name=user_display_name,
         caps=caps,
-        can_upload_ui=False,
-        cannot_upload_reason="Leíró oldal — feltöltés letiltva.",
+        can_upload_ui=can_upload_ui,
+        upload_form=FileUploadForm(),
+        cannot_upload_reason=deny_reason,
         assignment_type_label=assignment_type_label,
         investigation_type_label=investigation_type_label,
         assigned_expert_display=assigned_expert_display,
@@ -836,7 +847,7 @@ def download_investigation_file(inv_id, file_id):
         abort(404)
 
     subdir = investigation_subdir_from_case_number(inv.case_number)
-    root = Path(current_app.config["UPLOAD_INVESTIGATIONS_ROOT"]) / subdir
+    root = investigation_root() / subdir
     filename = att.filename
     try:
         return send_safe(root, filename, as_attachment=True)
