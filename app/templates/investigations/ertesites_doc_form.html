@@ -1,24 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Értesítés szakértői vizsgálatról — űrlap (ideiglenes){% endblock %}
+{% block title %}Értesítés szakértői vizsgálatról — űrlap{% endblock %}
 {% block content %}
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
-      <div class="card shadow-sm mb-3">
+      <div class="card shadow-sm">
         <div class="card-body">
           <h1 class="h4 mb-3">Értesítés szakértői vizsgálatról</h1>
-          <p class="text-muted mb-3">
-            Ez egy ideiglenes űrlap-helyőrző. A végleges dokumentum sablon itt található:
+          <form
+            id="ertesites-doc-form"
+            method="post"
+            action="{{ url_for('investigations.leiro_ertesites_form', id=investigation.id) }}"
+            class="row g-3"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label for="titulus" class="form-label">Titulus</label>
+              <input
+                type="text"
+                class="form-control"
+                id="titulus"
+                name="titulus"
+                value="{{ (form_data or {}).get('titulus', '') }}"
+                maxlength="120"
+                required
+              >
+            </div>
+            <div class="col-md-6">
+              <label for="vizsg_date" class="form-label">Dátum és időpont</label>
+              <input
+                type="datetime-local"
+                class="form-control"
+                id="vizsg_date"
+                name="vizsg_date"
+                value="{{ (form_data or {}).get('vizsg_date', '') }}"
+                required
+              >
+            </div>
+            <div class="col-12 d-flex align-items-center gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-earmark-word"></i>
+                Dokumentum generálása
+              </button>
+              <a
+                class="btn btn-outline-secondary"
+                href="{{ url_for('investigations.leiro_elvegzem', id=investigation.id) }}"
+              >
+                Vissza a vizsgálathoz
+              </a>
+            </div>
+          </form>
+          <p class="text-muted small mb-0 mt-3">
+            Sablon helye:
+            <code>
+              instance/uploads_investigations/{{ (investigation.case_number or '').replace(':', '-').replace('/', '-') }}/DO-NOT-EDIT/ertesites_szakertoi_vizsgalatrol.docx
+            </code>
           </p>
-          <code>app/docs/vizsgalat/ertesites_szakertoi_vizsgalatrol.docx</code>
         </div>
       </div>
-      <a
-        class="btn btn-secondary"
-        href="{{ url_for('investigations.leiro_elvegzem', id=investigation.id) }}"
-      >
-        Vissza a vizsgálathoz
-      </a>
     </div>
   </div>
 </div>

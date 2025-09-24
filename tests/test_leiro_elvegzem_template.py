@@ -193,9 +193,7 @@ def test_leiro_page_shows_document_generator_button(
     assert "Értesítés szakértői vizsgálatról" in button.get_text(strip=True)
 
 
-def test_leiro_ertesites_form_placeholder_renders(
-    client, sample_investigation_with_data
-):
+def test_leiro_ertesites_form_renders_inputs(client, sample_investigation_with_data):
     investigation, leiro_user = sample_investigation_with_data
     login_follow(client, leiro_user.username, "secret")
 
@@ -206,4 +204,12 @@ def test_leiro_ertesites_form_placeholder_renders(
     heading = soup.find("h1")
     assert heading is not None
     assert "Értesítés szakértői vizsgálatról" in heading.get_text(strip=True)
-    assert "ideiglenes" in soup.get_text(" ", strip=True).casefold()
+
+    form = soup.select_one("form#ertesites-doc-form")
+    assert form is not None
+    titulus_input = form.select_one("input[name='titulus']")
+    vizsg_input = form.select_one("input[name='vizsg_date']")
+    assert titulus_input is not None
+    assert titulus_input.get("type") == "text"
+    assert vizsg_input is not None
+    assert vizsg_input.get("type") == "datetime-local"

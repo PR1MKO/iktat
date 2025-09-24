@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from flask import (
@@ -260,7 +260,11 @@ def leiro_elvegzem(id: int):
     )
 
 
-@investigations_bp.route("/<int:id>/leiro/ertesites_form", methods=["GET"])
+ERTESITES_TEMPLATE_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
+ERTESITES_TEMPLATE_DIRNAME = "DO-NOT-EDIT"
+
+
+@investigations_bp.route("/<int:id>/leiro/ertesites_form", methods=["GET", "POST"])
 @login_required
 @roles_required("leíró", "leir", "LEIRO", "lei")
 def leiro_ertesites_form(id: int):
@@ -268,15 +272,165 @@ def leiro_ertesites_form(id: int):
     if inv is None:
         abort(404)
 
+    form_data = {
+        "titulus": request.form.get("titulus", ""),
+        "vizsg_date": request.form.get("vizsg_date", ""),
+    }
+
+    if request.method == "POST":
+        errors: list[str] = []
+
+        titulus = form_data["titulus"].strip()
+        if not titulus:
+            errors.append("A titulus mező kitöltése kötelező.")
+
+        vizsg_dt = None
+        vizsg_raw = form_data["vizsg_date"].strip()
+        if vizsg_raw:
+            try:
+                vizsg_dt = datetime.strptime(vizsg_raw, "%Y-%m-%dT%H:%M")
+            except ValueError:
+                errors.append("Érvénytelen dátum és időpont formátum.")
+        else:
+            errors.append("A dátum és időpont mező kitöltése kötelező.")
+
+        if errors:
+            for message in errors:
+                flash(message, "danger")
+            return (
+                render_template(
+                    "investigations/ertesites_doc_form.html",
+                    investigation=inv,
+                    form_data=form_data,
+                ),
+                400,
+            )
+
+        assigned_expert_user = (
+            get_user_safe(inv.assigned_expert_id) if inv.assigned_expert_id else None
+        )
+        expert_user = getattr(inv, "expert", None)
+        if expert_user is None:
+            for candidate_id in (
+                getattr(inv, "expert1_id", None),
+                getattr(inv, "expert2_id", None),
+            ):
+                if not candidate_id:
+                    continue
+                expert_user = get_user_safe(candidate_id)
+                if expert_user:
+                    break
+        if expert_user is None:
+            expert_user = assigned_expert_user
+
+        describer_user = getattr(
+            inv, "describer", None
+        ) or resolve_effective_describer_user(
+            expert_user, getattr(inv, "describer_id", None)
+        )
+
+        creation_date = fmt_budapest(now_utc(), "%Y.%m.%d")
+        vizsg_formatted = vizsg_dt.strftime("%Y.%m.%d %H:%M") if vizsg_dt else ""
+
+        context = {
+            "cimzett": (inv.subject_name or ""),
+            "kulso ugyirat": (inv.external_case_number or ""),
+            "iktatasi szam": (inv.case_number or ""),
+            "vezeto": user_display_name(describer_user) if describer_user else "",
+            "kirendelo": (inv.institution_name or ""),
+            "szak": user_display_name(expert_user) if expert_user else "",
+            "creation_date": creation_date,
+            "titulus": titulus,
+            "vizsg_date": vizsg_formatted,
+        }
+        context.update(
+            {
+                "kulso_ugyirat": context["kulso ugyirat"],
+                "iktatasi_szam": context["iktatasi szam"],
+                "jkv.vezető": context["vezeto"],
+                "jkv_vezeto": context["vezeto"],
+            }
+        )
+
+        case_folder = ensure_investigation_folder(inv.case_number)
+        template_path = (
+            Path(case_folder) / ERTESITES_TEMPLATE_DIRNAME / ERTESITES_TEMPLATE_FILENAME
+        )
+        if not template_path.exists():
+            abort(404, description="A sablon nem található ehhez a vizsgálathoz.")
+
+        output_path = Path(case_folder) / ERTESITES_TEMPLATE_FILENAME
+
+        try:
+            _render_docx_template(template_path, output_path, context)
+        except Exception as exc:  # noqa: BLE001
+            current_app.logger.exception(
+                "DOCX generation failed for investigation %s: %s", inv.id, exc
+            )
+            flash("Hiba történt a dokumentum generálása közben.", "danger")
+            return (
+                render_template(
+                    "investigations/ertesites_doc_form.html",
+                    investigation=inv,
+                    form_data=form_data,
+                ),
+                500,
+            )
+
+        flash("Értesítés dokumentum sikeresen generálva.", "success")
+        return redirect(url_for("investigations.leiro_ertesites_form", id=inv.id))
+
     return render_template(
         "investigations/ertesites_doc_form.html",
         investigation=inv,
+        form_data=form_data,
     )
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _render_docx_template(
+    template_path: Path, output_path: Path, context: dict
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        from docxtpl import DocxTemplate
+    except ModuleNotFoundError:
+        DocxTemplate = None
+    else:
+        tpl = DocxTemplate(str(template_path))
+        tpl.render({k: v if v is not None else "" for k, v in context.items()})
+        tpl.save(str(output_path))
+        return
+
+    from docx import Document
+
+    doc = Document(str(template_path))
+    replacements = {
+        f"{{{{{key}}}}}": (str(value) if value is not None else "")
+        for key, value in context.items()
+    }
+
+    for paragraph in doc.paragraphs:
+        for needle, replacement in replacements.items():
+            if needle in paragraph.text:
+                paragraph.text = paragraph.text.replace(needle, replacement)
+
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                text = cell.text
+                for needle, replacement in replacements.items():
+                    if needle in text:
+                        text = text.replace(needle, replacement)
+                if cell.text != text:
+                    cell.text = text
+
+    doc.save(str(output_path))
 
 
 def _can_modify(inv, user) -> bool:
