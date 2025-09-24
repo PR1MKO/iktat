@@ -171,3 +171,39 @@ def test_leiro_elvegzem_unassigned_hides_controls(
     assert soup.select_one("form#file-upload-form") is None
     assert soup.select_one("button#add-note-btn") is None
     assert soup.find(string="Feltöltés letiltva")
+
+
+def test_leiro_page_shows_document_generator_button(
+    client, sample_investigation_with_data
+):
+    investigation, leiro_user = sample_investigation_with_data
+    login_follow(client, leiro_user.username, "secret")
+
+    response = client.get(f"/investigations/{investigation.id}/leiro/elvegzem")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    headers = [header.get_text(strip=True) for header in soup.select(".card-header")]
+    assert "Dokumentum generátor" in headers
+
+    button = soup.find(
+        "a", href=f"/investigations/{investigation.id}/leiro/ertesites_form"
+    )
+    assert button is not None
+    assert "Értesítés szakértői vizsgálatról" in button.get_text(strip=True)
+
+
+def test_leiro_ertesites_form_placeholder_renders(
+    client, sample_investigation_with_data
+):
+    investigation, leiro_user = sample_investigation_with_data
+    login_follow(client, leiro_user.username, "secret")
+
+    response = client.get(f"/investigations/{investigation.id}/leiro/ertesites_form")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    heading = soup.find("h1")
+    assert heading is not None
+    assert "Értesítés szakértői vizsgálatról" in heading.get_text(strip=True)
+    assert "ideiglenes" in soup.get_text(" ", strip=True).casefold()

@@ -260,6 +260,20 @@ def leiro_elvegzem(id: int):
     )
 
 
+@investigations_bp.route("/<int:id>/leiro/ertesites_form", methods=["GET"])
+@login_required
+@roles_required("leíró", "leir", "LEIRO", "lei")
+def leiro_ertesites_form(id: int):
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
+
+    return render_template(
+        "investigations/ertesites_doc_form.html",
+        investigation=inv,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
