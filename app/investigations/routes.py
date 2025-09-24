@@ -138,11 +138,97 @@ def cannot_upload_reason(inv, u):
 
 @investigations_bp.route("/<int:id>/leiro/elvegzem", methods=["GET"])
 @login_required
-@roles_required("leíró", "lei")
+@roles_required("leíró", "leir", "LEIRO", "lei")
 def leiro_elvegzem(id: int):
-    """Temporary placeholder work page for leíró users."""
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
 
-    return render_template("investigations/elvegzem_leiro_placeholder.html", inv_id=id)
+    form = InvestigationForm(obj=inv)
+
+    inv.birth_date_str = fmt_date(inv.birth_date)
+    inv.registration_time_str = fmt_date(inv.registration_time)
+    inv.deadline_str = fmt_date(inv.deadline)
+
+    notes = (
+        InvestigationNote.query.filter_by(investigation_id=id)
+        .order_by(InvestigationNote.timestamp.desc())
+        .all()
+    )
+    attachments = (
+        InvestigationAttachment.query.filter_by(investigation_id=id)
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .all()
+    )
+    changelog = (
+        InvestigationChangeLog.query.filter_by(investigation_id=id)
+        .order_by(InvestigationChangeLog.timestamp.desc())
+        .all()
+    )
+
+    for note in notes:
+        note.timestamp_str = fmt_budapest(note.timestamp)
+        note.author = get_user_safe(note.author_id)
+
+    for att in attachments:
+        att.uploaded_at_str = fmt_budapest(att.uploaded_at)
+
+    for log in changelog:
+        log.timestamp_str = fmt_budapest(log.timestamp)
+        log.editor = get_user_safe(log.edited_by)
+
+    assignment_type_label = dict(form.assignment_type.choices).get(
+        inv.assignment_type, inv.assignment_type
+    )
+    investigation_type_label = dict(form.investigation_type.choices).get(
+        inv.investigation_type, inv.investigation_type
+    )
+
+    assigned_expert_user = (
+        get_user_safe(inv.assigned_expert_id) if inv.assigned_expert_id else None
+    )
+    assigned_expert_display = (
+        user_display_name(assigned_expert_user) if assigned_expert_user else None
+    )
+
+    expert_user = getattr(inv, "expert", None) or (
+        get_user_safe(getattr(inv, "expert1_id", None))
+        if getattr(inv, "expert1_id", None)
+        else None
+    )
+    if expert_user is None:
+        expert_user = assigned_expert_user
+
+    describer_user = getattr(inv, "describer", None)
+    if describer_user is None and getattr(inv, "describer_id", None):
+        describer_user = get_user_safe(inv.describer_id)
+    if describer_user is None and expert_user is not None:
+        default_leiro_id = getattr(expert_user, "default_leiro_id", None)
+        if default_leiro_id:
+            describer_user = get_user_safe(default_leiro_id)
+
+    expert_display = display_name(expert_user)
+    describer_display = display_name(describer_user)
+
+    caps = dict(capabilities_for(current_user) or {})
+    caps["can_post_investigation_notes"] = False
+
+    return render_template(
+        "investigations/leiro_elvegzem.html",
+        investigation=inv,
+        notes=notes,
+        attachments=attachments,
+        changelog=changelog,
+        user_display_name=user_display_name,
+        caps=caps,
+        can_upload_ui=False,
+        cannot_upload_reason="Leíró oldal — feltöltés letiltva.",
+        assignment_type_label=assignment_type_label,
+        investigation_type_label=investigation_type_label,
+        assigned_expert_display=assigned_expert_display,
+        expert_display_name=expert_display,
+        describer_display_name=describer_display,
+    )
 
 
 # ---------------------------------------------------------------------------

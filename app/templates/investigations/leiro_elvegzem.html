@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Leíró – Elvégzem ({{ investigation.case_number or investigation.id }}){% endblock %}
+{% block content %}
+<div class="container py-3">
+  <h1 class="visually-hidden">Leíró — Vizsgálat munkalap</h1>
+  <div class="card mb-3">
+    <div class="card-header fw-bold">Adatok</div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <div class="text-muted small">Ügyszám</div>
+          <div class="fw-semibold">{{ investigation.case_number or investigation.id }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Végrehajtás módja</div>
+          <div class="fw-semibold">{{ assignment_type_label }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Szakértő</div>
+          <div class="fw-semibold">{{ expert_display_name }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Leíró</div>
+          <div class="fw-semibold">{{ describer_display_name }}</div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="text-muted small">Vizsgálat típusa</div>
+          <div class="fw-semibold">{{ investigation_type_label }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Külső ügyirat szám</div>
+          <div class="fw-semibold">{{ investigation.external_case_number or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Egyéb azonosító</div>
+          <div class="fw-semibold">{{ investigation.other_identifier or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Vizsgált személy neve</div>
+          <div class="fw-semibold">{{ investigation.subject_name or "—" }}</div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="text-muted small">Beküldő intézmény</div>
+          <div class="fw-semibold">{{ investigation.institution_name or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Leánykori neve</div>
+          <div class="fw-semibold">{{ investigation.maiden_name or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Anyja neve</div>
+          <div class="fw-semibold">{{ investigation.mother_name or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">TAJ szám</div>
+          <div class="fw-semibold">{{ investigation.taj_number or "—" }}</div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="text-muted small">Állampolgársága</div>
+          <div class="fw-semibold">{{ investigation.citizenship or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Születési hely</div>
+          <div class="fw-semibold">{{ investigation.birth_place or "—" }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="text-muted small">Születési idő</div>
+          <div class="fw-semibold">{{ investigation.birth_date_str or "—" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+      <span>Dokumentumok</span>
+      {% if not can_upload_ui %}
+      <span class="badge bg-secondary">Feltöltés letiltva</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      {% if attachments and attachments|length %}
+      <div class="list-group">
+        {% for att in attachments %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">{{ att.filename }}</div>
+            <div class="small text-muted">{{ att.category }} • {{ att.uploaded_at_str }}</div>
+          </div>
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=att.id) }}">Letöltés</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted">Nincs csatolt dokumentum.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-3">
+    <div class="card-header fw-bold">Megjegyzések</div>
+    <div class="card-body">
+      {% if notes and notes|length %}
+      <div class="list-group">
+        {% for note in notes %}
+        <div class="list-group-item">
+          <div class="small text-muted">{{ user_display_name(note.author) }} • {{ note.timestamp_str }}</div>
+          <div>{{ note.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted">Nincs megjegyzés.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card mb-5">
+    <div class="card-header fw-bold">Változások</div>
+    <div class="card-body">
+      {% if changelog and changelog|length %}
+      <div class="list-group">
+        {% for log in changelog %}
+        <div class="list-group-item">
+          <div class="small text-muted">{{ user_display_name(log.editor) }} • {{ log.timestamp_str }}</div>
+          <div><strong>{{ log.field_name }}</strong>: {{ log.old_value }} → {{ log.new_value }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted">Nincs változás.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

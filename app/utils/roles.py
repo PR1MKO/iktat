@@ -18,6 +18,7 @@ ROLE_CANON = {
     "szak": "szakértő",
     "leíró": "leíró",
     "leir": "leíró",
+    "LEIRO": "leíró",
     "lei": "leíró",
     "toxi": "toxi",
 }

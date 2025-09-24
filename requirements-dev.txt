@@ -8,6 +8,6 @@ pre-commit
 ruff
 isort
 black
-beautifulsoup4
+beautifulsoup4>=4.12
 iniconfig
 pluggy
