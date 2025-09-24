@@ -78,3 +78,18 @@ def create_investigation(**kwargs):
     db.session.add(inv)
     db.session.commit()
     return inv
+
+
+def create_investigation_with_default_leiro(role: str = "leíró"):
+    leiro = create_user(f"default_{role}_leiro", "secret", role)
+    expert = create_user(
+        f"default_{role}_expert",
+        "secret",
+        "szakértő",
+        default_leiro_id=leiro.id,
+    )
+    inv = create_investigation()
+    inv.expert1_id = expert.id
+    inv.describer_id = None
+    db.session.commit()
+    return inv, leiro, expert

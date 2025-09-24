@@ -3,9 +3,14 @@ import io
 import pytest
 
 from app import db
-from app.investigations.models import Investigation
+from app.investigations.models import Investigation, InvestigationAttachment
 from app.utils.roles import canonical_role
-from tests.helpers import create_investigation, create_user, login
+from tests.helpers import (
+    create_investigation,
+    create_investigation_with_default_leiro,
+    create_user,
+    login,
+)
 
 
 @pytest.fixture
@@ -102,3 +107,33 @@ def test_upload_policy_matrix(
         assert resp.status_code in (200, 201, 302)
     else:
         assert resp.status_code == 403
+
+
+def test_default_leiro_upload_and_download_roundtrip(app, client):
+    with app.app_context():
+        inv, leiro, _ = create_investigation_with_default_leiro()
+        inv_id = inv.id
+        username = leiro.username
+
+    login(client, username, "secret")
+
+    data = {"category": "jegyzőkönyv", "file": (io.BytesIO(b"data"), "proof.pdf")}
+    resp = client.post(
+        f"/investigations/{inv_id}/upload",
+        data=data,
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+    assert resp.status_code in (200, 201, 302)
+
+    with app.app_context():
+        attachment = (
+            InvestigationAttachment.query.filter_by(investigation_id=inv_id)
+            .order_by(InvestigationAttachment.id.desc())
+            .first()
+        )
+        assert attachment is not None
+        attachment_id = attachment.id
+
+    download = client.get(f"/investigations/{inv_id}/download/{attachment_id}")
+    assert download.status_code == 200

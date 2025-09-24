@@ -10,7 +10,13 @@ from app.investigations.models import (
     InvestigationChangeLog,
     InvestigationNote,
 )
-from tests.helpers import create_investigation, create_user, login, login_follow
+from tests.helpers import (
+    create_investigation,
+    create_investigation_with_default_leiro,
+    create_user,
+    login,
+    login_follow,
+)
 
 
 @pytest.fixture
@@ -67,6 +73,13 @@ def sample_investigation_with_data(app):
         return investigation, leiro_user
 
 
+@pytest.fixture
+def investigation_with_default_leiro(app):
+    with app.app_context():
+        inv, leiro_user, _ = create_investigation_with_default_leiro()
+        return inv, leiro_user
+
+
 def test_leiro_elvegzem_assigned_sees_upload_and_notes(
     client, sample_investigation_with_data
 ):
@@ -101,6 +114,20 @@ def test_leiro_elvegzem_assigned_sees_upload_and_notes(
 
     notes_list = soup.select_one("#notes-list")
     assert notes_list is not None
+
+
+def test_leiro_default_fallback_sees_upload_and_notes(
+    client, investigation_with_default_leiro
+):
+    investigation, leiro_user = investigation_with_default_leiro
+    login_follow(client, leiro_user.username, "secret")
+
+    response = client.get(f"/investigations/{investigation.id}/leiro/elvegzem")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    assert soup.select_one("form#file-upload-form") is not None
+    assert soup.select_one("button#add-note-btn") is not None
 
 
 @pytest.mark.parametrize("role_alias", ["leir", "LEIRO", "lei"])

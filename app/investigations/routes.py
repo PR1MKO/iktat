@@ -18,11 +18,8 @@ from werkzeug.utils import secure_filename  # for safe filenames
 
 from app import db
 from app.models import User
-from app.paths import (
-    ensure_investigation_folder,
-    investigation_root,
-    investigation_subdir_from_case_number,
-)
+from app.paths import ensure_investigation_folder
+from app.services.case_logic import resolve_effective_describer_user
 from app.services.core_user_read import get_user_safe
 
 # IMPORTANT: import the module (so monkeypatch in tests affects calls)
@@ -106,11 +103,32 @@ CONDITIONAL_UPLOAD_ROLES = {
 
 def _is_assigned_member(inv, u):
     uid = getattr(u, "id", None)
-    return uid and uid in {
+    if not uid:
+        return False
+
+    explicit_describer_id = getattr(inv, "describer_id", None)
+    if uid in {
         getattr(inv, "expert1_id", None),
         getattr(inv, "expert2_id", None),
-        getattr(inv, "describer_id", None),
-    }
+        explicit_describer_id,
+    }:
+        return True
+
+    if explicit_describer_id:
+        return False
+
+    for expert_id in (
+        getattr(inv, "expert1_id", None),
+        getattr(inv, "expert2_id", None),
+    ):
+        if not expert_id:
+            continue
+        expert_user = db.session.get(User, expert_id)
+        effective = resolve_effective_describer_user(expert_user, explicit_describer_id)
+        if effective and effective.id == uid:
+            return True
+
+    return False
 
 
 def can_upload_investigation_now(inv, u):
@@ -693,22 +711,18 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szak", "szig")
+@roles_required("admin", "iroda", "szak", "szig", "leíró", "leir", "LEIRO", "lei")
 def add_investigation_note(id):
     inv = db.session.get(Investigation, id)
     if inv is None:
         abort(404)
-    caps = capabilities_for(current_user)
+    caps = capabilities_for(current_user) or {}
     if not caps.get("can_post_investigation_notes"):
         abort(403)
     if normalize_role(current_user.role) not in {
         "admin",
         "iroda",
-    } and current_user.id not in {
-        inv.expert1_id,
-        inv.expert2_id,
-        inv.describer_id,
-    }:
+    } and not _is_assigned_member(inv, current_user):
         abort(403)
 
     form = InvestigationNoteForm()
@@ -846,8 +860,7 @@ def download_investigation_file(inv_id, file_id):
     if att.investigation_id != inv_id:
         abort(404)
 
-    subdir = investigation_subdir_from_case_number(inv.case_number)
-    root = investigation_root() / subdir
+    root = Path(ensure_investigation_folder(inv.case_number))
     filename = att.filename
     try:
         return send_safe(root, filename, as_attachment=True)

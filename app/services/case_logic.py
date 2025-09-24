@@ -59,3 +59,15 @@ def resolve_effective_describer(case: Case) -> Optional[str]:
             return label
 
     return None
+
+
+def resolve_effective_describer_user(
+    expert_user: Optional[User], explicit_describer_id: Optional[int]
+) -> Optional[User]:
+    """Return the effective describer user preferring explicit assignment."""
+
+    if explicit_describer_id:
+        return db.session.get(User, explicit_describer_id)
+    if not expert_user:
+        return None
+    return _resolve_default_leiro(expert_user)
