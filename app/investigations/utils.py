@@ -29,7 +29,7 @@ def init_investigation_upload_dirs(case_or_inv) -> str:
 
     Accepts a case number string or an Investigation instance. Ensures the
     investigation folder exists, creates a ``DO-NOT-EDIT`` subdirectory and
-    copies template files from ``instance/docs/vizsgalat`` into it. Existing
+    copies template files from the configured template directory. Existing
     files are left untouched so repeated calls are safe.
     """
 
@@ -40,9 +40,18 @@ def init_investigation_upload_dirs(case_or_inv) -> str:
 
     inv_root = ensure_invest_path(case_number)
     target = inv_root / "DO-NOT-EDIT"
-    target.mkdir(exist_ok=True)
+    target.mkdir(parents=True, exist_ok=True)
 
-    src_root = Path(current_app.instance_path) / "docs" / "vizsgalat"
+    cfg_override = current_app.config.get("INVESTIGATION_TEMPLATE_DIR")
+    if cfg_override:
+        src_root = Path(cfg_override)
+        current_app.logger.info("Using INVESTIGATION_TEMPLATE_DIR: %s", src_root)
+    else:
+        src_root = Path(current_app.instance_path) / "docs" / "vizsgalat"
+        current_app.logger.info(
+            "Using default investigation template dir: %s", src_root
+        )
+
     if not src_root.exists():
         current_app.logger.warning("Investigation template dir missing: %s", src_root)
         return str(target)

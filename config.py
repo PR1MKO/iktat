@@ -32,6 +32,8 @@ class Config:
     # Optional upload folder overrides (defaults computed from instance path)
     CASE_UPLOAD_FOLDER = os.environ.get("CASE_UPLOAD_FOLDER")
     INVESTIGATION_UPLOAD_FOLDER = os.environ.get("INVESTIGATION_UPLOAD_FOLDER")
+    # Optional override for investigation template source directory.
+    INVESTIGATION_TEMPLATE_DIR = os.environ.get("INVESTIGATION_TEMPLATE_DIR")
 
     SQLALCHEMY_BINDS = {
         "examination": os.environ.get(

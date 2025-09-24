@@ -1,5 +1,4 @@
 import shutil
-from pathlib import Path
 
 from app.investigations.models import Investigation
 from app.investigations.utils import init_investigation_upload_dirs
@@ -29,11 +28,11 @@ def _reset_upload_root(app):
         shutil.rmtree(root)
 
 
-def test_investigation_templates_copied(client, app):
+def test_investigation_templates_copied(client, app, tmp_path):
     with app.app_context():
         create_user()
         _reset_upload_root(app)
-        src_root = Path(app.instance_path) / "docs" / "vizsgalat"
+        src_root = tmp_path / "vizsgalat"
         if src_root.exists():
             shutil.rmtree(src_root)
         src_root.mkdir(parents=True)
@@ -41,6 +40,7 @@ def test_investigation_templates_copied(client, app):
         forms = src_root / "forms"
         forms.mkdir()
         (forms / "blank.txt").write_text("blank")
+        app.config["INVESTIGATION_TEMPLATE_DIR"] = str(src_root)
 
     with client:
         login(client, "admin", "secret")
