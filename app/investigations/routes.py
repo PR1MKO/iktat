@@ -451,7 +451,7 @@ def _render_docx_template(
 # This covers </w:t> ... <w:t>, but also arbitrary tag runs between them.
 _JOIN_TEXT_NODES = re.compile(rb"</w:t>(?:\s|<[^>]+>)*<w:t[^>]*>")
 _PLACEHOLDER_PATTERN = re.compile(r"(\{\{.*?\}\}|\{%.*?%\}|\{#.*?#\})", flags=re.DOTALL)
-_VAR_NAME_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+_VAR_NAME_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}", flags=re.DOTALL)
 
 
 def _sanitize_docx_placeholders(docx_path: Path) -> Path:
@@ -487,40 +487,59 @@ def _sanitize_docx_placeholders(docx_path: Path) -> Path:
                 changed_any = changed_any or changed
             zout.writestr(name, data)
 
-    tmp = tempfile.NamedTemporaryFile(prefix="sanitized_", suffix=".docx", delete=False)
+    tmp = tempfile.NamedTemporaryFile(prefix="sanitized", suffix=".docx", delete=False)
     with tmp:
         tmp.write(out_buf.getvalue())
+    tmp_path = Path(tmp.name)
+    # Validate sanitized DOCX; if invalid, fall back to a safe temp copy of the original.
     try:
+        from docx import Document  # python-docx
+
+        Document(str(tmp_path))  # raises on malformed XML
         current_app.logger.info(
             "DOCX sanitizer: wrote %s (changed=%s)",
-            tmp.name,
+            tmp_path,
             "yes" if changed_any else "no",
         )
-    except Exception:
-        pass
-    return Path(tmp.name)
+        return tmp_path
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.warning(
+            "DOCX sanitizer produced invalid file (%s). Falling back to original.", exc
+        )
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        fb_path = Path(
+            tempfile.mkstemp(prefix="sanitized_fallback_", suffix=".docx")[1]
+        )
+        fb_path.write_bytes(Path(docx_path).read_bytes())
+        current_app.logger.info(
+            "DOCX sanitizer: fallback copy at %s (changed=no)", fb_path
+        )
+        return fb_path
 
 
 def _normalize_xml_placeholders(xml_bytes: bytes) -> tuple[bytes, bool]:
     """
-    Normalize placeholders within a single XML part.
-    Steps:
-      1) Join text nodes across ANY XML boundaries so {{var}} becomes contiguous.
-      2) Inside {{ ... }}, strip all XML tags/whitespace to reconstruct the raw var.
-      3) Normalize var names (ASCII-fold, non-word→'_', collapse '_').
-      4) Leave {% %} and {# #} tokens intact.
+    Conservative placeholder normalization for a single XML part.
+    - Do NOT join across block boundaries (no global run merges).
+    - Only normalize tokens that are already contiguous like '{{name}}'.
+    - Leave {% %} / {# #} intact.
+    - Never touch the <w:sectPr> region.
     """
 
-    # Step 1: Join adjacent text nodes even if multiple XML tags in between
-    joined = _JOIN_TEXT_NODES.sub(b"", xml_bytes)
-    changed = joined != xml_bytes
-    text = joined.decode("utf-8", errors="ignore")
+    # Fast path: skip if no Jinja var delimiters at all.
+    if b"{{" not in xml_bytes or b"}}" not in xml_bytes:
+        return xml_bytes, False
+
+    changed = False
+    text = xml_bytes.decode("utf-8", errors="ignore")
 
     def _ascii_fold(value: str) -> str:
         nfkd = unicodedata.normalize("NFKD", value)
         return "".join(ch for ch in nfkd if not unicodedata.combining(ch))
 
-    # Step 2/3: For {{ ... }}, strip XML tags & spaces; then normalize
     def repl(match: re.Match[str]) -> str:
         nonlocal changed
         token = match.group(0)
@@ -532,14 +551,21 @@ def _normalize_xml_placeholders(xml_bytes: bytes) -> tuple[bytes, bool]:
         inner = re.sub(r"<[^>]+>", "", inner, flags=re.DOTALL)
         inner = re.sub(r"\s+", " ", inner).strip()
         folded = _ascii_fold(inner)
-        normalized = re.sub(r"[^\w]", "_", folded)
-        normalized = re.sub(r"_+", "_", normalized).strip("_")
-        if normalized != vm.group(1):
+        normalized = re.sub(r"[^\w]", "", folded)
+        sanitized = "{{" + normalized + "}}"
+        if sanitized != token:
             changed = True
-        return "{{" + normalized + "}}"
+        return sanitized
 
-    new_text = _PLACEHOLDER_PATTERN.sub(repl, text)
-    return new_text.encode("utf-8"), changed
+    # Protect section properties: process only before <w:sectPr>, keep sectPr/tail intact
+    parts = re.split(r"(<w:sectPr\\b.*?</w:sectPr>)", text, flags=re.DOTALL)
+    if len(parts) >= 3:
+        head = _PLACEHOLDER_PATTERN.sub(repl, parts[0])
+        tail = "".join(parts[1:])
+        result = head + tail
+    else:
+        result = _PLACEHOLDER_PATTERN.sub(repl, text)
+    return result.encode("utf-8"), changed
 
 
 def _can_modify(inv, user) -> bool:

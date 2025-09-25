@@ -34,12 +34,22 @@ def _make_fake_docx(xml_bytes: bytes) -> Path:
         z.writestr(
             "_rels/.rels",
             """<?xml version="1.0" encoding="UTF-8"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>""",
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>
+</Relationships>""",
         )
         z.writestr(
             "word/_rels/document.xml.rels",
             """<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>""",
+        )
+        z.writestr(
+            "docProps/core.xml",
+            """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:title>Fixture</dc:title>
+</cp:coreProperties>""",
         )
     tmp.flush()
     tmp.close()
@@ -50,9 +60,9 @@ def test_normalize_xml_placeholders_merges_runs_and_sanitizes_names():
     output, changed = _normalize_xml_placeholders(BROKEN_XML)
     assert changed is True
     text = output.decode("utf-8")
-    assert "{{kulso_ugyirat}}" in text
-    assert "{{iktatasi_szam}}" in text
-    assert "{{jkv_vezeto}}" in text
+    assert "{{kulsougyirat}}" in text
+    assert "{{iktatasiszam}}" in text
+    assert "{{jkvvezeto}}" in text
 
 
 def test_sanitize_docx_placeholders_returns_tempfile_with_normalized_content():
@@ -61,8 +71,8 @@ def test_sanitize_docx_placeholders_returns_tempfile_with_normalized_content():
     assert sanitized_path.exists()
     with zipfile.ZipFile(sanitized_path, "r") as z:
         data = z.read("word/document.xml").decode("utf-8")
-        assert "{{kulso_ugyirat}}" in data
-        assert "{{iktatasi_szam}}" in data
-        assert "{{jkv_vezeto}}" in data
+        assert "{{kulsougyirat}}" in data
+        assert "{{iktatasiszam}}" in data
+        assert "{{jkvvezeto}}" in data
     sanitized_path.unlink()
     docx_path.unlink()
