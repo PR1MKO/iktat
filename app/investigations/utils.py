@@ -69,6 +69,22 @@ def init_investigation_upload_dirs(case_or_inv) -> str:
             if not dest.exists():
                 shutil.copy2(item, dest)
 
+    # Best-effort one-time sanitizer for bundled templates. Render-time sanitation remains authoritative.
+    try:
+        from app.investigations.routes import _sanitize_docx_placeholders
+
+        for docx_file in target.rglob("*.docx"):
+            try:
+                tmp = _sanitize_docx_placeholders(docx_file)
+            except Exception:
+                continue
+            try:
+                tmp.unlink()
+            except FileNotFoundError:
+                pass
+    except Exception:
+        pass
+
     return str(target)
 
 

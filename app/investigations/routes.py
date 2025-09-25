@@ -1,3 +1,8 @@
+import io
+import re
+import tempfile
+import unicodedata
+import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -395,42 +400,133 @@ def leiro_ertesites_form(id: int):
 def _render_docx_template(
     template_path: Path, output_path: Path, context: dict
 ) -> None:
+    """Render a DOCX template after sanitizing malformed Jinja placeholders."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    sanitized_path = _sanitize_docx_placeholders(template_path)
+    safe_context = {k: ("" if v is None else v) for k, v in context.items()}
 
     try:
-        from docxtpl import DocxTemplate
-    except ModuleNotFoundError:
-        DocxTemplate = None
-    else:
-        tpl = DocxTemplate(str(template_path))
-        tpl.render({k: v if v is not None else "" for k, v in context.items()})
-        tpl.save(str(output_path))
-        return
+        try:
+            from docxtpl import DocxTemplate
+        except ModuleNotFoundError:
+            DocxTemplate = None
+        else:
+            tpl = DocxTemplate(str(sanitized_path))
+            tpl.render(safe_context)
+            tpl.save(str(output_path))
+            return
 
-    from docx import Document
+        from docx import Document
 
-    doc = Document(str(template_path))
-    replacements = {
-        f"{{{{{key}}}}}": (str(value) if value is not None else "")
-        for key, value in context.items()
-    }
+        doc = Document(str(sanitized_path))
+        replacements = {
+            f"{{{{{key}}}}}": (str(value) if value is not None else "")
+            for key, value in safe_context.items()
+        }
 
-    for paragraph in doc.paragraphs:
-        for needle, replacement in replacements.items():
-            if needle in paragraph.text:
-                paragraph.text = paragraph.text.replace(needle, replacement)
+        for paragraph in doc.paragraphs:
+            for needle, replacement in replacements.items():
+                if needle in paragraph.text:
+                    paragraph.text = paragraph.text.replace(needle, replacement)
 
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                text = cell.text
-                for needle, replacement in replacements.items():
-                    if needle in text:
-                        text = text.replace(needle, replacement)
-                if cell.text != text:
-                    cell.text = text
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    text = cell.text
+                    for needle, replacement in replacements.items():
+                        if needle in text:
+                            text = text.replace(needle, replacement)
+                    if cell.text != text:
+                        cell.text = text
 
-    doc.save(str(output_path))
+        doc.save(str(output_path))
+    finally:
+        try:
+            sanitized_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+_W_T_OPEN = re.compile(rb"</w:t>\s*<w:t[^>]*>")
+_PLACEHOLDER_PATTERN = re.compile(r"(\{\{.*?\}\}|\{%.*?%\}|\{#.*?#\})", flags=re.DOTALL)
+_VAR_NAME_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+
+
+def _sanitize_docx_placeholders(docx_path: Path) -> Path:
+    """Return sanitized copy of DOCX with normalized Jinja placeholders."""
+    changed_any = False
+    out_buf = io.BytesIO()
+
+    with (
+        zipfile.ZipFile(str(docx_path), "r") as zin,
+        zipfile.ZipFile(out_buf, "w", compression=zipfile.ZIP_DEFLATED) as zout,
+    ):
+        names = zin.namelist()
+        target_parts = [
+            n
+            for n in names
+            if n.startswith("word/")
+            and n.endswith(".xml")
+            and (
+                n == "word/document.xml"
+                or n.startswith("word/header")
+                or n.startswith("word/footer")
+            )
+        ]
+        for name in names:
+            data = zin.read(name)
+            if name in target_parts:
+                try:
+                    new_data, changed = _normalize_xml_placeholders(data)
+                except Exception:
+                    new_data, changed = data, False
+                else:
+                    data = new_data
+                changed_any = changed_any or changed
+            zout.writestr(name, data)
+
+    tmp = tempfile.NamedTemporaryFile(prefix="sanitized_", suffix=".docx", delete=False)
+    with tmp:
+        tmp.write(out_buf.getvalue())
+    try:
+        current_app.logger.info(
+            "DOCX sanitizer: wrote %s (changed=%s)",
+            tmp.name,
+            "yes" if changed_any else "no",
+        )
+    except Exception:
+        pass
+    return Path(tmp.name)
+
+
+def _normalize_xml_placeholders(xml_bytes: bytes) -> tuple[bytes, bool]:
+    """Normalize placeholders in a DOCX XML part."""
+
+    joined = _W_T_OPEN.sub(b"", xml_bytes)
+    changed = joined != xml_bytes
+    text = joined.decode("utf-8", errors="ignore")
+
+    def _ascii_fold(value: str) -> str:
+        nfkd = unicodedata.normalize("NFKD", value)
+        return "".join(ch for ch in nfkd if not unicodedata.combining(ch))
+
+    def repl(match: re.Match[str]) -> str:
+        nonlocal changed
+        token = match.group(0)
+        vm = _VAR_NAME_PATTERN.fullmatch(token)
+        if not vm:
+            return token
+        var = vm.group(1)
+        folded = _ascii_fold(var)
+        normalized = re.sub(r"[^\w]", "_", folded)
+        normalized = re.sub(r"_+", "_", normalized).strip("_")
+        if normalized != var:
+            changed = True
+            return "{{" + normalized + "}}"
+        return token
+
+    new_text = _PLACEHOLDER_PATTERN.sub(repl, text)
+    return new_text.encode("utf-8"), changed
 
 
 def _can_modify(inv, user) -> bool:
