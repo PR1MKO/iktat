@@ -447,7 +447,9 @@ def _render_docx_template(
             pass
 
 
-_W_T_OPEN = re.compile(rb"</w:t>\s*<w:t[^>]*>")
+# Join any sequence of XML between adjacent text nodes so placeholders can be contiguous.
+# This covers </w:t> ... <w:t>, but also arbitrary tag runs between them.
+_JOIN_TEXT_NODES = re.compile(rb"</w:t>(?:\s|<[^>]+>)*<w:t[^>]*>")
 _PLACEHOLDER_PATTERN = re.compile(r"(\{\{.*?\}\}|\{%.*?%\}|\{#.*?#\})", flags=re.DOTALL)
 _VAR_NAME_PATTERN = re.compile(r"\{\{\s*(.*?)\s*\}\}")
 
@@ -500,9 +502,17 @@ def _sanitize_docx_placeholders(docx_path: Path) -> Path:
 
 
 def _normalize_xml_placeholders(xml_bytes: bytes) -> tuple[bytes, bool]:
-    """Normalize placeholders in a DOCX XML part."""
+    """
+    Normalize placeholders within a single XML part.
+    Steps:
+      1) Join text nodes across ANY XML boundaries so {{var}} becomes contiguous.
+      2) Inside {{ ... }}, strip all XML tags/whitespace to reconstruct the raw var.
+      3) Normalize var names (ASCII-fold, non-word→'_', collapse '_').
+      4) Leave {% %} and {# #} tokens intact.
+    """
 
-    joined = _W_T_OPEN.sub(b"", xml_bytes)
+    # Step 1: Join adjacent text nodes even if multiple XML tags in between
+    joined = _JOIN_TEXT_NODES.sub(b"", xml_bytes)
     changed = joined != xml_bytes
     text = joined.decode("utf-8", errors="ignore")
 
@@ -510,20 +520,23 @@ def _normalize_xml_placeholders(xml_bytes: bytes) -> tuple[bytes, bool]:
         nfkd = unicodedata.normalize("NFKD", value)
         return "".join(ch for ch in nfkd if not unicodedata.combining(ch))
 
+    # Step 2/3: For {{ ... }}, strip XML tags & spaces; then normalize
     def repl(match: re.Match[str]) -> str:
         nonlocal changed
         token = match.group(0)
         vm = _VAR_NAME_PATTERN.fullmatch(token)
         if not vm:
-            return token
-        var = vm.group(1)
-        folded = _ascii_fold(var)
+            return token  # keep blocks/comments unchanged
+        inner = vm.group(1)
+        # Remove any XML tags that leaked inside braces and normalize whitespace
+        inner = re.sub(r"<[^>]+>", "", inner, flags=re.DOTALL)
+        inner = re.sub(r"\s+", " ", inner).strip()
+        folded = _ascii_fold(inner)
         normalized = re.sub(r"[^\w]", "_", folded)
         normalized = re.sub(r"_+", "_", normalized).strip("_")
-        if normalized != var:
+        if normalized != vm.group(1):
             changed = True
-            return "{{" + normalized + "}}"
-        return token
+        return "{{" + normalized + "}}"
 
     new_text = _PLACEHOLDER_PATTERN.sub(repl, text)
     return new_text.encode("utf-8"), changed
