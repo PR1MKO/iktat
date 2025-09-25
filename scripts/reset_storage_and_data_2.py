@@ -19,6 +19,17 @@ try:
     from app.models import CaseSheetField
 except Exception:
     CaseSheetField = None
+try:
+    # Optional: holds tokens that may reference Case via case_id (FK child)
+    from app.models import IdempotencyToken
+except Exception:
+    IdempotencyToken = None
+try:
+    # Optional: include ONLY if this table FK-references Case. Keep None otherwise.
+    # from app.models import AuditLog
+    AuditLog = None  # sentinel when not imported
+except Exception:
+    AuditLog = None
 
 from app.investigations.models import (
     Investigation,
@@ -303,12 +314,18 @@ def main():
         )
         _delete_all(Investigation, "examination.Investigation", dry_run=dry_run)
 
-        print(f"[INFO] {mode}Deleting case-related rows (default bind)...")
+        print(
+            f"[INFO] {mode}Deleting case-related rows (default bind)... (children → parents)"
+        )
         _delete_all(UploadedFile, "default.UploadedFile", dry_run=dry_run)
         _delete_all(TaskMessage, "default.TaskMessage", dry_run=dry_run)
         _delete_all(ChangeLog, "default.ChangeLog", dry_run=dry_run)
         _maybe_delete(EmailNotification, "default.EmailNotification", dry_run=dry_run)
         _maybe_delete(CaseSheetField, "default.CaseSheetField", dry_run=dry_run)
+        # Delete FK-children that reference Case BEFORE deleting Case:
+        _maybe_delete(IdempotencyToken, "default.IdempotencyToken", dry_run=dry_run)
+        # If (and only if) your AuditLog table has FK(s) to Case, uncomment the next line:
+        # _maybe_delete(AuditLog, "default.AuditLog", dry_run=dry_run)
         _delete_all(Case, "default.Case", dry_run=dry_run)
 
         if dry_run:
