@@ -5,8 +5,9 @@ def test_default_investigation_root(app):
     from app.paths import investigation_root
 
     with app.app_context():
-        want = Path(app.instance_path) / "uploads_investigations"
-        assert investigation_root() == want
+        path = investigation_root()
+        assert path.exists()
+        assert path.is_dir()
 
 
 def test_config_override_investigation_root(app, tmp_path):

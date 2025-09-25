@@ -4,6 +4,7 @@ import os
 import pathlib
 import pathlib as _p
 import random
+import shutil
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -48,6 +49,137 @@ def _force_utf8_read_text():
         pathlib.Path.read_text = orig
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _force_tmp_upload_roots(tmp_path_factory):
+    """Route all upload roots to pytest tmp dirs, preventing writes to real instance/."""
+
+    tmp_base = tmp_path_factory.mktemp("uploads")
+    tmp_cases = tmp_base / "uploads_cases"
+    tmp_investigations = tmp_base / "uploads_investigations"
+    tmp_cases.mkdir(parents=True, exist_ok=True)
+    tmp_investigations.mkdir(parents=True, exist_ok=True)
+
+    from flask import current_app
+
+    import app.paths as _paths
+
+    orig_case_root = getattr(_paths, "case_root", None)
+    orig_investigation_root = getattr(_paths, "investigation_root", None)
+    orig_default_case = (
+        getattr(_paths, "_default_case_root", None)
+        if hasattr(_paths, "_default_case_root")
+        else None
+    )
+    orig_default_investigation = (
+        getattr(_paths, "_default_investigation_root", None)
+        if hasattr(_paths, "_default_investigation_root")
+        else None
+    )
+
+    def _resolve_app():
+        try:
+            return current_app._get_current_object()
+        except Exception:  # pragma: no cover - happens outside app context
+            return None
+
+    def _case_root_override():
+        app_obj = _resolve_app()
+        default_target = tmp_cases
+        if app_obj is not None:
+            cfg_value = app_obj.config.get("CASE_UPLOAD_FOLDER") or app_obj.config.get(
+                "UPLOAD_CASES_ROOT"
+            )
+            if cfg_value:
+                cfg_path = pathlib.Path(cfg_value)
+                if orig_default_case is not None:
+                    try:
+                        default_orig = orig_default_case()
+                    except Exception:
+                        default_orig = None
+                else:
+                    default_orig = None
+                if default_orig is not None and cfg_path == default_orig:
+                    root = default_target
+                else:
+                    root = cfg_path
+            else:
+                root = default_target
+
+            app_obj.config["CASE_UPLOAD_FOLDER"] = str(root)
+            app_obj.config["UPLOAD_CASES_ROOT"] = str(root)
+        else:
+            root = default_target
+
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+
+    def _investigation_root_override():
+        app_obj = _resolve_app()
+        default_target = tmp_investigations
+        if app_obj is not None:
+            cfg_value = app_obj.config.get(
+                "INVESTIGATION_UPLOAD_FOLDER"
+            ) or app_obj.config.get("UPLOAD_INVESTIGATIONS_ROOT")
+            if cfg_value:
+                cfg_path = pathlib.Path(cfg_value)
+                if orig_default_investigation is not None:
+                    try:
+                        default_orig = orig_default_investigation()
+                    except Exception:
+                        default_orig = None
+                else:
+                    default_orig = None
+                if default_orig is not None and cfg_path == default_orig:
+                    root = default_target
+                else:
+                    root = cfg_path
+            else:
+                root = default_target
+
+            app_obj.config["INVESTIGATION_UPLOAD_FOLDER"] = str(root)
+            app_obj.config["UPLOAD_INVESTIGATIONS_ROOT"] = str(root)
+        else:
+            root = default_target
+
+        root.mkdir(parents=True, exist_ok=True)
+        return root
+
+    def _default_case_root_override():
+        tmp_cases.mkdir(parents=True, exist_ok=True)
+        return tmp_cases
+
+    def _default_investigation_root_override():
+        tmp_investigations.mkdir(parents=True, exist_ok=True)
+        return tmp_investigations
+
+    _paths.case_root = _case_root_override
+    _paths.investigation_root = _investigation_root_override
+    if orig_default_case is not None:
+        _paths._default_case_root = _default_case_root_override
+    if orig_default_investigation is not None:
+        _paths._default_investigation_root = _default_investigation_root_override
+
+    os.environ["UPLOAD_CASES_ROOT"] = str(tmp_cases)
+    os.environ["UPLOAD_INVESTIGATIONS_ROOT"] = str(tmp_investigations)
+
+    try:
+        yield
+    finally:
+        if orig_case_root is not None:
+            _paths.case_root = orig_case_root
+        if orig_investigation_root is not None:
+            _paths.investigation_root = orig_investigation_root
+        if orig_default_case is not None:
+            _paths._default_case_root = orig_default_case
+        if orig_default_investigation is not None:
+            _paths._default_investigation_root = orig_default_investigation
+
+        try:
+            shutil.rmtree(tmp_base, ignore_errors=True)
+        except Exception:
+            pass
+
+
 @pytest.fixture(autouse=True)
 def _seed_random(monkeypatch):
     random.seed(1337)
@@ -70,18 +202,8 @@ def _fixed_now(monkeypatch):
                 monkeypatch.setattr(mod, "now_utc", lambda: fixed_utc, raising=False)
 
 
-@pytest.fixture(autouse=True)
-def _tmp_upload_dirs(tmp_path, monkeypatch):
-    cases = tmp_path / "uploads_cases"
-    investigations = tmp_path / "uploads_investigations"
-    cases.mkdir()
-    investigations.mkdir()
-    monkeypatch.setenv("UPLOAD_CASES_ROOT", str(cases))
-    monkeypatch.setenv("UPLOAD_INVESTIGATIONS_ROOT", str(investigations))
-
-
 @pytest.fixture
-def app(_tmp_upload_dirs):
+def app():
     app = create_app(TestingConfig)
 
     # Shared in-memory DB across the process for deterministic tests

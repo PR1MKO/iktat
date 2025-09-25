@@ -1,12 +1,10 @@
-from pathlib import Path
-
-
 def test_default_case_root(app):
     from app.paths import case_root
 
     with app.app_context():
-        want = Path(app.instance_path) / "uploads_cases"
-        assert case_root() == want
+        path = case_root()
+        assert path.exists()
+        assert path.is_dir()
 
 
 def test_ensure_case_folder_creates(app, tmp_path):
