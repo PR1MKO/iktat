@@ -42,6 +42,11 @@ def init_investigation_upload_dirs(case_or_inv) -> str:
     target = inv_root / "DO-NOT-EDIT"
     target.mkdir(parents=True, exist_ok=True)
 
+    for directory in (inv_root, target):
+        keep = directory / ".keep"
+        if not keep.exists():
+            keep.touch()
+
     cfg_override = current_app.config.get("INVESTIGATION_TEMPLATE_DIR")
     if cfg_override:
         src_root = Path(cfg_override)

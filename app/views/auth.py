@@ -68,12 +68,17 @@ def _case_upload_root() -> str:
 
 def init_case_upload_dirs(case):
     """Create per-case upload folders and populate the DO-NOT-EDIT template set."""
-    case_dir = str(ensure_case_folder(case.case_number))
+    case_dir = Path(ensure_case_folder(case.case_number))
 
     # Populate DO-NOT-EDIT from instance/docs/boncolas
     src_root = Path(current_app.instance_path) / "docs" / "boncolas"
-    dst_root = Path(case_dir) / "DO-NOT-EDIT"
+    dst_root = case_dir / "DO-NOT-EDIT"
     dst_root.mkdir(parents=True, exist_ok=True)
+
+    for directory in (case_dir, dst_root):
+        keep = directory / ".keep"
+        if not keep.exists():
+            keep.touch()
 
     if not src_root.exists():
         current_app.logger.warning("Case template dir missing: %s", src_root)

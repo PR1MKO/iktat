@@ -2,8 +2,6 @@
 import argparse
 import os
 import shutil
-import sys
-from pathlib import Path
 
 from sqlalchemy import text
 
@@ -31,26 +29,6 @@ from app.paths import case_root, investigation_root
 # Preserve rules for *legacy/live* app roots ONLY
 PRESERVE_DIR_NAMES = {"autofill-word-do-not-edit"}
 PRESERVE_SUFFIXES = ("-do-not-edit",)
-
-
-def _is_production() -> bool:
-    return (
-        os.getenv("FLASK_ENV") == "production" or os.getenv("APP_ENV") == "production"
-    )
-
-
-def _ensure_instance_path(path: Path) -> None:
-    if "instance" not in path.resolve().parts:
-        print(f"Refusing to touch non-instance path: {path}", file=sys.stderr)
-        raise SystemExit(3)
-
-
-def _ensure_keep(path: Path) -> None:
-    if not path.exists():
-        path.mkdir(parents=True, exist_ok=True)
-    keep = path / ".keep"
-    if not keep.exists():
-        keep.touch()
 
 
 def _is_preserved(name: str, preserve_names, preserve_suffixes) -> bool:
@@ -186,36 +164,13 @@ def parse_args():
         action="store_true",
         help="Skip VACUUM on SQLite databases after deletion.",
     )
-    p.add_argument(
-        "--force",
-        action="store_true",
-        help="Perform deletion (requires --i-know-what-im-doing and ALLOW_INSTANCE_DELETION=1).",
-    )
-    p.add_argument(
-        "--i-know-what-im-doing",
-        action="store_true",
-        help="Additional confirmation flag acknowledging destructive behaviour.",
-    )
     return p.parse_args()
 
 
 def main():
     args = parse_args()
 
-    if _is_production():
-        print("Refusing to run in production.", file=sys.stderr)
-        return 2
-
-    confirmations = (
-        args.force
-        and args.i_know_what_im_doing
-        and os.getenv("ALLOW_INSTANCE_DELETION") == "1"
-    )
-    dry_run = args.dry_run or not confirmations
-    if dry_run and not args.dry_run:
-        print("[SAFE] Missing confirmations. Running in DRY-RUN mode.", file=sys.stderr)
-
-    if not dry_run and not args.yes:
+    if not args.yes and not args.dry_run:
         print(
             "⚠️  This will permanently delete ALL case/investigation data and uploaded files."
         )
@@ -226,22 +181,19 @@ def main():
         confirm = input("Type YES to confirm factory reset: ")
         if confirm.strip() != "YES":
             print("Aborted.")
-            return 1
+            return
 
     app = create_app()
     with app.app_context():
         # Canonical instance roots (WIPE EVERYTHING here)
-        cases_root = Path(case_root())  # instance\uploads_cases
-        inv_root = Path(investigation_root())  # instance\uploads_investigations
-
-        for root in (cases_root, inv_root):
-            _ensure_instance_path(root)
+        cases_root = case_root()  # instance\uploads_cases
+        inv_root = investigation_root()  # instance\uploads_investigations
 
         # Legacy/live app roots (preserve *-do-not-edit)
         legacy_cases_root = os.path.join(app.root_path, "uploads_boncolasok")
         legacy_invest_root = os.path.join(app.root_path, "uploads_vizsgalatok")
 
-        mode = "(dry-run) " if dry_run else ""
+        mode = "(dry-run) " if args.dry_run else ""
         print(f"[INFO] {mode}Resetting storage...")
         print(f"  Instance cases (NO preserve):          {cases_root}")
         print(f"  Instance investigations (NO preserve): {inv_root}")
@@ -250,27 +202,17 @@ def main():
 
         # Purge instance roots with NO preservation at all
         _clear_dir_preserving(
-            str(cases_root),
-            dry_run=dry_run,
-            preserve_names=set(),
-            preserve_suffixes=(),
+            cases_root, dry_run=args.dry_run, preserve_names=set(), preserve_suffixes=()
         )
         _clear_dir_preserving(
-            str(inv_root),
-            dry_run=dry_run,
-            preserve_names=set(),
-            preserve_suffixes=(),
+            inv_root, dry_run=args.dry_run, preserve_names=set(), preserve_suffixes=()
         )
-
-        if not dry_run:
-            _ensure_keep(cases_root)
-            _ensure_keep(inv_root)
 
         # Purge legacy/live app roots WITH preservation of do-not-edit dirs
         if os.path.exists(legacy_cases_root):
             _clear_dir_preserving(
                 legacy_cases_root,
-                dry_run=dry_run,
+                dry_run=args.dry_run,
                 preserve_names=PRESERVE_DIR_NAMES,
                 preserve_suffixes=PRESERVE_SUFFIXES,
             )
@@ -280,7 +222,7 @@ def main():
         if os.path.exists(legacy_invest_root):
             _clear_dir_preserving(
                 legacy_invest_root,
-                dry_run=dry_run,
+                dry_run=args.dry_run,
                 preserve_names=PRESERVE_DIR_NAMES,
                 preserve_suffixes=PRESERVE_SUFFIXES,
             )
@@ -293,32 +235,36 @@ def main():
         _delete_all(
             InvestigationAttachment,
             "examination.InvestigationAttachment",
-            dry_run=dry_run,
+            dry_run=args.dry_run,
         )
-        _delete_all(InvestigationNote, "examination.InvestigationNote", dry_run=dry_run)
+        _delete_all(
+            InvestigationNote, "examination.InvestigationNote", dry_run=args.dry_run
+        )
         _delete_all(
             InvestigationChangeLog,
             "examination.InvestigationChangeLog",
-            dry_run=dry_run,
+            dry_run=args.dry_run,
         )
-        _delete_all(Investigation, "examination.Investigation", dry_run=dry_run)
+        _delete_all(Investigation, "examination.Investigation", dry_run=args.dry_run)
 
         print(f"[INFO] {mode}Deleting case-related rows (default bind)...")
-        _delete_all(UploadedFile, "default.UploadedFile", dry_run=dry_run)
-        _delete_all(TaskMessage, "default.TaskMessage", dry_run=dry_run)
-        _delete_all(ChangeLog, "default.ChangeLog", dry_run=dry_run)
-        _maybe_delete(EmailNotification, "default.EmailNotification", dry_run=dry_run)
-        _maybe_delete(CaseSheetField, "default.CaseSheetField", dry_run=dry_run)
-        _delete_all(Case, "default.Case", dry_run=dry_run)
+        _delete_all(UploadedFile, "default.UploadedFile", dry_run=args.dry_run)
+        _delete_all(TaskMessage, "default.TaskMessage", dry_run=args.dry_run)
+        _delete_all(ChangeLog, "default.ChangeLog", dry_run=args.dry_run)
+        _maybe_delete(
+            EmailNotification, "default.EmailNotification", dry_run=args.dry_run
+        )
+        _maybe_delete(CaseSheetField, "default.CaseSheetField", dry_run=args.dry_run)
+        _delete_all(Case, "default.Case", dry_run=args.dry_run)
 
-        if dry_run:
+        if args.dry_run:
             print("[INFO] (dry-run) Instance roots: wiped with NO preservation.")
             print(
                 "[INFO] (dry-run) App roots preserved dir names:",
                 sorted(PRESERVE_DIR_NAMES),
             )
             print("[DONE] (dry-run) No changes committed. Users preserved.")
-            return 0
+            return
 
         db.session.commit()
         print("[INFO] Changes committed to databases.")
@@ -336,14 +282,12 @@ def main():
             "be recreated when new investigations or cases are added."
         )
 
-    return 0
-
 
 if __name__ == "__main__":
     # Usage (Windows, repo root, venv):
     #   python -m scripts.reset_storage_and_data_2 --dry-run
     #   python -m scripts.reset_storage_and_data_2 --yes
-    sys.exit(main())
+    main()
 
 # ---- Legacy marker for tests (grep safeguard) --------------------------------
 LEGACY_GET_ENGINE_MARKER = "db.get_engine("

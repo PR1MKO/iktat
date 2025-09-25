@@ -29,10 +29,24 @@ def file_safe_case_number(n: str) -> str:
     return n.replace(":", "-").replace("/", "-").strip(" .")
 
 
+def _ensure_keep(directory: Path) -> None:
+    directory.mkdir(parents=True, exist_ok=True)
+    keep = directory / ".keep"
+    if not keep.exists():
+        keep.touch()
+
+
 def ensure_case_folder(case_number: str) -> Path:
     safe = file_safe_case_number(case_number)
     p = case_root() / safe
     p.mkdir(parents=True, exist_ok=True)
+
+    do_not_edit = p / "DO-NOT-EDIT"
+    do_not_edit.mkdir(parents=True, exist_ok=True)
+
+    for target in (p, do_not_edit):
+        _ensure_keep(target)
+
     return p
 
 
@@ -41,9 +55,16 @@ def case_folder_name(case_number: str) -> str:
 
 
 def ensure_investigation_folder(case_number: str) -> Path:
-    safe = case_number.replace(":", "-").replace("/", "-").strip(" .")
+    safe = file_safe_case_number(case_number)
     p = investigation_root() / safe
     p.mkdir(parents=True, exist_ok=True)
+
+    do_not_edit = p / "DO-NOT-EDIT"
+    do_not_edit.mkdir(parents=True, exist_ok=True)
+
+    for target in (p, do_not_edit):
+        _ensure_keep(target)
+
     return p
 
 

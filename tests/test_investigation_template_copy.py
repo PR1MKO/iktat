@@ -1,4 +1,8 @@
+import os
 import shutil
+import stat
+import time
+from pathlib import Path
 
 from app.investigations.models import Investigation
 from app.investigations.utils import init_investigation_upload_dirs
@@ -22,16 +26,51 @@ def _base_form_data():
     }
 
 
-def _reset_upload_root(app):
-    root = investigation_root()
+def _rmtree_win_safe(path: Path, retries: int = 10, delay: float = 0.1) -> None:
+    """
+    Robust rmtree for Windows: retries and clears RO attributes on failure.
+    """
+
+    def _onerror(func, p, exc_info):
+        try:
+            os.chmod(p, stat.S_IWRITE)
+        except Exception:
+            pass
+        try:
+            func(p)
+        except Exception:
+            # rethrow to be handled by retry loop
+            raise
+
+    for _ in range(retries):
+        try:
+            shutil.rmtree(path, onerror=_onerror)
+            return
+        except PermissionError:
+            time.sleep(delay)
+    # final attempt (raise if still locked)
+    shutil.rmtree(path, onerror=_onerror)
+
+
+def _reset_upload_root(app, tmp_path):
+    """Point INVESTIGATIONS_UPLOAD_ROOT at a per-test temp directory."""
+    root = Path(tmp_path) / "uploads_investigations"
     if root.exists():
-        shutil.rmtree(root)
+        _rmtree_win_safe(root)
+    root.mkdir(parents=True, exist_ok=True)
+    app.config["INVESTIGATIONS_UPLOAD_ROOT"] = str(root)
+    return root
 
 
 def test_investigation_templates_copied(client, app, tmp_path):
     with app.app_context():
         create_user()
-        _reset_upload_root(app)
+        root = _reset_upload_root(app, tmp_path)
+        # Guard: never touch real instance path in tests
+        # (Py<3.9 lacks Path.is_relative_to; implement manual check)
+        root_str = str(root.resolve())
+        tmp_str = str(Path(tmp_path).resolve())
+        assert root_str.startswith(tmp_str)
         src_root = tmp_path / "vizsgalat"
         if src_root.exists():
             shutil.rmtree(src_root)

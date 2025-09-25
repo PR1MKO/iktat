@@ -1,6 +1,16 @@
 # factory_reset.py
-# Deprecated: use scripts/reset_storage_and_data.py
-from scripts.reset_storage_and_data import main
+# Deprecated entrypoint: intentionally disabled to avoid accidental data loss.
+import sys
 
-if __name__ == "__main__":
-    main()
+
+def main() -> int:
+    print(
+        "This command is disabled. Use scripts/reset_storage_and_data.py with --force "
+        "--i-know-what-im-doing and set ALLOW_INSTANCE_DELETION=1.",
+        file=sys.stderr,
+    )
+    return 1
+
+
+if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
+    sys.exit(main())
