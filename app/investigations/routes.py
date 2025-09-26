@@ -1,4 +1,5 @@
 import io
+import os
 import re
 import tempfile
 import unicodedata
@@ -283,6 +284,27 @@ def leiro_ertesites_form(id: int):
         "actor": request.form.get("actor", ""),
     }
 
+    if request.method == "GET":
+        generated_att = None
+        generated_id = request.args.get("generated_id")
+        if generated_id:
+            try:
+                generated_pk = int(generated_id)
+            except (TypeError, ValueError):
+                generated_pk = None
+            if generated_pk:
+                att = db.session.get(InvestigationAttachment, generated_pk)
+                if att and att.investigation_id == inv.id:
+                    att.uploaded_at_str = safe_fmt(att.uploaded_at)
+                    generated_att = att
+
+        return render_template(
+            "investigations/ertesites_doc_form.html",
+            investigation=inv,
+            form_data=form_data,
+            generated_att=generated_att,
+        )
+
     if request.method == "POST":
         errors: list[str] = []
 
@@ -308,6 +330,7 @@ def leiro_ertesites_form(id: int):
                     "investigations/ertesites_doc_form.html",
                     investigation=inv,
                     form_data=form_data,
+                    generated_att=None,
                 ),
                 400,
             )
@@ -336,7 +359,6 @@ def leiro_ertesites_form(id: int):
         )
 
         creation_date = fmt_budapest(now_utc(), "%Y.%m.%d")
-        # Ensure vizsg_formatted is defined before using it in context.
         vizsg_formatted = vizsg_dt.strftime("%Y.%m.%d %H:%M") if vizsg_dt else ""
         actor_val = (form_data.get("actor") or "").strip()
 
@@ -358,7 +380,6 @@ def leiro_ertesites_form(id: int):
                 "iktatasi_szam": context["iktatasi szam"],
                 "jkv.vezető": context["vezeto"],
                 "jkv_vezeto": context["vezeto"],
-                # Sanitizer-normalized keys (spaces/dots removed, accents folded):
                 "kulsougyirat": context["kulso ugyirat"],
                 "iktatasiszam": context["iktatasi szam"],
                 "jkvvezeto": context["vezeto"],
@@ -375,28 +396,70 @@ def leiro_ertesites_form(id: int):
         output_path = Path(case_folder) / ERTESITES_TEMPLATE_FILENAME
 
         try:
+            # _render_docx_template saves atomically to output_path itself
             _render_docx_template(template_path, output_path, context)
         except Exception as exc:  # noqa: BLE001
             current_app.logger.exception(
                 "DOCX generation failed for investigation %s: %s", inv.id, exc
             )
+            stray_tmp = output_path.with_suffix(".tmp")
+            if stray_tmp.exists():
+                try:
+                    stray_tmp.unlink()
+                except OSError:
+                    current_app.logger.warning(
+                        "Could not remove temporary értesítés file: %s", stray_tmp
+                    )
             flash("Hiba történt a dokumentum generálása közben.", "danger")
             return (
                 render_template(
                     "investigations/ertesites_doc_form.html",
                     investigation=inv,
                     form_data=form_data,
+                    generated_att=None,
                 ),
                 500,
             )
 
+        filename = ERTESITES_TEMPLATE_FILENAME
+        timestamp = now_utc()
+        attachment = (
+            InvestigationAttachment.query.filter_by(
+                investigation_id=inv.id, filename=filename
+            )
+            .order_by(InvestigationAttachment.uploaded_at.desc())
+            .first()
+        )
+        if attachment is None:
+            attachment = InvestigationAttachment(
+                investigation_id=inv.id,
+                filename=filename,
+                category="egyéb",
+                uploaded_by=current_user.id,
+                uploaded_at=timestamp,
+            )
+            db.session.add(attachment)
+        else:
+            attachment.category = "egyéb"
+            attachment.uploaded_by = current_user.id
+            attachment.uploaded_at = timestamp
+
+        db.session.commit()
+
         flash("Értesítés dokumentum sikeresen generálva.", "success")
-        return redirect(url_for("investigations.leiro_ertesites_form", id=inv.id))
+        return redirect(
+            url_for(
+                "investigations.leiro_ertesites_form",
+                id=inv.id,
+                generated_id=attachment.id,
+            )
+        )
 
     return render_template(
         "investigations/ertesites_doc_form.html",
         investigation=inv,
         form_data=form_data,
+        generated_att=None,
     )
 
 
@@ -421,7 +484,7 @@ def _render_docx_template(
         else:
             tpl = DocxTemplate(str(sanitized_path))
             tpl.render(safe_context)
-            tpl.save(str(output_path))
+            _save_docx_atomic(tpl.save, output_path)
             return
 
         from docx import Document
@@ -447,12 +510,27 @@ def _render_docx_template(
                     if cell.text != text:
                         cell.text = text
 
-        doc.save(str(output_path))
+        _save_docx_atomic(doc.save, output_path)
     finally:
         try:
             sanitized_path.unlink()
         except FileNotFoundError:
             pass
+
+
+def _save_docx_atomic(save_func, output_path: Path) -> None:
+    """Persist DOCX via temp file + atomic replace to avoid Windows locking."""
+
+    tmp_out = output_path.with_suffix(".tmp")
+    try:
+        save_func(str(tmp_out))
+        os.replace(tmp_out, output_path)
+    finally:
+        if tmp_out.exists():
+            try:
+                tmp_out.unlink()
+            except Exception:  # noqa: BLE001
+                pass
 
 
 # Join any sequence of XML between adjacent text nodes so placeholders can be contiguous.

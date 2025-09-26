@@ -4,6 +4,7 @@ from zipfile import ZipFile
 import pytest
 
 from app import db
+from app.investigations.models import InvestigationAttachment
 from app.paths import ensure_investigation_folder
 from tests.helpers import (
     create_investigation,
@@ -15,8 +16,8 @@ from tests.helpers import (
 ERTESITES_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
 
 
-@pytest.mark.usefixtures("app")
-def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
+def _prepare_ertesites_case(app, tmp_path):
+    storage_root = tmp_path / "generated-investigations"
     with app.app_context():
         inv, leiro_user, expert_user = create_investigation_with_default_leiro()
         inv.subject_name = "Vizsgált Alany"
@@ -28,15 +29,10 @@ def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
         expert_user.full_name = "Szakértő Példa"
         db.session.commit()
 
-        case_number = inv.case_number
-        inv_id = inv.id
-        login_username = leiro_user.username
-
-        storage_root = tmp_path / "generated-investigations"
         app.config["INVESTIGATION_UPLOAD_FOLDER"] = str(storage_root)
         app.config["UPLOAD_INVESTIGATIONS_ROOT"] = str(storage_root)
 
-        case_folder = ensure_investigation_folder(case_number)
+        case_folder = ensure_investigation_folder(inv.case_number)
         template_dir = case_folder / "DO-NOT-EDIT"
         template_dir.mkdir(parents=True, exist_ok=True)
 
@@ -55,23 +51,40 @@ def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
         doc.add_paragraph("Vizsgálat időpontja: {{vizsg_date}}")
         doc.save(template_dst)
 
-    login_follow(client, login_username, "secret")
+        return {
+            "inv_id": inv.id,
+            "case_number": inv.case_number,
+            "leiro_username": leiro_user.username,
+            "leiro_id": leiro_user.id,
+        }
 
-    get_resp = client.get(f"/investigations/{inv_id}/leiro/ertesites_form")
+
+@pytest.mark.usefixtures("app")
+def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
+    info = _prepare_ertesites_case(app, tmp_path)
+
+    login_follow(client, info["leiro_username"], "secret")
+
+    get_resp = client.get(f"/investigations/{info['inv_id']}/leiro/ertesites_form")
     assert get_resp.status_code == 200
 
     post_resp = client.post(
-        f"/investigations/{inv_id}/leiro/ertesites_form",
+        f"/investigations/{info['inv_id']}/leiro/ertesites_form",
         data={"titulus": "Dr.", "vizsg_date": "2025-09-24T10:30"},
         follow_redirects=False,
     )
     assert post_resp.status_code in {302, 303}
+    assert "generated_id=" in post_resp.headers.get("Location", "")
 
-    safe_case = case_number.replace(":", "-").replace("/", "-").strip(" .")
+    safe_case = info["case_number"].replace(":", "-").replace("/", "-").strip(" .")
     output_path = (
         Path(app.config["INVESTIGATION_UPLOAD_FOLDER"]) / safe_case / ERTESITES_FILENAME
     )
     assert output_path.exists()
+
+    with open(output_path, "rb") as fh:
+        signature = fh.read(4)
+    assert signature.startswith(b"PK")
 
     with ZipFile(output_path) as bundle:
         document_xml = bundle.read("word/document.xml").decode("utf-8")
@@ -84,6 +97,70 @@ def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
     assert "Dr." in document_xml
     assert "2025.09.24 10:30" in document_xml
     assert "{{" not in document_xml
+
+    with app.app_context():
+        attachments = InvestigationAttachment.query.filter_by(
+            investigation_id=info["inv_id"], filename=ERTESITES_FILENAME
+        ).all()
+        assert attachments
+        att = attachments[0]
+        assert att.category == "egyéb"
+        assert att.uploaded_by == info["leiro_id"]
+
+
+def test_leiro_sees_download_link_after_generation(app, client, tmp_path):
+    info = _prepare_ertesites_case(app, tmp_path)
+    login_follow(client, info["leiro_username"], "secret")
+
+    post_resp = client.post(
+        f"/investigations/{info['inv_id']}/leiro/ertesites_form",
+        data={"titulus": "Dr.", "vizsg_date": "2025-09-24T10:30"},
+        follow_redirects=False,
+    )
+    follow_resp = client.get(post_resp.headers["Location"])
+    assert follow_resp.status_code == 200
+    assert (
+        b"Let\xc3\xb6lt\xc3\xa9s: ertesites_szakertoi_vizsgalatrol.docx"
+        in follow_resp.data
+    )
+
+
+def test_generated_attachment_surfaces_in_documents_listing(app, client, tmp_path):
+    info = _prepare_ertesites_case(app, tmp_path)
+    login_follow(client, info["leiro_username"], "secret")
+
+    client.post(
+        f"/investigations/{info['inv_id']}/leiro/ertesites_form",
+        data={"titulus": "Dr.", "vizsg_date": "2025-09-24T10:30"},
+        follow_redirects=True,
+    )
+
+    docs_resp = client.get(f"/investigations/{info['inv_id']}/documents")
+    assert docs_resp.status_code == 200
+    assert b"ertesites_szakertoi_vizsgalatrol.docx" in docs_resp.data
+
+
+def test_leiro_can_download_generated_attachment(app, client, tmp_path):
+    info = _prepare_ertesites_case(app, tmp_path)
+    login_follow(client, info["leiro_username"], "secret")
+
+    client.post(
+        f"/investigations/{info['inv_id']}/leiro/ertesites_form",
+        data={"titulus": "Dr.", "vizsg_date": "2025-09-24T10:30"},
+        follow_redirects=True,
+    )
+
+    with app.app_context():
+        att = InvestigationAttachment.query.filter_by(
+            investigation_id=info["inv_id"], filename=ERTESITES_FILENAME
+        ).first()
+        assert att is not None
+        file_id = att.id
+
+    download_resp = client.get(f"/investigations/{info['inv_id']}/download/{file_id}")
+    assert download_resp.status_code == 200
+    content_disposition = download_resp.headers.get("Content-Disposition", "")
+    assert content_disposition.lower().startswith("attachment;")
 
 
 @pytest.mark.usefixtures("app")
