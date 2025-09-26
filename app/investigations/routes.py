@@ -24,7 +24,7 @@ from werkzeug.utils import secure_filename  # for safe filenames
 
 from app import db
 from app.models import User
-from app.paths import ensure_investigation_folder
+from app.paths import ensure_investigation_folder, file_safe_case_number
 from app.services.case_logic import resolve_effective_describer_user
 from app.services.core_user_read import get_user_safe
 
@@ -393,7 +393,13 @@ def leiro_ertesites_form(id: int):
         if not template_path.exists():
             abort(404, description="A sablon nem található ehhez a vizsgálathoz.")
 
-        output_path = Path(case_folder) / ERTESITES_TEMPLATE_FILENAME
+        safe_case = file_safe_case_number(inv.case_number or "")
+        output_filename = (
+            f"{safe_case}_{ERTESITES_TEMPLATE_FILENAME}"
+            if safe_case
+            else ERTESITES_TEMPLATE_FILENAME
+        )
+        output_path = Path(case_folder) / output_filename
 
         try:
             # _render_docx_template saves atomically to output_path itself
@@ -421,7 +427,7 @@ def leiro_ertesites_form(id: int):
                 500,
             )
 
-        filename = ERTESITES_TEMPLATE_FILENAME
+        filename = output_filename
         timestamp = now_utc()
         attachment = (
             InvestigationAttachment.query.filter_by(

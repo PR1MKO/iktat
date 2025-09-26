@@ -13,7 +13,18 @@ from tests.helpers import (
     login_follow,
 )
 
-ERTESITES_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
+ERTESITES_TEMPLATE_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
+
+
+def _file_safe(name: str) -> str:
+    return (name or "").replace(":", "-").replace("/", "-").strip(" .")
+
+
+def _expected_output_filename(case_number: str) -> str:
+    safe_case = _file_safe(case_number)
+    if not safe_case:
+        return ERTESITES_TEMPLATE_FILENAME
+    return f"{safe_case}_{ERTESITES_TEMPLATE_FILENAME}"
 
 
 def _prepare_ertesites_case(app, tmp_path):
@@ -38,7 +49,7 @@ def _prepare_ertesites_case(app, tmp_path):
 
         from docx import Document
 
-        template_dst = template_dir / ERTESITES_FILENAME
+        template_dst = template_dir / ERTESITES_TEMPLATE_FILENAME
         doc = Document()
         doc.add_paragraph("Címzett: {{cimzett}}")
         doc.add_paragraph("Külső ügyirat: {{kulso_ugyirat}}")
@@ -76,9 +87,10 @@ def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
     assert post_resp.status_code in {302, 303}
     assert "generated_id=" in post_resp.headers.get("Location", "")
 
-    safe_case = info["case_number"].replace(":", "-").replace("/", "-").strip(" .")
+    safe_case = _file_safe(info["case_number"])
+    output_filename = _expected_output_filename(info["case_number"])
     output_path = (
-        Path(app.config["INVESTIGATION_UPLOAD_FOLDER"]) / safe_case / ERTESITES_FILENAME
+        Path(app.config["INVESTIGATION_UPLOAD_FOLDER"]) / safe_case / output_filename
     )
     assert output_path.exists()
 
@@ -99,8 +111,9 @@ def test_leiro_ertesites_form_generates_document(app, client, tmp_path):
     assert "{{" not in document_xml
 
     with app.app_context():
+        expected_name = _expected_output_filename(info["case_number"])
         attachments = InvestigationAttachment.query.filter_by(
-            investigation_id=info["inv_id"], filename=ERTESITES_FILENAME
+            investigation_id=info["inv_id"], filename=expected_name
         ).all()
         assert attachments
         att = attachments[0]
@@ -119,10 +132,8 @@ def test_leiro_sees_download_link_after_generation(app, client, tmp_path):
     )
     follow_resp = client.get(post_resp.headers["Location"])
     assert follow_resp.status_code == 200
-    assert (
-        b"Let\xc3\xb6lt\xc3\xa9s: ertesites_szakertoi_vizsgalatrol.docx"
-        in follow_resp.data
-    )
+    expected_name = _expected_output_filename(info["case_number"])
+    assert expected_name.encode() in follow_resp.data
 
 
 def test_generated_attachment_surfaces_in_documents_listing(app, client, tmp_path):
@@ -137,7 +148,8 @@ def test_generated_attachment_surfaces_in_documents_listing(app, client, tmp_pat
 
     docs_resp = client.get(f"/investigations/{info['inv_id']}/documents")
     assert docs_resp.status_code == 200
-    assert b"ertesites_szakertoi_vizsgalatrol.docx" in docs_resp.data
+    expected_name = _expected_output_filename(info["case_number"])
+    assert expected_name.encode() in docs_resp.data
 
 
 def test_leiro_can_download_generated_attachment(app, client, tmp_path):
@@ -151,8 +163,9 @@ def test_leiro_can_download_generated_attachment(app, client, tmp_path):
     )
 
     with app.app_context():
+        expected_name = _expected_output_filename(info["case_number"])
         att = InvestigationAttachment.query.filter_by(
-            investigation_id=info["inv_id"], filename=ERTESITES_FILENAME
+            investigation_id=info["inv_id"], filename=expected_name
         ).first()
         assert att is not None
         file_id = att.id
