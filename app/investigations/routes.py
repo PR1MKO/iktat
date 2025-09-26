@@ -280,6 +280,7 @@ def leiro_ertesites_form(id: int):
     form_data = {
         "titulus": request.form.get("titulus", ""),
         "vizsg_date": request.form.get("vizsg_date", ""),
+        "actor": request.form.get("actor", ""),
     }
 
     if request.method == "POST":
@@ -335,7 +336,9 @@ def leiro_ertesites_form(id: int):
         )
 
         creation_date = fmt_budapest(now_utc(), "%Y.%m.%d")
+        # Ensure vizsg_formatted is defined before using it in context.
         vizsg_formatted = vizsg_dt.strftime("%Y.%m.%d %H:%M") if vizsg_dt else ""
+        actor_val = (form_data.get("actor") or "").strip()
 
         context = {
             "cimzett": (inv.subject_name or ""),
@@ -347,6 +350,7 @@ def leiro_ertesites_form(id: int):
             "creation_date": creation_date,
             "titulus": titulus,
             "vizsg_date": vizsg_formatted,
+            "actor": actor_val,
         }
         context.update(
             {
@@ -354,6 +358,10 @@ def leiro_ertesites_form(id: int):
                 "iktatasi_szam": context["iktatasi szam"],
                 "jkv.vezető": context["vezeto"],
                 "jkv_vezeto": context["vezeto"],
+                # Sanitizer-normalized keys (spaces/dots removed, accents folded):
+                "kulsougyirat": context["kulso ugyirat"],
+                "iktatasiszam": context["iktatasi szam"],
+                "jkvvezeto": context["vezeto"],
             }
         )
 

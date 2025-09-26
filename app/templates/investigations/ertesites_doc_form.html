@@ -27,6 +27,17 @@
               >
             </div>
             <div class="col-md-6">
+              <label for="actor" class="form-label">Actor</label>
+              <input
+                type="text"
+                class="form-control"
+                id="actor"
+                name="actor"
+                value="{{ (form_data or {}).get('actor', '') }}"
+                maxlength="120"
+              >
+            </div>
+            <div class="col-md-6">
               <label for="vizsg_date" class="form-label">Dátum és időpont</label>
               <input
                 type="datetime-local"
