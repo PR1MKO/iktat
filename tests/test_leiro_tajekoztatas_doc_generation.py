@@ -84,8 +84,6 @@ def test_leiro_tajekoztatas_generates_document(app, client, tmp_path):
         data={
             "cimzett_szerv": "Országos Rendőr-főkapitányság",
             "titulus_szerv": "Osztályvezető",
-            "kulso_ugyirat": "KÜ-123/2025",
-            "kirendelo": "Kirendelő Intézmény",
             "actor": "N. N.",
             "titulus": "dr.",
             "sum": "250 000 Ft",
@@ -106,8 +104,8 @@ def test_leiro_tajekoztatas_generates_document(app, client, tmp_path):
 
     assert "Országos Rendőr-főkapitányság" in document_xml
     assert "Osztályvezető" in document_xml
-    assert "KÜ-123/2025" in document_xml
-    assert "Kirendelő Intézmény" in document_xml
+    assert "KULSO-42" in document_xml
+    assert "Beküldő Intézmény" in document_xml
     assert info["case_number"] in document_xml
     assert "Leíró Példa" in document_xml
     assert "Szakértő Példa" in document_xml

@@ -284,6 +284,28 @@ def _resolve_describer_full_name(inv: Investigation) -> str:
     return getattr(current_user, "full_name", "") or "-"
 
 
+def _external_case_number(inv: Investigation) -> str:
+    """Resolve the external case number from common investigation attributes."""
+
+    candidates = [
+        "external_case_number",
+        "external_number",
+        "external_ref",
+        "external_reference",
+        "external_case_id",
+        "external_id",
+        "external_ugyirat",
+        "kulso_ugyirat_szam",
+        "kulso_ugyirat",
+    ]
+    for attr in candidates:
+        if hasattr(inv, attr):
+            value = getattr(inv, attr)
+            if value:
+                return str(value)
+    return ""
+
+
 @investigations_bp.route("/<int:id>/leiro/elvegzem", methods=["GET"])
 @login_required
 @roles_required("leíró", "leir", "LEIRO", "lei")
@@ -616,10 +638,6 @@ def leiro_tajekoztatas_arajanlat(id: int):
     form_data = {
         "cimzett_szerv": request.form.get("cimzett_szerv", ""),
         "titulus_szerv": request.form.get("titulus_szerv", ""),
-        "kulso_ugyirat": request.form.get(
-            "kulso_ugyirat", inv.external_case_number or ""
-        ),
-        "kirendelo": request.form.get("kirendelo", inv.institution_name or ""),
         "actor": request.form.get("actor", ""),
         "titulus": request.form.get("titulus", ""),
         "sum": request.form.get("sum", ""),
@@ -677,10 +695,8 @@ def leiro_tajekoztatas_arajanlat(id: int):
 
     cimzett_szerv = form_data["cimzett_szerv"].strip()
     titulus_szerv = form_data["titulus_szerv"].strip()
-    kulso_ugyirat = form_data["kulso_ugyirat"].strip() or (
-        inv.external_case_number or ""
-    )
-    kirendelo_val = form_data["kirendelo"].strip() or (inv.institution_name or "")
+    kulso_ugyirat = _external_case_number(inv).strip()
+    kirendelo_val = (inv.institution_name or "").strip()
     actor_val = form_data["actor"].strip()
     titulus_val = form_data["titulus"].strip()
     sum_val = form_data["sum"].strip()
