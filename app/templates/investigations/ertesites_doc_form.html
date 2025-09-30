@@ -1,4 +1,17 @@
 {% extends "base.html" %}
+
+{% block navbar %}
+  {% set inv = investigation %}
+  {% if inv %}
+    {% set case = namespace(case_number=inv.case_number or inv.id) %}
+  {% else %}
+    {% set case = none %}
+  {% endif %}
+  {{ super() }}
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
 {% block title %}Értesítés szakértői vizsgálatról — űrlap{% endblock %}
 {% block content %}
 <div class="container py-4">
