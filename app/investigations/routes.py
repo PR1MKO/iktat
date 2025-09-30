@@ -165,6 +165,50 @@ def cannot_upload_reason(inv, u):
     return "Nincs jogosultság a feltöltéshez."
 
 
+def _investigation_summary_context(inv, form=None):
+    form = form or InvestigationForm(obj=inv)
+    assignment_type_label = dict(form.assignment_type.choices).get(
+        inv.assignment_type, inv.assignment_type
+    )
+    investigation_type_label = dict(form.investigation_type.choices).get(
+        inv.investigation_type, inv.investigation_type
+    )
+
+    assigned_expert_user = (
+        get_user_safe(inv.assigned_expert_id) if inv.assigned_expert_id else None
+    )
+    assigned_expert_display = (
+        user_display_name(assigned_expert_user) if assigned_expert_user else None
+    )
+
+    expert_user = getattr(inv, "expert", None) or (
+        get_user_safe(getattr(inv, "expert1_id", None))
+        if getattr(inv, "expert1_id", None)
+        else None
+    )
+    if expert_user is None:
+        expert_user = assigned_expert_user
+
+    describer_user = getattr(inv, "describer", None)
+    if describer_user is None and getattr(inv, "describer_id", None):
+        describer_user = get_user_safe(inv.describer_id)
+    if describer_user is None and expert_user is not None:
+        default_leiro_id = getattr(expert_user, "default_leiro_id", None)
+        if default_leiro_id:
+            describer_user = get_user_safe(default_leiro_id)
+
+    expert_display = display_name(expert_user)
+    describer_display = display_name(describer_user)
+
+    return {
+        "assignment_type_label": assignment_type_label,
+        "investigation_type_label": investigation_type_label,
+        "expert_display_name": expert_display,
+        "describer_display_name": describer_display,
+        "assigned_expert_display": assigned_expert_display,
+    }
+
+
 @investigations_bp.route("/<int:id>/leiro/elvegzem", methods=["GET"])
 @login_required
 @roles_required("leíró", "leir", "LEIRO", "lei")
@@ -279,6 +323,10 @@ def leiro_ertesites_form(id: int):
     if inv is None:
         abort(404)
 
+    inv.birth_date_str = fmt_date(inv.birth_date)
+
+    summary_context = _investigation_summary_context(inv)
+
     form_data = {
         "titulus": request.form.get("titulus", ""),
         "vizsg_date": request.form.get("vizsg_date", ""),
@@ -305,6 +353,7 @@ def leiro_ertesites_form(id: int):
             form_data=form_data,
             generated_att=generated_att,
             case=SimpleNamespace(case_number=inv.case_number or inv.id),
+            **summary_context,
         )
 
     if request.method == "POST":
@@ -334,6 +383,7 @@ def leiro_ertesites_form(id: int):
                     form_data=form_data,
                     generated_att=None,
                     case=SimpleNamespace(case_number=inv.case_number or inv.id),
+                    **summary_context,
                 ),
                 400,
             )
@@ -426,6 +476,7 @@ def leiro_ertesites_form(id: int):
                     investigation=inv,
                     form_data=form_data,
                     generated_att=None,
+                    **summary_context,
                 ),
                 500,
             )
