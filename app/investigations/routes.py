@@ -209,6 +209,81 @@ def _investigation_summary_context(inv, form=None):
     }
 
 
+def _resolve_user_full_name(user) -> str:
+    full_name = getattr(user, "full_name", None)
+    if full_name:
+        return full_name
+    screen_name = getattr(user, "screen_name", None)
+    if screen_name:
+        return screen_name
+    username = getattr(user, "username", None)
+    return username or "-"
+
+
+def _resolve_expert_full_name(inv: Investigation) -> str:
+    candidates = []
+    for attr in ("assigned_expert", "expert", "expert1", "expert2"):
+        user = getattr(inv, attr, None)
+        if user is not None:
+            candidates.append(user)
+
+    for attr in ("assigned_expert_id", "expert1_id", "expert2_id"):
+        ident = getattr(inv, attr, None)
+        if ident:
+            candidates.append(get_user_safe(ident))
+
+    for user in candidates:
+        if user and getattr(user, "full_name", None):
+            return user.full_name
+
+    for user in candidates:
+        if user:
+            return _resolve_user_full_name(user)
+
+    return "-"
+
+
+def _resolve_describer_full_name(inv: Investigation) -> str:
+    describer = getattr(inv, "describer", None)
+    if describer and getattr(describer, "full_name", None):
+        return describer.full_name
+
+    describer_id = getattr(inv, "describer_id", None)
+    if describer_id:
+        user = get_user_safe(describer_id)
+        if user and getattr(user, "full_name", None):
+            return user.full_name
+        if user:
+            return _resolve_user_full_name(user)
+
+    assigned_expert = getattr(inv, "assigned_expert", None)
+    if assigned_expert is None and getattr(inv, "assigned_expert_id", None):
+        assigned_expert = get_user_safe(inv.assigned_expert_id)
+
+    expert_user = getattr(inv, "expert", None)
+    if expert_user is None:
+        for attr in ("expert1_id", "expert2_id"):
+            ident = getattr(inv, attr, None)
+            if ident:
+                expert_user = get_user_safe(ident)
+            if expert_user:
+                break
+    if expert_user is None:
+        expert_user = assigned_expert
+
+    fallback_user = (
+        resolve_effective_describer_user(expert_user, describer_id)
+        if expert_user
+        else None
+    )
+    if fallback_user and getattr(fallback_user, "full_name", None):
+        return fallback_user.full_name
+    if fallback_user:
+        return _resolve_user_full_name(fallback_user)
+
+    return getattr(current_user, "full_name", "") or "-"
+
+
 @investigations_bp.route("/<int:id>/leiro/elvegzem", methods=["GET"])
 @login_required
 @roles_required("leíró", "leir", "LEIRO", "lei")
@@ -313,6 +388,7 @@ def leiro_elvegzem(id: int):
 
 ERTESITES_TEMPLATE_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
 ERTESITES_TEMPLATE_DIRNAME = "DO-NOT-EDIT"
+TAJEKOZTATAS_ARAJANLAT_TEMPLATE_FILENAME = "tajekoztatas_arajanlat.docx"
 
 
 @investigations_bp.route("/<int:id>/leiro/ertesites_form", methods=["GET", "POST"])
@@ -520,6 +596,187 @@ def leiro_ertesites_form(id: int):
         investigation=inv,
         form_data=form_data,
         generated_att=None,
+    )
+
+
+@investigations_bp.route(
+    "/<int:id>/leiro/tajekoztatas_arajanlat", methods=["GET", "POST"]
+)
+@login_required
+@roles_required("leíró", "leir", "LEIRO", "lei")
+def leiro_tajekoztatas_arajanlat(id: int):
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
+
+    inv.birth_date_str = fmt_date(inv.birth_date)
+
+    summary_context = _investigation_summary_context(inv)
+
+    form_data = {
+        "cimzett_szerv": request.form.get("cimzett_szerv", ""),
+        "titulus_szerv": request.form.get("titulus_szerv", ""),
+        "kulso_ugyirat": request.form.get(
+            "kulso_ugyirat", inv.external_case_number or ""
+        ),
+        "kirendelo": request.form.get("kirendelo", inv.institution_name or ""),
+        "actor": request.form.get("actor", ""),
+        "titulus": request.form.get("titulus", ""),
+        "sum": request.form.get("sum", ""),
+    }
+
+    generated_att = None
+    generated_id = request.args.get("generated_id")
+    if generated_id:
+        try:
+            generated_pk = int(generated_id)
+        except (TypeError, ValueError):
+            generated_pk = None
+        if generated_pk:
+            att = db.session.get(InvestigationAttachment, generated_pk)
+            if att and att.investigation_id == inv.id:
+                att.uploaded_at_str = safe_fmt(att.uploaded_at)
+                generated_att = att
+
+    if request.method == "GET":
+        return render_template(
+            "investigations/tajekoztatas_arajanlat_form.html",
+            investigation=inv,
+            form_data=form_data,
+            generated_att=generated_att,
+            **summary_context,
+        )
+
+    required_fields = ("cimzett_szerv", "titulus_szerv", "actor", "titulus", "sum")
+    missing = [
+        field for field in required_fields if not (form_data.get(field) or "").strip()
+    ]
+    if missing:
+        labels = {
+            "cimzett_szerv": "Címzett szerv",
+            "titulus_szerv": "Titulus (szerv)",
+            "actor": "Actor",
+            "titulus": "Titulus",
+            "sum": "Összeg",
+        }
+        missing_labels = [labels.get(field, field) for field in missing]
+        flash(
+            "Hiányzó kötelező mezők: " + ", ".join(missing_labels),
+            "danger",
+        )
+        return (
+            render_template(
+                "investigations/tajekoztatas_arajanlat_form.html",
+                investigation=inv,
+                form_data=form_data,
+                generated_att=generated_att,
+                **summary_context,
+            ),
+            400,
+        )
+
+    cimzett_szerv = form_data["cimzett_szerv"].strip()
+    titulus_szerv = form_data["titulus_szerv"].strip()
+    kulso_ugyirat = form_data["kulso_ugyirat"].strip() or (
+        inv.external_case_number or ""
+    )
+    kirendelo_val = form_data["kirendelo"].strip() or (inv.institution_name or "")
+    actor_val = form_data["actor"].strip()
+    titulus_val = form_data["titulus"].strip()
+    sum_val = form_data["sum"].strip()
+
+    creation_date = fmt_budapest(now_utc(), "%Y.%m.%d")
+    iktatoszam = inv.case_number or ""
+    vezeto = _resolve_describer_full_name(inv)
+    szak = _resolve_expert_full_name(inv)
+
+    context = {
+        "cimzett_szerv": cimzett_szerv,
+        "cimzett-szerv": cimzett_szerv,
+        "cimzettszerv": cimzett_szerv,
+        "titulus_szerv": titulus_szerv,
+        "titulus-szerv": titulus_szerv,
+        "tituluszerv": titulus_szerv,
+        "titulusszerv": titulus_szerv,
+        "kulso_ugyirat": kulso_ugyirat,
+        "kulso ugyirat": kulso_ugyirat,
+        "kulsougyirat": kulso_ugyirat,
+        "kirendelo": kirendelo_val,
+        "iktatasi_szam": iktatoszam,
+        "iktatasi szam": iktatoszam,
+        "iktatasiszam": iktatoszam,
+        "vezeto": vezeto,
+        "actor": actor_val,
+        "szak": szak,
+        "titulus": titulus_val,
+        "sum": sum_val,
+        "creation_date": creation_date,
+    }
+
+    case_folder = ensure_investigation_folder(inv.case_number)
+    template_path = (
+        Path(case_folder)
+        / ERTESITES_TEMPLATE_DIRNAME
+        / TAJEKOZTATAS_ARAJANLAT_TEMPLATE_FILENAME
+    )
+    if not template_path.exists():
+        abort(404, description="A sablon nem található ehhez a vizsgálathoz.")
+
+    output_path = Path(case_folder) / "tajekoztatas_arajanlat.docx"
+
+    try:
+        _render_docx_template(template_path, output_path, context)
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.exception(
+            "DOCX generation failed for tájékoztatás árajánlat %s: %s",
+            inv.id,
+            exc,
+        )
+        flash("Hiba történt a dokumentum generálása közben.", "danger")
+        return (
+            render_template(
+                "investigations/tajekoztatas_arajanlat_form.html",
+                investigation=inv,
+                form_data=form_data,
+                generated_att=generated_att,
+                **summary_context,
+            ),
+            500,
+        )
+
+    timestamp = now_utc()
+    filename = output_path.name
+    attachment = (
+        InvestigationAttachment.query.filter_by(
+            investigation_id=inv.id, filename=filename
+        )
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .first()
+    )
+
+    if attachment is None:
+        attachment = InvestigationAttachment(
+            investigation_id=inv.id,
+            filename=filename,
+            category="generated",
+            uploaded_by=current_user.id,
+            uploaded_at=timestamp,
+        )
+        db.session.add(attachment)
+    else:
+        attachment.category = "generated"
+        attachment.uploaded_by = current_user.id
+        attachment.uploaded_at = timestamp
+
+    db.session.commit()
+
+    flash("Dokumentum sikeresen generálva.", "success")
+    return redirect(
+        url_for(
+            "investigations.leiro_tajekoztatas_arajanlat",
+            id=inv.id,
+            generated_id=attachment.id,
+        )
     )
 
 
