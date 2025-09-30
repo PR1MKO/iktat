@@ -6,6 +6,7 @@ import unicodedata
 import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 from flask import (
     abort,
@@ -303,6 +304,7 @@ def leiro_ertesites_form(id: int):
             investigation=inv,
             form_data=form_data,
             generated_att=generated_att,
+            case=SimpleNamespace(case_number=inv.case_number or inv.id),
         )
 
     if request.method == "POST":
@@ -331,6 +333,7 @@ def leiro_ertesites_form(id: int):
                     investigation=inv,
                     form_data=form_data,
                     generated_att=None,
+                    case=SimpleNamespace(case_number=inv.case_number or inv.id),
                 ),
                 400,
             )

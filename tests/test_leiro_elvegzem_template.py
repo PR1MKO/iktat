@@ -213,3 +213,18 @@ def test_leiro_ertesites_form_renders_inputs(client, sample_investigation_with_d
     assert titulus_input.get("type") == "text"
     assert vizsg_input is not None
     assert vizsg_input.get("type") == "datetime-local"
+
+
+def test_leiro_ertesites_form_shows_case_number_in_navbar(
+    client, sample_investigation_with_data
+):
+    investigation, leiro_user = sample_investigation_with_data
+    login_follow(client, leiro_user.username, "secret")
+
+    response = client.get(f"/investigations/{investigation.id}/leiro/ertesites_form")
+    assert response.status_code == 200
+
+    soup = BeautifulSoup(response.data, "html.parser")
+    suffix = soup.select_one("nav.navbar span.ms-2.text-white")
+    assert suffix is not None
+    assert investigation.case_number in suffix.get_text(strip=True)
