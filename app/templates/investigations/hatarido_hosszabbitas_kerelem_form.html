@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {{ super() }}
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block title %}Határidő hosszabbítás kérelem — űrlap{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+      {% include "investigations/_adatok_card.html" %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold">
+          <h1 class="h5 mb-0">Határidő hosszabbítás kérelem</h1>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('investigations.leiro_hatarido_hosszabbitas_kerelem', id=investigation.id) }}" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label for="titulus_szerv" class="form-label text-muted small">Titulus (szerv)</label>
+              <input type="text" class="form-control" id="titulus_szerv" name="titulus_szerv" value="{{ form_data.titulus_szerv }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="cimzett_szerv" class="form-label text-muted small">Címzett szerv</label>
+              <input type="text" class="form-control" id="cimzett_szerv" name="cimzett_szerv" value="{{ form_data.cimzett_szerv }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="actor" class="form-label text-muted small">Actor</label>
+              <input type="text" class="form-control" id="actor" name="actor" value="{{ form_data.actor }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="reasons" class="form-label text-muted small">Indok</label>
+              <select class="form-select" id="reasons" name="reasons" required>
+                {% set selected_reason = form_data.reasons or 'túlterheltsége' %}
+                {% for option in ['túlterheltsége', 'iratanyag késedelme', 'külső szakértő kapacitás', 'ügy összetettsége', 'egyéb'] %}
+                  <option value="{{ option }}" {% if selected_reason == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="desired_date" class="form-label text-muted small">Kívánt határidő</label>
+              <input type="date" class="form-control" id="desired_date" name="desired_date" value="{{ form_data.desired_date }}" required>
+            </div>
+            <div class="col-md-6">
+              <label for="titulus" class="form-label text-muted small">Titulus</label>
+              <input type="text" class="form-control" id="titulus" name="titulus" value="{{ form_data.titulus }}" maxlength="160" required>
+            </div>
+            <div class="col-12 d-flex align-items-center gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-earmark-word"></i>
+                Dokumentum generálása
+              </button>
+              <a class="btn btn-outline-secondary" href="{{ url_for('investigations.leiro_elvegzem', id=investigation.id) }}">Vissza a vizsgálathoz</a>
+              {% if generated_att %}
+                <a class="btn btn-success" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=generated_att.id) }}">
+                  Letöltés: {{ generated_att.filename }}
+                </a>
+              {% endif %}
+            </div>
+          </form>
+          <p class="text-muted small mb-0 mt-3">
+            Sablon helye:
+            <code>
+              instance/uploads_investigations/{{ safe_case_number }}/DO-NOT-EDIT/hatarido_hosszabbitas_kerelem.docx
+            </code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
