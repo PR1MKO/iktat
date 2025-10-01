@@ -96,7 +96,8 @@ def test_leiro_tajekoztatas_generates_document(app, client, tmp_path):
     assert "generated_id=" in location
 
     case_folder = ensure_investigation_folder(info["case_number"])
-    output_path = Path(case_folder) / "tajekoztatas_arajanlat.docx"
+    safe_case = info["case_number"].replace(":", "-").replace("/", "-")
+    output_path = Path(case_folder) / f"{safe_case}_tajekoztatas_arajanlat.docx"
     assert output_path.exists()
 
     with ZipFile(output_path) as bundle:
@@ -117,7 +118,7 @@ def test_leiro_tajekoztatas_generates_document(app, client, tmp_path):
     with app.app_context():
         attachment = InvestigationAttachment.query.filter_by(
             investigation_id=info["inv_id"],
-            filename="tajekoztatas_arajanlat.docx",
+            filename=f"{safe_case}_tajekoztatas_arajanlat.docx",
         ).first()
         assert attachment is not None
         assert attachment.category == "generated"

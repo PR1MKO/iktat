@@ -738,7 +738,8 @@ def leiro_tajekoztatas_arajanlat(id: int):
     if not template_path.exists():
         abort(404, description="A sablon nem található ehhez a vizsgálathoz.")
 
-    output_path = Path(case_folder) / "tajekoztatas_arajanlat.docx"
+    safe_case = (inv.case_number or "").replace(":", "-").replace("/", "-")
+    output_path = Path(case_folder) / f"{safe_case}_tajekoztatas_arajanlat.docx"
 
     try:
         _render_docx_template(template_path, output_path, context)
