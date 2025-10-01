@@ -411,6 +411,7 @@ def leiro_elvegzem(id: int):
 ERTESITES_TEMPLATE_FILENAME = "ertesites_szakertoi_vizsgalatrol.docx"
 ERTESITES_TEMPLATE_DIRNAME = "DO-NOT-EDIT"
 TAJEKOZTATAS_ARAJANLAT_TEMPLATE_FILENAME = "tajekoztatas_arajanlat.docx"
+SZAKERTO_SZAKKONZULTANS_TEMPLATE_FILENAME = "szakerto-szakkonzultans_bevonasa.docx"
 HATARIDO_HOSSZABBITAS_TEMPLATE_FILENAME = "hatarido_hosszabbitas_kerelem.docx"
 
 
@@ -619,6 +620,188 @@ def leiro_ertesites_form(id: int):
         investigation=inv,
         form_data=form_data,
         generated_att=None,
+    )
+
+
+@investigations_bp.route(
+    "/<int:id>/leiro/szakerto_szakkonzultans_bevonasa", methods=["GET", "POST"]
+)
+@login_required
+@roles_required("leíró", "leir", "LEIRO", "lei")
+def leiro_szakerto_szakkonzultans_bevonasa(id: int):
+    inv = db.session.get(Investigation, id)
+    if inv is None:
+        abort(404)
+
+    inv.birth_date_str = fmt_date(inv.birth_date)
+    summary_context = _investigation_summary_context(inv)
+
+    form_data = {
+        "cimzett_szerv": request.form.get("cimzett_szerv", ""),
+        "titulus_szerv": request.form.get("titulus_szerv", ""),
+        "actor": request.form.get("actor", ""),
+        "szakterulet": request.form.get("szakterulet", ""),
+        "titulus": request.form.get("titulus", ""),
+    }
+    if request.method == "GET" and not form_data["szakterulet"]:
+        form_data["szakterulet"] = "option1"
+
+    generated_att = None
+    generated_id = request.args.get("generated_id")
+    if generated_id:
+        try:
+            generated_pk = int(generated_id)
+        except (TypeError, ValueError):
+            generated_pk = None
+        if generated_pk:
+            att = db.session.get(InvestigationAttachment, generated_pk)
+            if att and att.investigation_id == inv.id:
+                att.uploaded_at_str = safe_fmt(att.uploaded_at)
+                generated_att = att
+
+    if request.method == "GET":
+        return render_template(
+            "investigations/szakerto_szakkonzultans_bevonasa_form.html",
+            investigation=inv,
+            form_data=form_data,
+            generated_att=generated_att,
+            **summary_context,
+        )
+
+    required_fields = (
+        "cimzett_szerv",
+        "titulus_szerv",
+        "actor",
+        "szakterulet",
+        "titulus",
+    )
+    missing = [
+        field for field in required_fields if not (form_data.get(field) or "").strip()
+    ]
+    if missing:
+        labels = {
+            "cimzett_szerv": "Címzett szerv",
+            "titulus_szerv": "Titulus (szerv)",
+            "actor": "Actor",
+            "szakterulet": "Szakterület",
+            "titulus": "Titulus",
+        }
+        missing_labels = [labels.get(field, field) for field in missing]
+        flash("Hiányzó kötelező mezők: " + ", ".join(missing_labels), "danger")
+        return (
+            render_template(
+                "investigations/szakerto_szakkonzultans_bevonasa_form.html",
+                investigation=inv,
+                form_data=form_data,
+                generated_att=generated_att,
+                **summary_context,
+            ),
+            400,
+        )
+
+    cimzett_szerv = form_data["cimzett_szerv"].strip()
+    titulus_szerv = form_data["titulus_szerv"].strip()
+    actor_val = form_data["actor"].strip()
+    szakterulet_val = form_data["szakterulet"].strip()
+    titulus_val = form_data["titulus"].strip()
+
+    creation_date = fmt_budapest(now_utc(), "%Y.%m.%d")
+    iktatasi_szam = inv.case_number or ""
+    kulso_ugyirat = _external_case_number(inv).strip()
+    vezeto = _resolve_describer_full_name(inv) or ""
+    kirendelo_val = (inv.institution_name or "").strip() or "-"
+    szak = _resolve_expert_full_name(inv) or ""
+
+    case_identifier = inv.case_number or str(inv.id)
+    case_folder = ensure_investigation_folder(case_identifier)
+    template_path = (
+        Path(case_folder)
+        / ERTESITES_TEMPLATE_DIRNAME
+        / SZAKERTO_SZAKKONZULTANS_TEMPLATE_FILENAME
+    )
+    if not template_path.exists():
+        abort(404, description="A sablon nem található ehhez a vizsgálathoz.")
+
+    safe_case = file_safe_case_number(case_identifier)
+    output_path = (
+        Path(case_folder) / f"{safe_case}_szakerto_szakkonzultans_bevonasa.docx"
+    )
+
+    context = {
+        "cimzett_szerv": cimzett_szerv,
+        "cimzett-szerv": cimzett_szerv,
+        "cimzettszerv": cimzett_szerv,
+        "titulus_szerv": titulus_szerv,
+        "titulus-szerv": titulus_szerv,
+        "titulusszerv": titulus_szerv,
+        "actor": actor_val,
+        "szakterulet": szakterulet_val,
+        "titulus": titulus_val,
+        "kulso_ugyirat": kulso_ugyirat,
+        "kulso ugyirat": kulso_ugyirat,
+        "kulsougyirat": kulso_ugyirat,
+        "iktatasi_szam": iktatasi_szam,
+        "iktatasi szam": iktatasi_szam,
+        "iktatasiszam": iktatasi_szam,
+        "creation_date": creation_date,
+        "vezeto": vezeto,
+        "kirendelo": kirendelo_val,
+        "szak": szak,
+    }
+
+    try:
+        _render_docx_template(template_path, output_path, context)
+    except Exception as exc:  # noqa: BLE001
+        current_app.logger.exception(
+            "DOCX generation failed for szakértő / szakkonzultáns bevonása %s: %s",
+            inv.id,
+            exc,
+        )
+        flash("Hiba történt a dokumentum generálása közben.", "danger")
+        return (
+            render_template(
+                "investigations/szakerto_szakkonzultans_bevonasa_form.html",
+                investigation=inv,
+                form_data=form_data,
+                generated_att=generated_att,
+                **summary_context,
+            ),
+            500,
+        )
+
+    timestamp = now_utc()
+    filename = output_path.name
+    attachment = (
+        InvestigationAttachment.query.filter_by(
+            investigation_id=inv.id, filename=filename
+        )
+        .order_by(InvestigationAttachment.uploaded_at.desc())
+        .first()
+    )
+
+    if attachment is None:
+        attachment = InvestigationAttachment(
+            investigation_id=inv.id,
+            filename=filename,
+            category="generated",
+            uploaded_by=current_user.id,
+            uploaded_at=timestamp,
+        )
+        db.session.add(attachment)
+    else:
+        attachment.category = "generated"
+        attachment.uploaded_by = current_user.id
+        attachment.uploaded_at = timestamp
+
+    db.session.commit()
+
+    flash("Dokumentum sikeresen generálva.", "success")
+    return redirect(
+        url_for(
+            "investigations.leiro_szakerto_szakkonzultans_bevonasa",
+            id=inv.id,
+            generated_id=attachment.id,
+        )
     )
 
 
