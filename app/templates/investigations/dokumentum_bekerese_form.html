@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {{ super() }}
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block title %}Dokumentumok bekérése — űrlap{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+      {% set raw_case = investigation.case_number if investigation.case_number else investigation.id %}
+      {% set safe_case = (raw_case ~ '')|replace(':', '-')|replace('/', '-') %}
+      {% include "investigations/_adatok_card.html" %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold">
+          <h1 class="h5 mb-0">Dokumentumok bekérése</h1>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('investigations.leiro_dokumentum_bekerese', id=investigation.id) }}" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label for="cimzett_szerv" class="form-label text-muted small">Címzett szerv</label>
+              <input type="text" class="form-control" id="cimzett_szerv" name="cimzett_szerv" value="{{ form_data.cimzett_szerv }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="titulus_szerv" class="form-label text-muted small">Titulus (szerv)</label>
+              <input type="text" class="form-control" id="titulus_szerv" name="titulus_szerv" value="{{ form_data.titulus_szerv }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="actor" class="form-label text-muted small">Actor</label>
+              <input type="text" class="form-control" id="actor" name="actor" value="{{ form_data.actor }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="titulus" class="form-label text-muted small">Titulus</label>
+              <input type="text" class="form-control" id="titulus" name="titulus" value="{{ form_data.titulus }}" maxlength="160" required>
+            </div>
+
+            <div class="col-12">
+              <hr class="my-3">
+            </div>
+
+            {% for idx in range(1, 11) %}
+              <div class="col-md-6">
+                <label for="docs_{{ idx }}" class="form-label text-muted small">Kért dokumentum {{ idx }}</label>
+                <input type="text" class="form-control" id="docs_{{ idx }}" name="docs_{{ idx }}" value="{{ form_data['docs_' ~ idx] }}" maxlength="200">
+              </div>
+            {% endfor %}
+
+            <div class="col-12 d-flex align-items-center gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-earmark-word"></i>
+                Dokumentum generálása
+              </button>
+              <a class="btn btn-outline-secondary" href="{{ url_for('investigations.leiro_elvegzem', id=investigation.id) }}">Vissza a vizsgálathoz</a>
+              {% if generated_att %}
+                <a class="btn btn-success ms-auto" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=generated_att.id) }}">
+                  Letöltés: {{ generated_att.filename }}
+                </a>
+              {% endif %}
+            </div>
+          </form>
+          <p class="text-muted small mb-0 mt-3">
+            Sablon helye:
+            <code>
+              instance/uploads_investigations/{{ safe_case }}/DO-NOT-EDIT/dokumentum_bekerese.docx
+            </code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
