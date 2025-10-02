@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <h1 class="h4 mb-3">Változásnapló (teljes)</h1>
+
+  <form class="row gy-2 gx-2 align-items-end mb-3" method="get" action="{{ url_for('auth.admin_changelog') }}">
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="date_start">Dátumtól</label>
+      <input class="form-control" type="date" id="date_start" name="date_start" value="{{ date_start }}">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="date_end">Dátumig</label>
+      <input class="form-control" type="date" id="date_end" name="date_end" value="{{ date_end }}">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="actor">Szerkesztő</label>
+      <input class="form-control" type="text" id="actor" name="actor" value="{{ actor }}" placeholder="Név vagy azonosító">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="subject_type">Tárgy típusa</label>
+      <select class="form-select" id="subject_type" name="subject_type">
+        <option value="" {% if not subject_type %}selected{% endif %}>Összes</option>
+        <option value="case" {% if subject_type == 'case' %}selected{% endif %}>Ügy</option>
+        <option value="investigation" {% if subject_type == 'investigation' %}selected{% endif %}>Vizsgálat</option>
+      </select>
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="subject_id">Tárgy azonosító</label>
+      <input class="form-control" type="text" id="subject_id" name="subject_id" value="{{ subject_id }}" placeholder="ID">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="q">Keresés</label>
+      <input class="form-control" type="text" id="q" name="q" value="{{ q }}" placeholder="Mező / érték">
+    </div>
+    <div class="col-sm-6 col-md-3 col-lg-2">
+      <label class="form-label small text-uppercase" for="per_page">Találat oldalanként</label>
+      <select class="form-select" id="per_page" name="per_page">
+        {% for option in per_page_options %}
+          <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 d-flex flex-wrap gap-2 mt-2">
+      <button class="btn btn-primary" type="submit">Szűrés</button>
+      <a class="btn btn-outline-secondary" href="{{ url_for('auth.admin_changelog') }}">Szűrők törlése</a>
+      <span class="flex-grow-1"></span>
+      <a class="btn btn-outline-success" href="{{ url_for('auth.admin_changelog_csv', **export_args) }}">CSV</a>
+      <a class="btn btn-outline-info" href="{{ url_for('auth.admin_changelog_jsonl', **export_args) }}">JSONL</a>
+    </div>
+  </form>
+
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="text-nowrap">Időpont (Budapest)</th>
+          <th class="text-nowrap">Típus</th>
+          <th>Tárgy</th>
+          <th>Mező</th>
+          <th>Régi érték</th>
+          <th>Új érték</th>
+          <th class="text-nowrap">Szerkesztő</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="text-nowrap">{{ row.timestamp_display }}</td>
+            <td class="text-nowrap">{{ 'Ügy' if row.type == 'case' else 'Vizsgálat' }}</td>
+            <td class="text-nowrap">{{ row.subject_label }}</td>
+            <td><code>{{ row.field }}</code></td>
+            <td class="small text-break">{{ row.old }}</td>
+            <td class="small text-break">{{ row.new }}</td>
+            <td class="text-nowrap">{{ row.actor }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">Nincs találat.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <nav class="mt-3" aria-label="Változásnapló oldalak">
+    <ul class="pagination pagination-sm mb-0">
+      {% for p in range(1, total_pages + 1) %}
+        {% set args = request_args.copy() %}
+        {% set _ = args.update({'page': p}) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('auth.admin_changelog', **args) }}">{{ p }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

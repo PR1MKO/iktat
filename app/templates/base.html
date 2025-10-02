@@ -115,6 +115,11 @@
                 <i class="bi bi-people"></i> Felhasználók
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link {% if request.endpoint in ['auth.admin_changelog', 'auth.admin_changelog_csv', 'auth.admin_changelog_jsonl'] %}active{% endif %}" href="{{ url_for('auth.admin_changelog') }}">
+                <i class="bi bi-clock-history"></i> Változásnapló (teljes)
+              </a>
+            </li>
             {% endif %}
           </ul>
         </nav>

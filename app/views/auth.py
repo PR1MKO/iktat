@@ -3,9 +3,12 @@ import codecs
 import csv
 import hashlib
 import io
+import json
 import shutil
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Optional
 
 from flask import (
     Blueprint,
@@ -20,7 +23,7 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, false, func, or_
 from werkzeug import exceptions
 from wtforms.validators import DataRequired
 
@@ -28,7 +31,7 @@ from app import db
 from app.audit import log_action
 from app.email_utils import send_email
 from app.forms import AdminUserForm, CaseIdentifierForm
-from app.investigations.models import Investigation
+from app.investigations.models import Investigation, InvestigationChangeLog
 from app.investigations.utils import user_display_name
 from app.models import AuditLog, Case, ChangeLog, TaskMessage, UploadedFile, User
 from app.paths import case_root, ensure_case_folder, file_safe_case_number
@@ -1061,6 +1064,353 @@ def assign_pathologist(case_id):
         changelog_entries=changelog_entries,
         uploads=uploads,
         caps=caps,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Admin – Full changelog aggregation
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class AdminChangelogFilters:
+    q: str
+    actor: str
+    subject_type: str
+    subject_id: Optional[int]
+    subject_id_raw: str
+    date_start_raw: str
+    date_end_raw: str
+    start_utc: Optional[datetime]
+    end_utc: Optional[datetime]
+    page: int
+    per_page: int
+    offset: int
+
+
+def _parse_admin_changelog_filters(args) -> AdminChangelogFilters:
+    q = (args.get("q") or "").strip()
+    actor = (args.get("actor") or "").strip()
+
+    subject_type = (args.get("subject_type") or "").strip().lower()
+    if subject_type not in {"case", "investigation"}:
+        subject_type = ""
+
+    subject_id_raw = (args.get("subject_id") or "").strip()
+    try:
+        subject_id_val = int(subject_id_raw)
+    except (TypeError, ValueError):
+        subject_id_val = None
+
+    date_start_raw = (args.get("date_start") or "").strip()
+    date_end_raw = (args.get("date_end") or "").strip()
+
+    def _parse_date(val: str, *, at_end: bool = False) -> Optional[datetime]:
+        if not val:
+            return None
+        try:
+            parsed = datetime.strptime(val, "%Y-%m-%d")
+        except ValueError:
+            return None
+        if at_end:
+            parsed = parsed.replace(hour=23, minute=59, second=59, microsecond=999999)
+        local = parsed.replace(tzinfo=BUDAPEST_TZ)
+        return local.astimezone(timezone.utc)
+
+    start_utc = _parse_date(date_start_raw)
+    end_utc = _parse_date(date_end_raw, at_end=True)
+
+    def _parse_int(name: str, default: int) -> int:
+        raw = args.get(name)
+        if raw in (None, ""):
+            return default
+        try:
+            return int(raw)
+        except ValueError:
+            return default
+
+    page = max(_parse_int("page", 1), 1)
+    per_page = _parse_int("per_page", 50)
+    per_page = min(max(per_page, 1), 200)
+    offset = (page - 1) * per_page
+
+    return AdminChangelogFilters(
+        q=q,
+        actor=actor,
+        subject_type=subject_type,
+        subject_id=subject_id_val,
+        subject_id_raw=subject_id_raw,
+        date_start_raw=date_start_raw,
+        date_end_raw=date_end_raw,
+        start_utc=start_utc,
+        end_utc=end_utc,
+        page=page,
+        per_page=per_page,
+        offset=offset,
+    )
+
+
+def _build_admin_changelog_queries(filters: AdminChangelogFilters):
+    case_query = ChangeLog.query
+    inv_query = InvestigationChangeLog.query
+
+    if filters.start_utc:
+        case_query = case_query.filter(ChangeLog.timestamp >= filters.start_utc)
+        inv_query = inv_query.filter(
+            InvestigationChangeLog.timestamp >= filters.start_utc
+        )
+    if filters.end_utc:
+        case_query = case_query.filter(ChangeLog.timestamp <= filters.end_utc)
+        inv_query = inv_query.filter(
+            InvestigationChangeLog.timestamp <= filters.end_utc
+        )
+
+    if filters.actor:
+        like = f"%{filters.actor}%"
+        case_query = case_query.filter(ChangeLog.edited_by.ilike(like))
+
+        inv_conditions = []
+        if filters.actor.isdigit():
+            inv_conditions.append(
+                InvestigationChangeLog.edited_by == int(filters.actor)
+            )
+        else:
+            user_match = (
+                User.query.with_entities(User.id)
+                .filter(
+                    or_(
+                        User.username.ilike(like),
+                        User.screen_name.ilike(like),
+                        func.coalesce(User.full_name, "").ilike(like),
+                    )
+                )
+                .all()
+            )
+            user_ids = [row.id if hasattr(row, "id") else row[0] for row in user_match]
+            if user_ids:
+                inv_conditions.append(InvestigationChangeLog.edited_by.in_(user_ids))
+
+        if inv_conditions:
+            inv_query = inv_query.filter(or_(*inv_conditions))
+        else:
+            inv_query = inv_query.filter(false())
+
+    if filters.subject_id is not None:
+        if filters.subject_type == "case":
+            case_query = case_query.filter(ChangeLog.case_id == filters.subject_id)
+            inv_query = inv_query.filter(false())
+        elif filters.subject_type == "investigation":
+            inv_query = inv_query.filter(
+                InvestigationChangeLog.investigation_id == filters.subject_id
+            )
+            case_query = case_query.filter(false())
+        else:
+            case_query = case_query.filter(ChangeLog.case_id == filters.subject_id)
+            inv_query = inv_query.filter(
+                InvestigationChangeLog.investigation_id == filters.subject_id
+            )
+
+    if filters.q:
+        like = f"%{filters.q}%"
+        case_query = case_query.filter(
+            or_(
+                ChangeLog.field_name.ilike(like),
+                ChangeLog.old_value.ilike(like),
+                ChangeLog.new_value.ilike(like),
+            )
+        )
+        inv_query = inv_query.filter(
+            or_(
+                InvestigationChangeLog.field_name.ilike(like),
+                InvestigationChangeLog.old_value.ilike(like),
+                InvestigationChangeLog.new_value.ilike(like),
+            )
+        )
+
+    return case_query, inv_query
+
+
+def _execute_admin_changelog_query(query, limit: Optional[int]):
+    if limit is None:
+        return query.all()
+    if limit <= 0:
+        return []
+    return query.limit(limit).all()
+
+
+def _serialize_case_log(entry: ChangeLog) -> dict:
+    local_dt = to_budapest(entry.timestamp)
+    iso = local_dt.isoformat(timespec="seconds") if local_dt else ""
+    return {
+        "type": "case",
+        "timestamp": entry.timestamp,
+        "timestamp_display": fmt_budapest(entry.timestamp, "%Y-%m-%d %H:%M:%S"),
+        "timestamp_iso": iso,
+        "actor": entry.edited_by or "",
+        "subject_id": entry.case_id,
+        "subject_label": f"Ügy #{entry.case_id}",
+        "field": entry.field_name,
+        "old": entry.old_value or "",
+        "new": entry.new_value or "",
+        "old_raw": entry.old_value,
+        "new_raw": entry.new_value,
+    }
+
+
+def _serialize_investigation_log(entry: InvestigationChangeLog) -> dict:
+    local_dt = to_budapest(entry.timestamp)
+    iso = local_dt.isoformat(timespec="seconds") if local_dt else ""
+    actor = "" if entry.edited_by is None else str(entry.edited_by)
+    return {
+        "type": "investigation",
+        "timestamp": entry.timestamp,
+        "timestamp_display": fmt_budapest(entry.timestamp, "%Y-%m-%d %H:%M:%S"),
+        "timestamp_iso": iso,
+        "actor": actor,
+        "subject_id": entry.investigation_id,
+        "subject_label": f"Vizsgálat #{entry.investigation_id}",
+        "field": entry.field_name,
+        "old": entry.old_value or "",
+        "new": entry.new_value or "",
+        "old_raw": entry.old_value,
+        "new_raw": entry.new_value,
+    }
+
+
+def _collect_admin_changelog(filters: AdminChangelogFilters, *, limit: Optional[int]):
+    case_query, inv_query = _build_admin_changelog_queries(filters)
+
+    total = case_query.order_by(None).count() + inv_query.order_by(None).count()
+
+    case_rows = _execute_admin_changelog_query(
+        case_query.order_by(ChangeLog.timestamp.desc()), limit
+    )
+    inv_rows = _execute_admin_changelog_query(
+        inv_query.order_by(InvestigationChangeLog.timestamp.desc()), limit
+    )
+
+    combined = [_serialize_case_log(row) for row in case_rows]
+    combined.extend(_serialize_investigation_log(row) for row in inv_rows)
+
+    zero = datetime.min.replace(tzinfo=timezone.utc)
+    combined.sort(key=lambda item: item.get("timestamp") or zero, reverse=True)
+
+    return combined, total
+
+
+@auth_bp.route("/admin/changelog")
+@login_required
+@roles_required("admin")
+def admin_changelog():
+    filters = _parse_admin_changelog_filters(request.args)
+    limit = filters.offset + filters.per_page
+    if limit <= 0:
+        limit = filters.per_page
+    entries, total = _collect_admin_changelog(filters, limit=limit)
+    page_rows = entries[filters.offset : filters.offset + filters.per_page]
+
+    total_pages = (total + filters.per_page - 1) // filters.per_page if total else 1
+    request_args = request.args.to_dict(flat=True)
+    export_args = dict(request_args)
+    export_args.pop("page", None)
+    export_args.pop("per_page", None)
+
+    per_page_options = sorted({1, 10, 25, 50, 100, 200, filters.per_page})
+
+    return render_template(
+        "admin/changelog.html",
+        rows=page_rows,
+        total=total,
+        page=filters.page,
+        per_page=filters.per_page,
+        total_pages=max(total_pages, 1),
+        q=filters.q,
+        actor=filters.actor,
+        subject_type=filters.subject_type,
+        subject_id=filters.subject_id_raw,
+        date_start=filters.date_start_raw,
+        date_end=filters.date_end_raw,
+        per_page_options=per_page_options,
+        export_args=export_args,
+        request_args=request_args,
+    )
+
+
+@auth_bp.route("/admin/changelog.csv")
+@login_required
+@roles_required("admin")
+def admin_changelog_csv():
+    filters = _parse_admin_changelog_filters(request.args)
+    entries, _ = _collect_admin_changelog(filters, limit=None)
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(
+        [
+            "Típus",
+            "Időpont (Budapest)",
+            "Szerkesztő",
+            "Tárgy",
+            "Mező",
+            "Régi érték",
+            "Új érték",
+        ]
+    )
+    for entry in entries:
+        writer.writerow(
+            [
+                "Ügy" if entry["type"] == "case" else "Vizsgálat",
+                entry["timestamp_display"],
+                entry["actor"],
+                entry["subject_label"],
+                entry["field"],
+                entry["old"],
+                entry["new"],
+            ]
+        )
+
+    bom = codecs.BOM_UTF8.decode("utf-8")
+    payload = bom + output.getvalue()
+    return Response(
+        payload,
+        mimetype="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=admin_full_changelog.csv",
+        },
+    )
+
+
+@auth_bp.route("/admin/changelog.jsonl")
+@login_required
+@roles_required("admin")
+def admin_changelog_jsonl():
+    filters = _parse_admin_changelog_filters(request.args)
+    entries, _ = _collect_admin_changelog(filters, limit=None)
+
+    buffer = io.StringIO()
+    for entry in entries:
+        payload = {
+            "type": entry["type"],
+            "timestamp_local": entry["timestamp_iso"],
+            "timestamp_display": entry["timestamp_display"],
+            "actor": entry["actor"],
+            "subject": {
+                "type": entry["type"],
+                "id": entry["subject_id"],
+                "label": entry["subject_label"],
+            },
+            "field": entry["field"],
+            "old": entry["old_raw"],
+            "new": entry["new_raw"],
+        }
+        buffer.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/jsonl; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=admin_full_changelog.jsonl",
+        },
     )
 
 
