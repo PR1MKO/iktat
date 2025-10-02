@@ -1,3 +1,5 @@
+﻿import sqlalchemy as sa
+
 from app import db
 from app.utils.time_utils import now_utc
 
@@ -23,7 +25,7 @@ class Investigation(db.Model):
     institution_name = db.Column(db.String(128), nullable=False)
 
     assignment_type = db.Column(
-        db.Enum("INTEZETI", "SZAKÉRTŐI", name="assignment_type"),
+        db.Enum("INTEZETI", "SZAKĂ‰RTĹI", name="assignment_type"),
         nullable=False,
         default="INTEZETI",
     )
@@ -31,8 +33,8 @@ class Investigation(db.Model):
     status = db.Column(
         db.String(32),
         nullable=False,
-        default="beérkezett",
-        server_default=db.text("'beérkezett'"),
+        default="beĂ©rkezett",
+        server_default=db.text("'beĂ©rkezett'"),
     )
 
     registration_time = db.Column(
@@ -116,3 +118,11 @@ class InvestigationChangeLog(db.Model):
     timestamp = db.Column(db.DateTime(timezone=True), default=now_utc, nullable=False)
 
     investigation = db.relationship("Investigation", back_populates="change_logs")
+
+    __table_args__ = (
+        sa.Index(
+            "ix_investigation_change_log_inv_id_ts",
+            "investigation_id",
+            "timestamp",
+        ),
+    )
