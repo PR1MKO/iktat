@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+  {{ super() }}
+{% endblock %}
+
+{% block sidebar %}{% endblock %}
+
+{% block title %}Szakkonzultánsi nyilatkozat — űrlap{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-10 offset-md-1">
+      {% set raw_case = investigation.case_number if investigation.case_number else investigation.id %}
+      {% set safe_case = (raw_case ~ '')|replace(':', '-')|replace('/', '-') %}
+      {% include "investigations/_adatok_card.html" %}
+
+      <div class="card shadow-sm mb-3">
+        <div class="card-header fw-bold">
+          <h1 class="h5 mb-0">Szakkonzultánsi nyilatkozat</h1>
+        </div>
+        <div class="card-body">
+          <form method="post" action="{{ url_for('investigations.leiro_szakkonzultansi_nyilatkozat', id=investigation.id) }}" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label for="actor" class="form-label text-muted small">Actor</label>
+              <input type="text" class="form-control" id="actor" name="actor" value="{{ form_data.actor }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="szakterulet" class="form-label text-muted small">Szakterület</label>
+              <input type="text" class="form-control" id="szakterulet" name="szakterulet" value="{{ form_data.szakterulet }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="szak_cons" class="form-label text-muted small">Szakkonzultáns neve</label>
+              <input type="text" class="form-control" id="szak_cons" name="szak_cons" value="{{ form_data.szak_cons }}" maxlength="160" required>
+            </div>
+            <div class="col-md-6">
+              <label for="titulus_cons" class="form-label text-muted small">Szakkonzultáns titulus</label>
+              <input type="text" class="form-control" id="titulus_cons" name="titulus_cons" value="{{ form_data.titulus_cons }}" maxlength="160" required>
+            </div>
+            <div class="col-12 d-flex align-items-center gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-earmark-word"></i>
+                Dokumentum generálása
+              </button>
+              <a class="btn btn-outline-secondary" href="{{ url_for('investigations.leiro_elvegzem', id=investigation.id) }}">Vissza a vizsgálathoz</a>
+              {% if generated_att %}
+                <a class="btn btn-success ms-auto" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=generated_att.id) }}">
+                  Letöltés: {{ generated_att.filename }}
+                </a>
+              {% endif %}
+            </div>
+          </form>
+          <p class="text-muted small mb-0 mt-3">
+            Sablon helye:
+            <code>instance/uploads_investigations/{{ safe_case }}/DO-NOT-EDIT/szakkonzultansi_nyilatkozat.docx</code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

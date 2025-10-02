@@ -27,6 +27,12 @@
         <i class="bi bi-file-earmark-word"></i> Dokumentumok bekérése
       </a>
       <a
+        href="{{ url_for('investigations.leiro_szakkonzultansi_nyilatkozat', id=investigation.id) }}"
+        class="btn btn-outline-primary"
+      >
+        <i class="bi bi-file-earmark-word"></i> Szakkonzultánsi nyilatkozat
+      </a>
+      <a
         href="{{ url_for('investigations.leiro_tajekoztatas_ugy_szignalasarol', id=investigation.id) }}"
         class="btn btn-outline-primary"
       >
