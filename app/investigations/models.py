@@ -25,10 +25,11 @@ class Investigation(db.Model):
     institution_name = db.Column(db.String(128), nullable=False)
 
     assignment_type = db.Column(
-        db.Enum("INTEZETI", "SZAKĂ‰RTĹI", name="assignment_type"),
+        db.Enum("INTEZETI", "SZAKÉRTŐI", name="assignment_type"),
         nullable=False,
         default="INTEZETI",
     )
+
     assigned_expert_id = db.Column(db.Integer, index=True)
     status = db.Column(
         db.String(32),
