@@ -486,6 +486,8 @@ def create_case():
             missing.append("Típus")
         if not request.form.get("beerk_modja"):
             missing.append("Beérkezés módja")
+        if not request.form.get("institution_name", "").strip():
+            missing.append("Intézmény neve")
         if missing:
             flash(", ".join(missing) + " kitöltése kötelező.")
         if not form.validate():

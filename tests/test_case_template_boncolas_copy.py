@@ -29,7 +29,12 @@ def test_boncolas_templates_copied(client, app):
 
     with client:
         login(client, "admin", "secret")
-        data = {"case_type": "test", "beerk_modja": "Email", "temp_id": "T1"}
+        data = {
+            "case_type": "test",
+            "beerk_modja": "Email",
+            "temp_id": "T1",
+            "institution_name": "Clinic",
+        }
         resp = client.post("/cases/new", data=data, follow_redirects=False)
         assert resp.status_code == 302
 
@@ -54,7 +59,12 @@ def test_boncolas_missing_template_dir_warns(client, app, caplog):
     with caplog.at_level(logging.WARNING):
         with client:
             login(client, "admin", "secret")
-            data = {"case_type": "test", "beerk_modja": "Email", "temp_id": "T2"}
+            data = {
+                "case_type": "test",
+                "beerk_modja": "Email",
+                "temp_id": "T2",
+                "institution_name": "Clinic",
+            }
             resp = client.post("/cases/new", data=data, follow_redirects=False)
             assert resp.status_code == 302
     assert any("Case template dir missing" in r.message for r in caplog.records)
@@ -72,7 +82,12 @@ def test_init_case_dirs_idempotent(client, app):
 
     with client:
         login(client, "admin", "secret")
-        data = {"case_type": "test", "beerk_modja": "Email", "temp_id": "T3"}
+        data = {
+            "case_type": "test",
+            "beerk_modja": "Email",
+            "temp_id": "T3",
+            "institution_name": "Clinic",
+        }
         resp = client.post("/cases/new", data=data, follow_redirects=False)
         assert resp.status_code == 302
 

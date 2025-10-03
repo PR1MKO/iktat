@@ -18,6 +18,7 @@ def test_case_creation_success(client, app):
             "deceased_name": "John Doe",
             "beerk_modja": "Email",
             "temp_id": "TEMP1",
+            "institution_name": "Clinic",
         }
         resp = client.post("/cases/new", data=data, follow_redirects=False)
         assert resp.status_code == 302
@@ -41,6 +42,7 @@ def test_changelog_created_on_case_creation(client, app):
             "case_type": "test",
             "beerk_modja": "Email",
             "temp_id": "TEMP2",
+            "institution_name": "Clinic",
         }
         resp = client.post("/cases/new", data=data, follow_redirects=False)
         assert resp.status_code == 302
@@ -62,7 +64,7 @@ def test_case_creation_missing_required(client, app):
         resp = client.post("/cases/new", data={}, follow_redirects=True)
         assert resp.status_code == 200
         assert (
-            b"T\xc3\xadpus, Be\xc3\xa9rkez\xc3\xa9s m\xc3\xb3dja kit\xc3\xb6lt\xc3\xa9se k\xc3\xb6telez\xc5\x91."
+            b"T\xc3\xadpus, Be\xc3\xa9rkez\xc3\xa9s m\xc3\xb3dja, Int\xc3\xa9zm\xc3\xa9ny neve kit\xc3\xb6lt\xc3\xa9se k\xc3\xb6telez\xc5\x91."
             in resp.data
         )
     with app.app_context():
@@ -89,6 +91,7 @@ def test_case_creation_requires_identifier(client, app):
         data = {
             "case_type": "test",
             "beerk_modja": "Email",
+            "institution_name": "Clinic",
         }
         resp = client.post("/cases/new", data=data, follow_redirects=True)
         assert resp.status_code == 200

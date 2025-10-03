@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% import 'includes/case_macros.html' as cm with context %}
 
+{% block sidebar %}
+  {% if current_user and current_user.role|lower == 'iroda' %}
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
 {% block title %}Új ügy létrehozása{% endblock %}
 
 {% block content %}
@@ -158,13 +165,16 @@
 
   <!-- Intézmény neve -->
   <div class="col-md-12">
-    <label for="institution_name" class="form-label">Intézmény neve</label>
+    <label for="institution_name" class="form-label">Intézmény neve *</label>
     <input type="text"
       id="institution_name"
       name="institution_name"
       class="form-control"
       aria-label="Intézmény neve" title="Intézmény neve"
-      value="{{ prefill.get('institution_name', '') }}">
+      value="{{ prefill.get('institution_name', '') }}"
+      required
+      aria-required="true"
+      autocomplete="organization">
   </div>
 
   <!-- Submit buttons -->

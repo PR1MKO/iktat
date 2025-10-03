@@ -28,7 +28,7 @@ def test_cases_new_preserves_inputs_on_invalid_submit_prg(client, app):
         assert follow.status_code == 200
         html = follow.data.decode()
 
-        assert "Típus kitöltése kötelező." in html
+        assert "Típus, Intézmény neve kitöltése kötelező." in html
         assert re.search(r'name="temp_id"[^>]*value="TMP-42"', html)
         assert re.search(r'name="deceased_name"[^>]*value="John Doe"', html)
         assert re.search(r'<option value="Email"[^>]*selected', html)

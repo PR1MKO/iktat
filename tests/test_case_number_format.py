@@ -10,7 +10,12 @@ def test_new_case_number_format(client, app):
         login(client, "admin", "secret")
         resp = client.post(
             "/cases/new",
-            data={"case_type": "t", "beerk_modja": "Email", "temp_id": "TMP"},
+            data={
+                "case_type": "t",
+                "beerk_modja": "Email",
+                "temp_id": "TMP",
+                "institution_name": "Clinic",
+            },
             follow_redirects=False,
         )
         assert resp.status_code == 302

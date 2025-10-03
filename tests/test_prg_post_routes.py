@@ -14,7 +14,11 @@ def setup_login_fail(app, client, monkeypatch):
 def setup_case_new_fail(app, client, monkeypatch):
     create_user("admin", "secret", "admin")
     login(client, "admin", "secret")
-    return "/cases/new", {"case_type": "", "beerk_modja": ""}, "kitöltése kötelező."
+    return (
+        "/cases/new",
+        {"case_type": "", "beerk_modja": "", "institution_name": ""},
+        "Típus, Beérkezés módja, Intézmény neve kitöltése kötelező.",
+    )
 
 
 def setup_case_edit_fail(app, client, monkeypatch):
