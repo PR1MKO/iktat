@@ -16,13 +16,30 @@
   </div>
   
   <div class="row mb-3">
-    <div class="col-12">
+    <div class="col-12 col-md-10 offset-md-1">
       {{ cm.alapadatok(case) }}
     </div>
   </div>
 
   <div class="row mb-4">
-    <div class="col-12">
+    <div class="col-12 col-md-10 offset-md-1">
+      {% set tox_radio_inline %}
+        <div class="d-flex align-items-center flex-wrap gap-2">
+          <span class="fw-semibold">Tartalmaz-e toxikológiai vizsgálatot?</span>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input" type="radio" name="tox_ordered" id="tox_no" value="nem"
+                   {% if not case.tox_ordered %}checked{% endif %}
+                   form="case-documents-form">
+            <label class="form-check-label" for="tox_no">Nem</label>
+          </div>
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input" type="radio" name="tox_ordered" id="tox_yes" value="igen"
+                   {% if case.tox_ordered %}checked{% endif %}
+                   form="case-documents-form">
+            <label class="form-check-label" for="tox_yes">Igen</label>
+          </div>
+        </div>
+      {% endset %}
       {{ cm.file_upload_block(
           form_id='file-upload-form',
           case_id=case.id,
@@ -31,32 +48,29 @@
           input_name='file',
           multiple=True,
           label='Fájl feltöltése',
-          btn_label='Feltöltés'
+          btn_label='Feltöltés',
+          extra_inline=tox_radio_inline
       ) }}
     </div>
   </div>
 
-  <form method="post" class="mb-0">
+  <form id="case-documents-form" method="post" action="{{ url_for('auth.case_documents', case_id=case.id) }}" class="mb-0">
     {{ utils.csrf_hidden(form if form is defined else None) }}
-    <div class="row">
-      <div class="col-12">
-        <label class="form-check mb-3">
-          <input class="form-check-input" type="checkbox" name="tox_ordered" id="tox_ordered" {% if case.tox_ordered %}checked{% endif %}>
-          A végzés toxikológiai vizsgálatot is tartalmaz?
-        </label>
-      </div>
-    </div>
 
     <div class="row mt-3 mb-4">
-      <div class="col-12">
+      <div class="col-12 col-md-10 offset-md-1">
         {{ cm.uploaded_files(case) }}
       </div>
     </div>
 
     {% set has_files = (case.uploaded_file_records|default([], true)|length) > 0 %}
-    <div class="d-flex justify-content-between mt-4">
-      <a href="{{ url_for('auth.create_case') }}" class="btn btn-secondary">Vissza</a>
-      <button type="submit" class="btn btn-primary"{% if not has_files %} disabled aria-disabled="true" title="Töltsön fel legalább 1 fájlt a folytatáshoz."{% endif %}>Tovább</button>
+    <div class="row mt-4">
+      <div class="col-12 col-md-10 offset-md-1">
+        <div class="d-flex justify-content-between">
+          <a href="{{ url_for('auth.create_case') }}" class="btn btn-secondary">Vissza</a>
+          <button type="submit" class="btn btn-primary"{% if not has_files %} disabled aria-disabled="true" title="Töltsön fel legalább 1 fájlt a folytatáshoz."{% endif %}>Tovább</button>
+        </div>
+      </div>
     </div>
   </form>
 </div>

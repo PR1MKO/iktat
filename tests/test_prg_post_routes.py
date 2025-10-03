@@ -70,7 +70,7 @@ def setup_case_documents_fail(app, client, monkeypatch):
     monkeypatch.setattr(db.session, "commit", boom)
     return (
         f"/cases/{case.id}/documents",
-        {"tox_ordered": "1"},
+        {"tox_ordered": "igen"},
         "Valami hiba történt. Próbáld újra.",
     )
 

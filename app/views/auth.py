@@ -774,7 +774,8 @@ def case_documents(case_id):
         return resp
     caps = capabilities_for(current_user)
     if request.method == "POST":
-        case.tox_ordered = bool(request.form.get("tox_ordered"))
+        tox_value = (request.form.get("tox_ordered") or "").strip().lower()
+        case.tox_ordered = tox_value in {"1", "true", "on", "igen", "yes", "y"}
         try:
             db.session.commit()
         except Exception as e:  # noqa: BLE001

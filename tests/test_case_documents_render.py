@@ -44,7 +44,7 @@ def test_iroda_access_and_next_requires_upload(client, app):
 
     resp = client.post(
         f"/cases/{cid}/documents",
-        data={"tox_ordered": "y"},
+        data={"tox_ordered": "igen"},
         follow_redirects=True,
     )
     html = resp.get_data(as_text=True)
@@ -63,7 +63,7 @@ def test_iroda_access_and_next_requires_upload(client, app):
 
     next_resp = client.post(
         f"/cases/{cid}/documents",
-        data={"tox_ordered": "y"},
+        data={"tox_ordered": "igen"},
         follow_redirects=False,
     )
     assert next_resp.status_code == 302

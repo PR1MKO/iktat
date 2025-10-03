@@ -157,7 +157,7 @@
 {% endmacro %}
 
 {# File upload block with accessible labeling #}
-{% macro file_upload_block(upload_url=None, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés', extra_fields={}, categories=None, case_id=None) %}
+{% macro file_upload_block(upload_url=None, input_name='result_file', form_id='file-upload-form', multiple=False, label='Fájl feltöltése', btn_label='Feltöltés', extra_fields={}, categories=None, case_id=None, extra_inline=None) %}
 {# Prefer explicit upload_url; otherwise build from case_id #}
 <form id="{{ form_id }}"
       action="{{ upload_url or url_for('auth.upload_file', case_id=case_id) }}"
@@ -212,6 +212,9 @@
   >
     Kategória megadása kötelező.
   </div>
+  {% if extra_inline %}
+  <div class="ms-2 d-flex align-items-center gap-2">{{ extra_inline|safe }}</div>
+  {% endif %}
   {% if caps['can_upload_case'] %}
   <button type="submit" class="btn btn-outline-success upload-btn" disabled>{{ btn_label }}</button>
   {% endif %}
