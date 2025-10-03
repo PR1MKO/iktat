@@ -14,6 +14,12 @@
       <h3 class="h4 mb-0"><small>Dokumentumok feltöltése – {{ case.case_number }}</small></h3>
     </div>
   </div>
+  
+  <div class="row mb-3">
+    <div class="col-12">
+      {{ cm.alapadatok(case) }}
+    </div>
+  </div>
 
   <div class="row mb-4">
     <div class="col-12">
@@ -30,21 +36,27 @@
     </div>
   </div>
 
-  <div class="row mt-3 mb-4">
-    <div class="col-12">
-      {{ cm.uploaded_files(case) }}
-    </div>
-  </div>
-
-  <form method="post">
+  <form method="post" class="mb-0">
     {{ utils.csrf_hidden(form if form is defined else None) }}
-    <label class="form-check mb-3">
-      <input class="form-check-input" type="checkbox" name="tox_ordered" id="tox_ordered" {% if case.tox_ordered %}checked{% endif %}>
-      A végzés toxikológiai vizsgálatot is tartalmaz?
-    </label>
+    <div class="row">
+      <div class="col-12">
+        <label class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="tox_ordered" id="tox_ordered" {% if case.tox_ordered %}checked{% endif %}>
+          A végzés toxikológiai vizsgálatot is tartalmaz?
+        </label>
+      </div>
+    </div>
+
+    <div class="row mt-3 mb-4">
+      <div class="col-12">
+        {{ cm.uploaded_files(case) }}
+      </div>
+    </div>
+
+    {% set has_files = (case.uploaded_file_records|default([], true)|length) > 0 %}
     <div class="d-flex justify-content-between mt-4">
       <a href="{{ url_for('auth.create_case') }}" class="btn btn-secondary">Vissza</a>
-      <button type="submit" class="btn btn-primary">Tovább</button>
+      <button type="submit" class="btn btn-primary"{% if not has_files %} disabled aria-disabled="true" title="Töltsön fel legalább 1 fájlt a folytatáshoz."{% endif %}>Tovább</button>
     </div>
   </form>
 </div>

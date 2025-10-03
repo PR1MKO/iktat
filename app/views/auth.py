@@ -789,6 +789,20 @@ def case_documents(case_id):
                 cat_options=get_upload_categories(),
                 caps=caps,
             )
+        has_files = (
+            bool(getattr(case, "uploaded_file_records", None))
+            and len(case.uploaded_file_records) > 0
+        )
+        if not has_files:
+            flash("Legalább 1 fájl feltöltése kötelező a folytatáshoz.", "danger")
+            if current_app.config.get("STRICT_PRG_ENABLED", True):
+                return redirect(url_for("auth.case_documents", case_id=case_id))
+            return render_template(
+                "case_documents.html",
+                case=case,
+                cat_options=get_upload_categories(),
+                caps=caps,
+            )
         return redirect(url_for("auth.edit_case", case_id=case_id))
     return render_template(
         "case_documents.html",
