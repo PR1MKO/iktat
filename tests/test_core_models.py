@@ -91,10 +91,14 @@ def test_change_log_created_on_update(app):
         case.deceased_name = "New"
         db.session.commit()
 
-        logs = ChangeLog.query.filter_by(case_id=case.id).all()
-        assert len(logs) == 1
-        log = logs[0]
-        assert log.field_name == "deceased_name"
-        assert log.new_value == "New"
-        assert log.edited_by == "system"
-        assert log.case == case
+        logs = (
+            ChangeLog.query.filter_by(case_id=case.id, field_name="deceased_name")
+            .order_by(ChangeLog.id)
+            .all()
+        )
+        assert len(logs) >= 2  # insert snapshot + update diff
+        update_log = logs[-1]
+        assert update_log.old_value == "Old"
+        assert update_log.new_value == "New"
+        assert update_log.edited_by == "system"
+        assert update_log.case == case

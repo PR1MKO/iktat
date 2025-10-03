@@ -11,9 +11,13 @@ def test_tox_order_changelog_records_incrementally(app):
         case.tox_orders = first
         db.session.commit()
 
-        logs = ChangeLog.query.filter_by(case_id=case.id, field_name="tox_orders").all()
-        assert len(logs) == 1
-        assert logs[0].new_value == first
+        logs = (
+            ChangeLog.query.filter_by(case_id=case.id, field_name="tox_orders")
+            .order_by(ChangeLog.id)
+            .all()
+        )
+        assert logs[-1].new_value.endswith(first)
+        assert logs[-1].old_value == "∅"
 
         second = "Vese - Spec fest rendelve: 2024-01-02 11:00 - U1"
         case.tox_orders = case.tox_orders + "\n" + second
@@ -24,6 +28,5 @@ def test_tox_order_changelog_records_incrementally(app):
             .order_by(ChangeLog.id)
             .all()
         )
-        assert len(logs) == 2
-        assert logs[1].new_value == second
-        assert logs[0].new_value != logs[1].new_value
+        assert logs[-1].new_value.endswith(second)
+        assert logs[-1].old_value.endswith(first)

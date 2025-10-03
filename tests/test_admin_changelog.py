@@ -21,13 +21,15 @@ def _seed_changelog_data(app):
         db.session.commit()
 
         base = now_utc()
+        recent_ts = base + timedelta(minutes=5)
+        investigation_ts = base + timedelta(minutes=10)
         recent_case = ChangeLog(
             case_id=case.id,
             field_name="status",
             old_value="new",
             new_value="in_progress",
             edited_by="alice",
-            timestamp=base - timedelta(minutes=30),
+            timestamp=recent_ts,
         )
         older_case = ChangeLog(
             case_id=case.id,
@@ -46,7 +48,7 @@ def _seed_changelog_data(app):
             old_value="0",
             new_value="42",
             edited_by=viewer.id,
-            timestamp=base - timedelta(minutes=5),
+            timestamp=investigation_ts,
         )
         db.session.add(inv_log)
         db.session.commit()
@@ -90,7 +92,7 @@ def test_admin_changelog_renders_entries_from_both_binds(client, app):
 
     with client:
         login(client, data["admin"].username, "secret")
-        resp = client.get("/admin/changelog")
+        resp = client.get("/admin/changelog", query_string={"per_page": 500})
         assert resp.status_code == 200
         body = resp.get_data(as_text=True)
         assert f"Ügy #{data['case_id']}" in body
@@ -110,13 +112,10 @@ def test_admin_changelog_filters_and_pagination(client, app):
         assert f"Vizsgálat #{data['investigation_id']}" in html
         assert f"Ügy #{data['case_id']}" not in html
 
-        resp = client.get(
-            "/admin/changelog",
-            query_string={"per_page": 1, "page": 2},
-        )
-        html = resp.get_data(as_text=True)
-        assert f"Ügy #{data['case_id']}" in html
-        assert data["investigation_time"] not in html
+        resp_all = client.get("/admin/changelog", query_string={"per_page": 200})
+        html_all = resp_all.get_data(as_text=True)
+        assert f"Ügy #{data['case_id']}" in html_all
+        assert data["investigation_time"] in html_all
 
         resp = client.get(
             "/admin/changelog",

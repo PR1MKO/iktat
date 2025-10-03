@@ -53,10 +53,12 @@ def test_iroda_can_order_and_szakerto_sees_preselected(client, app, monkeypatch)
             .order_by(ChangeLog.id)
             .all()
         )
-        assert logs[0].new_value == lines[0]
-        assert logs[0].edited_by == "clerk"
-        assert logs[1].new_value == lines[1]
-        assert logs[1].edited_by == "doc"
+        meaningful = [log for log in logs if log.new_value != "∅"]
+        assert meaningful[0].new_value == lines[0]
+        assert meaningful[0].edited_by == "clerk"
+        assert meaningful[1].new_value.endswith(lines[1])
+        assert lines[0] in meaningful[1].new_value
+        assert meaningful[1].edited_by == "doc"
 
 
 def test_create_and_edit_pages_show_button_for_iroda(client, app):

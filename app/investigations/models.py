@@ -1,6 +1,9 @@
 ﻿import sqlalchemy as sa
+from flask_login import current_user
+from sqlalchemy import event
 
 from app import db
+from app.audit import diff_for_update, snapshot_for_insert
 from app.utils.time_utils import now_utc
 
 
@@ -127,3 +130,61 @@ class InvestigationChangeLog(db.Model):
             "timestamp",
         ),
     )
+
+
+def _resolve_investigation_actor() -> int:
+    try:
+        if getattr(current_user, "is_authenticated", False):
+            ident = getattr(current_user, "id", None)
+            if ident is not None:
+                return ident
+    except Exception:  # pragma: no cover - defensive for tests / scripts
+        pass
+    return 0
+
+
+@event.listens_for(Investigation, "before_update", propagate=True)
+def _investigation_log_before_update(mapper, connection, target):  # noqa: ARG001
+    if isinstance(target, InvestigationChangeLog):
+        return
+    changes = diff_for_update(target)
+    if not changes:
+        return
+    actor = _resolve_investigation_actor()
+    inv_id = getattr(target, "id", None)
+    timestamp = now_utc()
+    rows = [
+        {
+            "investigation_id": inv_id,
+            "field_name": field,
+            "old_value": old_val,
+            "new_value": new_val,
+            "edited_by": actor,
+            "timestamp": timestamp,
+        }
+        for field, old_val, new_val in changes
+    ]
+    if rows:
+        connection.execute(InvestigationChangeLog.__table__.insert(), rows)
+
+
+@event.listens_for(Investigation, "after_insert", propagate=True)
+def _investigation_log_after_insert(mapper, connection, target):  # noqa: ARG001
+    if isinstance(target, InvestigationChangeLog):
+        return
+    actor = _resolve_investigation_actor()
+    inv_id = getattr(target, "id", None)
+    timestamp = now_utc()
+    rows = [
+        {
+            "investigation_id": inv_id,
+            "field_name": field,
+            "old_value": old_val,
+            "new_value": new_val,
+            "edited_by": actor,
+            "timestamp": timestamp,
+        }
+        for field, old_val, new_val in snapshot_for_insert(target)
+    ]
+    if rows:
+        connection.execute(InvestigationChangeLog.__table__.insert(), rows)

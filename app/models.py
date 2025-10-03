@@ -1,12 +1,13 @@
 # app/models.py
 
 from flask_login import UserMixin, current_user
-from sqlalchemy import event, inspect
+from sqlalchemy import event
 from sqlalchemy import text as sa_text
 from sqlalchemy.orm import synonym
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
+from app.audit import diff_for_update, snapshot_for_insert
 from app.utils.time_utils import fmt_budapest, now_utc
 
 
@@ -217,81 +218,66 @@ class ChangeLog(db.Model):
         return f"<ChangeLog {self.field_name}: {self.old_value} → {self.new_value}>"
 
 
-_TRACKED_FIELDS = [
-    "deceased_name",
-    "case_type",
-    "status",
-    "institution_name",
-    "external_case_number",
-    "birth_date",
-    "registration_time",
-    "deadline",
-    "expert_1",
-    "expert_2",
-    "describer",
-    "tox_expert",
-    "assigned_office",
-    "assigned_signatory",
-    "assigned_pathologist",
-    "notes",
-    "uploaded_files",
-    "tox_orders",
-]
+def _resolve_case_actor() -> str:
+    """Return identifier for whoever triggered the change."""
 
-
-@event.listens_for(Case, "before_update")
-def _audit_case_changes(mapper, connection, target):
-    """Record changes to Case fields in ChangeLog without using Session.add."""
-    from app.utils.time_utils import now_utc  # ensure function is available
-
-    state = inspect(target)
-    log_entries = []
-
-    for field in _TRACKED_FIELDS:
-        hist = state.attrs[field].history
-        if not hist.has_changes():
-            continue
-
-        old = hist.deleted[0] if hist.deleted else None
-        new = hist.added[0] if hist.added else None
-
-        if field in ("tox_orders", "notes"):
-            old_lines = old.splitlines() if old else []
-            new_lines = new.splitlines() if new else []
-            added = new_lines[len(old_lines) :]
-            for line in added:
-                log_entries.append(
-                    {
-                        "case_id": target.id,
-                        "field_name": field,
-                        "old_value": None,
-                        "new_value": line,
-                        "edited_by": (
-                            getattr(current_user, "screen_name", None)
-                            or getattr(current_user, "username", "system")
-                        ),
-                        "timestamp": now_utc(),
-                    }
-                )
-            continue
-
-        if old != new:
-            log_entries.append(
-                {
-                    "case_id": target.id,
-                    "field_name": field,
-                    "old_value": str(old) if old is not None else None,
-                    "new_value": str(new) if new is not None else None,
-                    "edited_by": (
-                        getattr(current_user, "screen_name", None)
-                        or getattr(current_user, "username", "system")
-                    ),
-                    "timestamp": now_utc(),
-                }
+    try:
+        if getattr(current_user, "is_authenticated", False):
+            return (
+                getattr(current_user, "screen_name", None)
+                or getattr(current_user, "username", None)
+                or "system"
             )
+    except Exception:  # pragma: no cover - defensive for tests / scripts
+        pass
+    return "system"
 
-    if log_entries:
-        connection.execute(ChangeLog.__table__.insert(), log_entries)
+
+@event.listens_for(Case, "before_update", propagate=True)
+def _case_log_before_update(mapper, connection, target):  # noqa: ARG001
+    if isinstance(target, ChangeLog):
+        return
+    changes = diff_for_update(target)
+    if not changes:
+        return
+    actor = _resolve_case_actor()
+    case_id = getattr(target, "id", None)
+    timestamp = now_utc()
+    rows = [
+        {
+            "case_id": case_id,
+            "field_name": field,
+            "old_value": old_val,
+            "new_value": new_val,
+            "edited_by": actor,
+            "timestamp": timestamp,
+        }
+        for field, old_val, new_val in changes
+    ]
+    if rows:
+        connection.execute(ChangeLog.__table__.insert(), rows)
+
+
+@event.listens_for(Case, "after_insert", propagate=True)
+def _case_log_after_insert(mapper, connection, target):  # noqa: ARG001
+    if isinstance(target, ChangeLog):
+        return
+    actor = _resolve_case_actor()
+    case_id = getattr(target, "id", None)
+    timestamp = now_utc()
+    rows = [
+        {
+            "case_id": case_id,
+            "field_name": field,
+            "old_value": old_val,
+            "new_value": new_val,
+            "edited_by": actor,
+            "timestamp": timestamp,
+        }
+        for field, old_val, new_val in snapshot_for_insert(target)
+    ]
+    if rows:
+        connection.execute(ChangeLog.__table__.insert(), rows)
 
 
 class UploadedFile(db.Model):
