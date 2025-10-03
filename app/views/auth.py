@@ -20,11 +20,13 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required, login_user, logout_user
 from sqlalchemy import and_, false, func, or_
 from werkzeug import exceptions
+from werkzeug.datastructures import MultiDict
 from wtforms.validators import DataRequired
 
 from app import db
@@ -440,16 +442,35 @@ def create_case():
     class DummyCase:
         notes = ""
         case_type = ""
+        beerk_modja = ""
         szakerto = ""
         expert_2 = ""
         describer = ""
 
-    form = CaseIdentifierForm(request.form if request.method == "POST" else None)
+    def _build_case_from_prefill(data: dict) -> DummyCase:
+        case_obj = DummyCase()
+        case_obj.case_type = data.get("case_type", "")
+        case_obj.beerk_modja = data.get("beerk_modja", "")
+        case_obj.szakerto = data.get("szakerto", "")
+        case_obj.expert_2 = data.get("expert_2", "")
+        case_obj.describer = data.get("describer", "")
+        return case_obj
+
+    prefill = session.pop("create_case_form", None)
+    if prefill:
+        prefill = {k: v for k, v in prefill.items() if k != "csrf_token"}
+
+    if request.method == "GET" and prefill:
+        form = CaseIdentifierForm(MultiDict(prefill))
+    else:
+        form = CaseIdentifierForm(request.form if request.method == "POST" else None)
 
     caps = capabilities_for(current_user)
     if not caps.get("can_edit_case"):
         flash("Nincs jogosultság", "danger")
         return redirect(url_for("auth.list_cases"))
+
+    case = _build_case_from_prefill(prefill) if prefill else DummyCase()
 
     szakerto_users = User.query.filter_by(role="szakértő").order_by(User.username).all()
     leiro_users = User.query.filter_by(role="leíró").order_by(User.username).all()
@@ -459,8 +480,6 @@ def create_case():
     leiro_choices = [("", "(opcionális)")] + [
         (u.screen_name, u.screen_name or u.username) for u in leiro_users
     ]
-    case = DummyCase()
-
     if request.method == "POST":
         missing = []
         if not request.form.get("case_type"):
@@ -474,6 +493,9 @@ def create_case():
                 flash(err)
         if missing or form.errors:
             if current_app.config.get("STRICT_PRG_ENABLED", True):
+                data = request.form.to_dict(flat=True)
+                data.pop("csrf_token", None)
+                session["create_case_form"] = data
                 return redirect(url_for("auth.create_case"))
             return render_template(
                 "create_case.html",
@@ -481,9 +503,14 @@ def create_case():
                 leiro_users=leiro_users,
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
-                case=case,
+                case=_build_case_from_prefill(request.form),
                 form=form,
                 caps=caps,
+                prefill={
+                    k: v
+                    for k, v in request.form.to_dict(flat=True).items()
+                    if k != "csrf_token"
+                },
             )
         ext_id = form.external_id.data or ""
         key = make_default_key(request, extra=ext_id)
@@ -552,9 +579,14 @@ def create_case():
                 leiro_users=leiro_users,
                 szakerto_choices=szakerto_choices,
                 leiro_choices=leiro_choices,
-                case=case,
+                case=_build_case_from_prefill(request.form),
                 form=form,
                 caps=caps,
+                prefill={
+                    k: v
+                    for k, v in request.form.to_dict(flat=True).items()
+                    if k != "csrf_token"
+                },
             )
 
         log = ChangeLog(
@@ -568,6 +600,7 @@ def create_case():
         db.session.add(log)
         db.session.commit()
 
+        session.pop("create_case_form", None)
         flash("New case created.", "success")
         return redirect(url_for("auth.case_documents", case_id=new_case.id))
 
@@ -580,6 +613,7 @@ def create_case():
         case=case,
         form=form,
         caps=caps,
+        prefill=prefill or {},
     )
 
 

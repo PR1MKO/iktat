@@ -72,17 +72,18 @@
       id="deceased_name"
       name="deceased_name"
       class="form-control"
-      aria-label="Elhunyt neve" title="Elhunyt neve">
+      aria-label="Elhunyt neve" title="Elhunyt neve"
+      value="{{ prefill.get('deceased_name', '') }}">
   </div>
   
   <div class="col-md-6">
     <label for="lanykori_nev" class="form-label">Elhunyt lánykori neve</label>
-    <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control">
+    <input type="text" id="lanykori_nev" name="lanykori_nev" class="form-control" value="{{ prefill.get('lanykori_nev', '') }}">
   </div>
   
   <div class="col-md-6">
     <label for="mother_name" class="form-label">Anyja neve</label>
-    <input type="text" id="mother_name" name="mother_name" class="form-control">
+    <input type="text" id="mother_name" name="mother_name" class="form-control" value="{{ prefill.get('mother_name', '') }}">
   </div>
 
   <!-- Experts & Describer -->
@@ -122,7 +123,7 @@
   <!-- Születési hely és idő -->
   <div class="col-md-6">
     <label for="szul_hely" class="form-label">Születési hely</label>
-    <input type="text" id="szul_hely" name="szul_hely" class="form-control">
+    <input type="text" id="szul_hely" name="szul_hely" class="form-control" value="{{ prefill.get('szul_hely', '') }}">
   </div>
 
   <div class="col-md-6">
@@ -131,27 +132,28 @@
            id="birth_date"
            name="birth_date"
            class="form-control"
-           aria-label="Születési idő" title="Születési idő">
+           aria-label="Születési idő" title="Születési idő"
+           value="{{ prefill.get('birth_date', '') }}">
   </div>
 
 
   <!-- TAJ szám és Poszeidon -->
   <div class="col-md-6">
     <label for="taj_szam" class="form-label">TAJ szám</label>
-    <input type="text" id="taj_szam" name="taj_szam" class="form-control">
+    <input type="text" id="taj_szam" name="taj_szam" class="form-control" value="{{ prefill.get('taj_szam', '') }}">
   </div>
   <div class="col-md-6">
     <label for="poszeidon" class="form-label">Poszeidon</label>
-    <input type="text" id="poszeidon" name="poszeidon" class="form-control">
+    <input type="text" id="poszeidon" name="poszeidon" class="form-control" value="{{ prefill.get('poszeidon', '') }}">
   </div>
   
   <div class="col-md-6">
     <label for="residence" class="form-label">Elhunyt lakhelye</label>
-    <input type="text" id="residence" name="residence" class="form-control">
+    <input type="text" id="residence" name="residence" class="form-control" value="{{ prefill.get('residence', '') }}">
   </div>
   <div class="col-md-6">
     <label for="citizenship" class="form-label">Állampolgársága</label>
-    <input type="text" id="citizenship" name="citizenship" class="form-control">
+    <input type="text" id="citizenship" name="citizenship" class="form-control" value="{{ prefill.get('citizenship', '') }}">
   </div>
 
   <!-- Intézmény neve -->
@@ -161,7 +163,8 @@
       id="institution_name"
       name="institution_name"
       class="form-control"
-      aria-label="Intézmény neve" title="Intézmény neve">
+      aria-label="Intézmény neve" title="Intézmény neve"
+      value="{{ prefill.get('institution_name', '') }}">
   </div>
 
   <!-- Submit buttons -->
