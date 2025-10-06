@@ -23,22 +23,21 @@
 
   <div class="row mb-4">
     <div class="col-12 col-md-10 offset-md-1">
-      {% set tox_radio_inline %}
-        <div class="d-flex align-items-center gap-2">
-          <span class="me-1">Tartalmaz-e toxikológiai vizsgálatot?</span>
-          <div class="form-check form-check-inline mb-0">
+      {% set radios_html %}
+        <span class="d-inline-flex align-items-center gap-2">
+          <span class="fw-semibold">Tartalmaz-e toxikológiai vizsgálatot?</span>
+          <label class="form-check form-check-inline mb-0">
             <input class="form-check-input" type="radio" name="tox_ordered" id="tox_no" value="nem"
-                   {% if not case.tox_ordered %}checked{% endif %}
-                   form="case-documents-form">
-            <label class="form-check-label" for="tox_no">Nem</label>
-          </div>
+                   {% if not case.tox_ordered %}checked{% endif %} form="case-documents-form">
+            <span class="form-check-label">Nem</span>
+          </label>
+          <label class="form-check form-check-inline mb-0">
           <div class="form-check form-check-inline mb-0">
             <input class="form-check-input" type="radio" name="tox_ordered" id="tox_yes" value="igen"
-                   {% if case.tox_ordered %}checked{% endif %}
-                   form="case-documents-form">
-            <label class="form-check-label" for="tox_yes">Igen</label>
-          </div>
-        </div>
+                   {% if case.tox_ordered %}checked{% endif %} form="case-documents-form">
+            <span class="form-check-label">Igen</span>
+          </label>
+        </span>
       {% endset %}
       {{ cm.file_upload_block(
           form_id='file-upload-form',
@@ -49,7 +48,7 @@
           multiple=True,
           label='Fájl feltöltése',
           btn_label='Feltöltés',
-          extra_inline=tox_radio_inline
+          extra_inline=radios_html
       ) }}
     </div>
   </div>

@@ -163,7 +163,7 @@
       action="{{ upload_url or url_for('auth.upload_file', case_id=case_id) }}"
       method="post"
       enctype="multipart/form-data"
-      class="needs-validation d-flex align-items-center gap-2 flex-wrap w-100 file-upload-form">
+      class="needs-validation d-flex align-items-center gap-2 flex-md-nowrap flex-wrap w-100 file-upload-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for name, value in extra_fields.items() %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
