@@ -62,3 +62,8 @@
   </form>
 </div>
 {% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/notes-assign.js') }}" defer></script>
+{% endblock %}
