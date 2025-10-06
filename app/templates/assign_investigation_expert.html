@@ -208,7 +208,7 @@
           <ul class="list-group list-group-flush mb-0">
             {% for entry in changelog_entries %}
             <li class="list-group-item py-2">
-              <span class="text-muted small">[{{ entry.timestamp_str }} – {{ user_display_name(entry.editor) }}]</span>
+              <span class="text-muted small">{{ entry.timestamp_str }} — {{ user_display_name(entry.editor) }}</span>
               {{ entry.field_name }}: {{ entry.old_value or '–' }} → {{ entry.new_value or '–' }}
             </li>
             {% endfor %}

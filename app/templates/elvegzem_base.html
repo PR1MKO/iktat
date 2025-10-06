@@ -79,9 +79,9 @@
           {% if case.uploaded_file_records %}
             <ul class="list-group list-group-flush mb-0">
               {% for rec in case.uploaded_file_records %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
+                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
                   <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
-                  <small class="text-muted">{{ rec.upload_time_str }} — {{ rec.uploader }}</small>
+                  <small class="text-muted text-nowrap">{{ rec.uploader }}{% if rec.upload_time_str %} · {{ rec.upload_time_str }}{% endif %}</small>
                 </li>
               {% endfor %}
             </ul>
@@ -115,7 +115,7 @@
           <div class="list-group list-group-flush">
             {% for entry in changelog_entries %}
               <div class="list-group-item py-2">
-                [{{ entry.timestamp_str }} – {{ entry.edited_by }}] {{ entry.new_value or '–' }}
+                {{ entry.timestamp_str }} — {{ entry.edited_by }} {{ entry.new_value or '–' }}
               </div>
             {% endfor %}
             {% if not changelog_entries %}

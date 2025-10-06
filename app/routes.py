@@ -30,6 +30,7 @@ from app.utils.rbac import require_roles as roles_required
 from app.utils.roles import canonical_role
 from app.utils.time_utils import fmt_budapest, fmt_date, now_utc
 from app.utils.uploads import is_valid_category, resolve_safe, save_upload
+from app.utils.user_display import user_display_name
 
 main_bp = Blueprint("main", __name__)
 
@@ -38,7 +39,7 @@ def append_note(case, note_text, author=None):
     """Appends a note to the case.notes field with timestamp and author."""
     ts = fmt_budapest(now_utc())
     if author is None:
-        author = current_user.screen_name or current_user.username
+        author = user_display_name(current_user)
     entry = f"[{ts} – {author}] {note_text}"
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     return entry
@@ -61,7 +62,7 @@ def handle_file_upload(case, file, category="egyéb"):
     rec = UploadedFile(
         case_id=case.id,
         filename=dest.name,
-        uploader=current_user.screen_name or current_user.username,
+        uploader=user_display_name(current_user),
         upload_time=now_utc(),
         category=category,
     )
@@ -208,7 +209,7 @@ def mark_tox_viewed(case_id):
         field_name="system",
         old_value=None,
         new_value="Toxi végzés megtekintve",
-        edited_by=current_user.screen_name or current_user.username,
+        edited_by=user_display_name(current_user),
         timestamp=ts,
     )
     db.session.add(log)

@@ -8,6 +8,7 @@ from sqlalchemy import func
 from app.paths import ensure_investigation_folder as ensure_invest_path
 from app.paths import investigation_root as invest_root_path
 from app.utils.time_utils import now_utc, to_budapest
+from app.utils.user_display import user_display_name as _core_user_display
 
 from .models import Investigation
 
@@ -117,7 +118,7 @@ def generate_case_number(session) -> str:
 
 
 def user_display_name(u):
-    return (u.full_name or u.screen_name or u.username) if u else "—"
+    return _core_user_display(u, default="—")
 
 
 def display_name(user) -> str:

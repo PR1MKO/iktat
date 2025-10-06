@@ -60,6 +60,7 @@ from app.utils.uploads import (
     save_upload,
     send_safe,
 )
+from app.utils.user_display import user_display_name as resolve_user_display
 
 from ..utils.case_helpers import build_case_context, ensure_unlocked_or_redirect
 from ..utils.case_status import CASE_STATUS_FINAL, is_final_status
@@ -596,7 +597,7 @@ def create_case():
             field_name="system",
             old_value="",
             new_value="ügy érkeztetve",
-            edited_by=current_user.screen_name or current_user.username,
+            edited_by=resolve_user_display(current_user),
             timestamp=now_utc(),
         )
         db.session.add(log)
@@ -744,7 +745,7 @@ def edit_case_basic(case_id):
             field_name="system",
             old_value="",
             new_value="alapadat(ok) szerkesztve",
-            edited_by=current_user.screen_name or current_user.username,
+            edited_by=resolve_user_display(current_user),
             timestamp=now_utc(),
         )
         db.session.add(log)
@@ -853,7 +854,7 @@ def upload_file(case_id):
         upload_rec = UploadedFile(
             case_id=case.id,
             filename=dest.name,
-            uploader=current_user.username,
+            uploader=resolve_user_display(current_user),
             upload_time=now_utc(),
             category=category,
         )
@@ -1679,7 +1680,7 @@ def add_note_universal(case_id):
 
     case = db.session.get(Case, case_id) or abort(404)
     ts = fmt_budapest(now_utc())
-    author = current_user.screen_name or current_user.username
+    author = resolve_user_display(current_user)
     entry = f"[{ts} – {author}] {note_text}"
 
     case.notes = (case.notes + "\n" if case.notes else "") + entry
@@ -1771,7 +1772,7 @@ def generate_tox_doc(case_id):
         },
         "intezmeny": case.institution_name or "",
         "today": fmt_budapest(now_utc(), "%Y.%m.%d"),
-        "current_user": current_user.screen_name or current_user.username,
+        "current_user": resolve_user_display(current_user),
         "alkohol_minta_count": safe_int(request.form.get("alkohol_minta_count")),
         "alkohol_minta_ara": safe_float(request.form.get("alkohol_minta_ara")),
         "permetezoszer_minta_count": safe_int(
@@ -1826,13 +1827,13 @@ def generate_tox_doc(case_id):
 
         case.tox_doc_generated = True
         case.tox_doc_generated_at = now_utc()
-        case.tox_doc_generated_by = current_user.screen_name or current_user.username
+        case.tox_doc_generated_by = resolve_user_display(current_user)
 
         db.session.add(
             UploadedFile(
                 case_id=case.id,
                 filename=output_path.name,
-                uploader=current_user.username,
+                uploader=resolve_user_display(current_user),
                 upload_time=now_utc(),
                 category="Toxikológiai kirendelő",
             )

@@ -4,6 +4,7 @@ from flask import flash, redirect, url_for
 from app.models import ChangeLog
 
 from .case_status import is_final_status
+from .dates import safe_fmt
 from .time_utils import fmt_budapest
 
 
@@ -26,16 +27,23 @@ def build_case_context(case):
         .limit(5)
         .all()
     )
+    for entry in changelog_entries:
+        entry.timestamp_str = safe_fmt(getattr(entry, "timestamp", None))
 
     formatted_ts = ""
     if case.certificate_generated_at:
         formatted_ts = fmt_budapest(case.certificate_generated_at)
+
+    uploads = list(getattr(case, "uploaded_file_records", []) or [])
+    for rec in uploads:
+        rec.upload_time_str = safe_fmt(getattr(rec, "upload_time", None))
 
     return {
         "grouped_orders": grouped_orders,
         "changelog_entries": changelog_entries,
         "formatted_certificate_timestamp": formatted_ts,
         "show_certificate_message": bool(case.certificate_generated),
+        "uploaded_file_records": uploads,
     }
 
 

@@ -76,15 +76,17 @@
     {% if case.uploaded_file_records %}
       <ul class="list-group list-group-flush mb-0">
         {% for rec in case.uploaded_file_records %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
               <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">
                 {{ rec.filename }}
               </a>
-              <span class="badge bg-secondary ms-2">{{ rec.category }}</span>
+              {% if rec.category %}
+                <span class="badge bg-secondary">{{ rec.category }}</span>
+              {% endif %}
             </div>
-            <small class="text-muted">
-              {{ rec.upload_time_str }} &mdash; {{ rec.uploader }}
+            <small class="text-muted text-nowrap">
+              {{ rec.uploader }}{% if rec.upload_time_str %} · {{ rec.upload_time_str }}{% endif %}
             </small>
           </li>
         {% endfor %}
@@ -132,19 +134,19 @@
             {% if entry.field_name == 'tox_orders' %}
               {% set parsed = entry.new_value | parse_tox_changelog %}
               {% if parsed %}
-                <span class="text-muted small">[{{ parsed.ts }} &ndash; {{ parsed.user }}]</span> {{ parsed.name }} rendelve
+                <span class="text-muted small">{{ parsed.ts }} — {{ parsed.user }}</span> {{ parsed.name }} rendelve
               {% else %}
-                <span class="text-muted small">[{{ entry.timestamp_str }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+                <span class="text-muted small">{{ entry.timestamp_str }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
               {% endif %}
-			{% elif entry.field_name == 'notes' %}
+            {% elif entry.field_name == 'notes' %}
             {% set parsed = entry.new_value | parse_note_changelog %}
             {% if parsed %}
-              <span class="text-muted small">[{{ parsed.ts }} &ndash; {{ parsed.user }}]</span> {{ parsed.text }}
+              <span class="text-muted small">{{ parsed.ts }} — {{ parsed.user }}</span> {{ parsed.text }}
             {% else %}
                 {{ entry.new_value or '–' }}
               {% endif %}
             {% else %}
-              <span class="text-muted small">[{{ entry.timestamp_str }} &ndash; {{ entry.edited_by }}]</span> {{ entry.new_value or '–' }}
+              <span class="text-muted small">{{ entry.timestamp_str }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
             {% endif %}
           </li>
         {% endfor %}

@@ -9,6 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db
 from app.audit import diff_for_update, snapshot_for_insert
 from app.utils.time_utils import fmt_budapest, now_utc
+from app.utils.user_display import user_display_name
 
 
 class User(db.Model, UserMixin):
@@ -223,11 +224,7 @@ def _resolve_case_actor() -> str:
 
     try:
         if getattr(current_user, "is_authenticated", False):
-            return (
-                getattr(current_user, "screen_name", None)
-                or getattr(current_user, "username", None)
-                or "system"
-            )
+            return user_display_name(current_user)
     except Exception:  # pragma: no cover - defensive for tests / scripts
         pass
     return "system"
