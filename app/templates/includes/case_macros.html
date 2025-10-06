@@ -163,7 +163,7 @@
       action="{{ upload_url or url_for('auth.upload_file', case_id=case_id) }}"
       method="post"
       enctype="multipart/form-data"
-      class="needs-validation d-flex align-items-center gap-2 flex-md-nowrap flex-wrap w-100 file-upload-form">
+      class="needs-validation d-flex align-items-center flex-md-nowrap flex-wrap w-100 gap-3 file-upload-form">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% for name, value in extra_fields.items() %}
     <input type="hidden" name="{{ name }}" value="{{ value }}">
@@ -172,7 +172,9 @@
   <input type="file"
          id="{{ input_name }}"
          name="{{ input_name }}"
-         class="form-control me-2 flex-grow-1"
+         class="form-control flex-grow-1"
+         style="min-width: 0;"
+         style="min-width:0"
          {% if multiple %}multiple{% endif %}
          required
          aria-label="{{ label }}"
@@ -191,7 +193,7 @@
   {% endif %}
   <select name="category"
     id="upload-category-{{ form_id or 'file-upload-form' }}"
-    class="form-select me-2 category-select w-auto flex-shrink-0"
+    class="form-select category-select w-auto flex-shrink-0"
     required
     aria-invalid="false"
     aria-describedby="category-help-{{ form_id or 'file-upload-form' }}"
@@ -212,10 +214,10 @@
     aria-hidden="true"
   ></div>
   {% if extra_inline %}
-  {{ extra_inline|safe }}
+  <span class="d-inline-flex align-items-center gap-2 flex-shrink-0">{{ extra_inline|safe }}</span>
   {% endif %}
   {% if caps['can_upload_case'] %}
-  <button type="submit" class="btn btn-outline-success upload-btn" disabled>{{ btn_label }}</button>
+  <button type="submit" class="btn btn-outline-success upload-btn flex-shrink-0" disabled>{{ btn_label }}</button>
   {% endif %}
 </form>
 {% endmacro %}

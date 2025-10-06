@@ -27,3 +27,14 @@ main,
 ion-icon,
 [class^="ion-"], [class*=" ion-"],
 .bi, [class^="bi "], [class*=" bi-"] { display: none !important; }
+
+/* Upload row alignment normalizers (scoped) */
+.file-upload-form { line-height: 1.25; }
+.file-upload-form .form-check { margin-bottom: 0; }
+.file-upload-form .form-check-label { margin-bottom: 0; }
+.file-upload-form .form-check-input { margin-top: 0; }
+.file-upload-form .form-select,
+.file-upload-form .form-control[type="file"],
+.file-upload-form .btn {
+  min-height: calc(2.375rem + 2px);
+}
