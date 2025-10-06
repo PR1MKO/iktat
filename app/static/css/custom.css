@@ -28,36 +28,29 @@ ion-icon,
 [class^="ion-"], [class*=" ion-"],
 .bi, [class^="bi "], [class*=" bi-"] { display: none !important; }
 
-/* Upload row alignment normalizers (scoped) */
-.file-upload-form { line-height: 1.25; }
-.file-upload-form .form-check { margin-bottom: 0; }
-.file-upload-form .form-check-label { margin-bottom: 0; }
-.file-upload-form .form-check-input { margin-top: 0; }
-.file-upload-form .form-select,
-.file-upload-form .form-control[type="file"],
-.file-upload-form .btn {
+/* Documents page — upload toolbar alignment (scoped) */
+.documents-page .file-upload-form { line-height: 1.25; }
+
+/* Equalize control heights for a tidy baseline */
+.documents-page .file-upload-form .form-select,
+.documents-page .file-upload-form .form-control[type="file"],
+.documents-page .file-upload-form .btn {
   min-height: calc(2.375rem + 2px);
 }
 
-/* Upload row layout refinements (scoped) */
+/* Single row at ≥ md; comfortable base for the file input; no squashing */
 @media (min-width: 768px) {
-  /* Give file control a comfy base width while remaining flexible */
-  .file-upload-form .form-control[type="file"] {
-    flex: 1 1 28rem;
-    min-width: 16rem;
+  .documents-page .file-upload-form { flex-wrap: nowrap; }
+  .documents-page .file-upload-form .form-control[type="file"] {
+    flex: 1 1 30rem;
+    min-width: 20rem;
   }
-
-  .file-upload-form .category-select {
-    flex: 0 0 auto;
-    width: auto;
-  }
-
-  .file-upload-form .upload-inline {
-    flex: 0 1 auto;
-  }
-
-  .file-upload-form .upload-btn {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
+  .documents-page .file-upload-form .category-select { flex: 0 0 auto; width: auto; }
+  .documents-page .file-upload-form .upload-inline { flex: 0 1 auto; white-space: nowrap; }
+  .documents-page .file-upload-form .upload-btn { flex: 0 0 auto; white-space: nowrap; }
 }
+
+/* Tighten radio block spacing; align vertically */
+.documents-page .file-upload-form .form-check { margin-bottom: 0; }
+.documents-page .file-upload-form .form-check-input { margin-top: 0; }
+.documents-page .file-upload-form .form-check-label { margin-bottom: 0; }
