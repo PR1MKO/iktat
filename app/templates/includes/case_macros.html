@@ -173,7 +173,6 @@
          id="{{ input_name }}"
          name="{{ input_name }}"
          class="form-control flex-grow-1"
-         style="min-width: 0;"
          style="min-width:0"
          {% if multiple %}multiple{% endif %}
          required
@@ -214,7 +213,7 @@
     aria-hidden="true"
   ></div>
   {% if extra_inline %}
-  <span class="d-inline-flex align-items-center gap-2 flex-shrink-0">{{ extra_inline|safe }}</span>
+  <span class="d-inline-flex align-items-center gap-2 flex-shrink-0 upload-inline">{{ extra_inline|safe }}</span>
   {% endif %}
   {% if caps['can_upload_case'] %}
   <button type="submit" class="btn btn-outline-success upload-btn flex-shrink-0" disabled>{{ btn_label }}</button>

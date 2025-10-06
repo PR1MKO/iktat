@@ -38,3 +38,26 @@ ion-icon,
 .file-upload-form .btn {
   min-height: calc(2.375rem + 2px);
 }
+
+/* Upload row layout refinements (scoped) */
+@media (min-width: 768px) {
+  /* Give file control a comfy base width while remaining flexible */
+  .file-upload-form .form-control[type="file"] {
+    flex: 1 1 28rem;
+    min-width: 16rem;
+  }
+
+  .file-upload-form .category-select {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .file-upload-form .upload-inline {
+    flex: 0 1 auto;
+  }
+
+  .file-upload-form .upload-btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
