@@ -143,6 +143,7 @@
   <div class="card mb-4">
     <div class="card-header">Megjegyzések</div>
     <div class="card-body">
+      {% set can_post_inv_note = caps.get('can_post_investigation_notes_effective', caps.get('can_post_investigation_notes')) %}
       <ul id="notes-list" class="list-group list-group-flush mb-3">
         {% if notes %}
           {% for note in notes %}
@@ -153,7 +154,7 @@
           <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
         {% endif %}
       </ul>
-      {% if caps['can_post_investigation_notes'] %}
+      {% if can_post_inv_note %}
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <textarea name="text" class="form-control mb-2" rows="2"></textarea>
       <button type="button" id="add-note-btn" class="btn btn-primary">Hozzáadás</button>

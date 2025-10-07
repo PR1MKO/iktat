@@ -406,6 +406,9 @@ def leiro_elvegzem(id: int):
     )
     deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
     caps["can_post_investigation_notes"] = bool(is_assigned)
+    caps["can_post_investigation_notes_effective"] = bool(
+        caps.get("can_post_investigation_notes") and is_assigned
+    )
 
     return render_template(
         "investigations/leiro_elvegzem.html",
@@ -2227,6 +2230,15 @@ def view_investigation(id):
     inv.registration_time_str = safe_fmt(inv.registration_time)
     inv.deadline_str = safe_fmt(inv.deadline)
 
+    caps = dict(capabilities_for(current_user) or {})
+    try:
+        assigned_member = _is_assigned_member(inv, current_user)
+    except Exception:  # noqa: BLE001
+        assigned_member = False
+    caps["can_post_investigation_notes_effective"] = bool(
+        caps.get("can_post_investigation_notes") and assigned_member
+    )
+
     return render_template(
         "investigations/view.html",
         investigation=inv,
@@ -2235,7 +2247,7 @@ def view_investigation(id):
         assigned_expert=assigned_expert,
         changelog_entries=changelog_entries,
         user_display_name=user_display_name,
-        caps=capabilities_for(current_user),
+        caps=caps,
     )
 
 
@@ -2318,7 +2330,14 @@ def detail_investigation(id):
     expert_display_name = display_name(expert_user)
     describer_display_name = display_name(describer_user)
 
-    caps = capabilities_for(current_user)
+    caps = dict(capabilities_for(current_user) or {})
+    try:
+        assigned_member = _is_assigned_member(inv, current_user)
+    except Exception:  # noqa: BLE001
+        assigned_member = False
+    caps["can_post_investigation_notes_effective"] = bool(
+        caps.get("can_post_investigation_notes") and assigned_member
+    )
     can_upload_ui = can_upload_investigation_now(inv, current_user)
     deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
 
@@ -2545,7 +2564,7 @@ def assign_investigation_expert(id):
     if inv is None:
         abort(404)
 
-    caps = capabilities_for(current_user)
+    caps = dict(capabilities_for(current_user) or {})
     if not caps.get("can_assign"):
         flash("Nincs jogosultság", "danger")
         return redirect(url_for("investigations.detail_investigation", id=id))
@@ -2766,6 +2785,14 @@ def assign_investigation_expert(id):
 
         flash("Szakértő kijelölve.", "success")
         return redirect(url_for("auth.szignal_cases"))
+
+    try:
+        assigned_member = _is_assigned_member(inv, current_user)
+    except Exception:  # noqa: BLE001
+        assigned_member = False
+    caps["can_post_investigation_notes_effective"] = bool(
+        caps.get("can_post_investigation_notes") and assigned_member
+    )
 
     return render_template(
         "assign_investigation_expert.html",
