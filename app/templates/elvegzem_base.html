@@ -79,8 +79,8 @@
           {% if case.uploaded_file_records %}
             <ul class="list-group list-group-flush mb-0">
               {% for rec in case.uploaded_file_records %}
-                <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
-                  <a href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
+                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <a class="flex-grow-1 text-break" href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
                   <small class="text-muted text-nowrap">{{ rec.uploader }}{% if rec.upload_time_str %} · {{ rec.upload_time_str }}{% endif %}</small>
                 </li>
               {% endfor %}

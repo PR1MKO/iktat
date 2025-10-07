@@ -104,9 +104,9 @@
         {% if attachments and attachments|length %}
         <div class="list-group">
           {% for att in attachments %}
-          <div class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <div class="fw-semibold">{{ att.filename }}</div>
+          <div class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
+            <div class="flex-grow-1 text-break">
+              <div class="fw-semibold text-break">{{ att.filename }}</div>
               <div class="small text-muted">{{ att.category }} • {{ att.uploaded_at_str }}</div>
             </div>
             <a class="btn btn-sm btn-outline-primary" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=att.id) }}">Letöltés</a>
