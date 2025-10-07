@@ -406,8 +406,9 @@ def leiro_elvegzem(id: int):
     )
     deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
     caps["can_post_investigation_notes"] = bool(is_assigned)
+    role = normalize_role(getattr(current_user, "role", None))
     caps["can_post_investigation_notes_effective"] = bool(
-        caps.get("can_post_investigation_notes") and is_assigned
+        is_assigned or role in {"admin", "iroda", "penz"}
     )
 
     return render_template(
@@ -2235,8 +2236,9 @@ def view_investigation(id):
         assigned_member = _is_assigned_member(inv, current_user)
     except Exception:  # noqa: BLE001
         assigned_member = False
+    role = normalize_role(getattr(current_user, "role", None))
     caps["can_post_investigation_notes_effective"] = bool(
-        caps.get("can_post_investigation_notes") and assigned_member
+        assigned_member or role in {"admin", "iroda", "penz"}
     )
 
     return render_template(
@@ -2335,8 +2337,9 @@ def detail_investigation(id):
         assigned_member = _is_assigned_member(inv, current_user)
     except Exception:  # noqa: BLE001
         assigned_member = False
+    role = normalize_role(getattr(current_user, "role", None))
     caps["can_post_investigation_notes_effective"] = bool(
-        caps.get("can_post_investigation_notes") and assigned_member
+        assigned_member or role in {"admin", "iroda", "penz"}
     )
     can_upload_ui = can_upload_investigation_now(inv, current_user)
     deny_reason = None if can_upload_ui else cannot_upload_reason(inv, current_user)
@@ -2386,18 +2389,24 @@ def edit_investigation(id):
 
 @investigations_bp.route("/<int:id>/notes", methods=["POST"])
 @login_required
-@roles_required("admin", "iroda", "szak", "szig", "leíró", "leir", "LEIRO", "lei")
+@roles_required(
+    "admin",
+    "iroda",
+    "penz",
+    "pénzügy",
+    "szak",
+    "szig",
+    "leíró",
+    "leir",
+    "LEIRO",
+    "lei",
+)
 def add_investigation_note(id):
-    inv = db.session.get(Investigation, id)
-    if inv is None:
-        abort(404)
-    caps = capabilities_for(current_user) or {}
-    if not caps.get("can_post_investigation_notes"):
-        abort(403)
-    if normalize_role(current_user.role) not in {
-        "admin",
-        "iroda",
-    } and not _is_assigned_member(inv, current_user):
+    inv = db.session.get(Investigation, id) or abort(404)
+    role = normalize_role(getattr(current_user, "role", None))
+    if not (
+        role in {"admin", "iroda", "penz"} or _is_assigned_member(inv, current_user)
+    ):
         abort(403)
 
     form = InvestigationNoteForm()
@@ -2406,7 +2415,7 @@ def add_investigation_note(id):
         text = form.text.data
     else:
         data = request.get_json(silent=True) or {}
-        text = (data.get("text") or "").strip()
+        text = (data.get("text") or request.form.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Empty note"}), 400
 
@@ -2790,8 +2799,9 @@ def assign_investigation_expert(id):
         assigned_member = _is_assigned_member(inv, current_user)
     except Exception:  # noqa: BLE001
         assigned_member = False
+    role = normalize_role(getattr(current_user, "role", None))
     caps["can_post_investigation_notes_effective"] = bool(
-        caps.get("can_post_investigation_notes") and assigned_member
+        assigned_member or role in {"admin", "iroda", "penz"}
     )
 
     return render_template(
