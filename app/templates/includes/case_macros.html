@@ -102,13 +102,15 @@
 <div class="card flex-fill d-flex flex-column h-100">
   <div class="card-header">Jegyzetek</div>
   <div class="card-body flex-fill overflow-auto p-3">
-    {% if case.notes %}
-      {% for line in case.notes.split('\n')|reverse %}
-        <div class="alert alert-secondary py-2">{{ line }}</div>
-      {% endfor %}
-    {% else %}
-      <div class="text-muted fst-italic">Nincsenek megjegyzések.</div>
-    {% endif %}
+    <div id="notes-list" class="notes-list">
+      {% if case.notes %}
+        {% for line in case.notes.split('\n')|reverse %}
+          <div class="alert alert-secondary py-2" data-auto-dismiss="false">{{ line }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="text-muted fst-italic" data-notes-empty>Nincsenek megjegyzések.</div>
+      {% endif %}
+    </div>
 
     <label for="new_note" class="form-label visually-hidden">Új megjegyzés</label>
     <textarea id="new_note" name="new_note"

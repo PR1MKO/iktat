@@ -1691,7 +1691,7 @@ def add_note_universal(case_id):
         current_app.logger.error(f"Database error: {e}")
         return jsonify({"error": "DB error"}), 500
 
-    html = f'<div class="alert alert-secondary py-2">{entry}</div>'
+    html = f'<div class="alert alert-secondary py-2" data-auto-dismiss="false">{entry}</div>'
     current_app.logger.info("Returning note HTML: %s", html)
     return jsonify({"html": html})
 

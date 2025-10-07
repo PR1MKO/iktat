@@ -32,13 +32,16 @@
     return document.querySelector('#new_note');
   }
 
-  function findNotesList(start) {
-    if (!start) return null;
-    var wrap = start.closest && start.closest('#notes-form');
+  function findNotesRoot(start) {
+    var wrap = (start && start.closest && start.closest('#notes-form')) || null;
     if (wrap) {
-      return wrap.querySelector('#notes-list') || wrap.querySelector('.card-body') || wrap;
+      return wrap;
     }
-    return document.querySelector('#notes-list');
+    var form = document.getElementById('notes-form');
+    if (form) {
+      return form;
+    }
+    return document;
   }
 
   function postNote(btn) {
@@ -71,9 +74,23 @@
         if (!data || !data.html) {
           return;
         }
-        var list = findNotesList(btn) || input.closest('#notes-form') || document;
-        list.innerHTML = data.html;
-        input.value = '';
+        var root = findNotesRoot(btn);
+        var list = (root && root.querySelector && root.querySelector('#notes-list')) || (root && root.querySelector && root.querySelector('.card-body')) || document.querySelector('#notes-list') || document.querySelector('.card-body');
+        if (list) {
+          var empty = list.querySelector && list.querySelector('[data-notes-empty]');
+          if (empty) {
+            empty.remove();
+          }
+          list.insertAdjacentHTML('afterbegin', data.html);
+        }
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        var form = input && input.closest && input.closest('form');
+        if (form) {
+          form.reset();
+        }
       })
       .catch(function (err) {
         console.error('notes: submit failed', err);

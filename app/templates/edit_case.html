@@ -243,6 +243,7 @@
         txt.classList.add('is-invalid');
         return;
       }
+      txt.classList.remove('is-invalid');
       fetch("/cases/{{ case.id }}/add_note", {
         method: 'POST',
         headers: {
@@ -256,9 +257,13 @@
         return r.json();
       })
       .then(data => {
-        const container = document.querySelector('#notes-form .card-body');
+        const container = document.querySelector('#notes-list') || document.querySelector('#notes-form .card-body');
+        if (!container) return;
+        const empty = container.querySelector('[data-notes-empty]');
+        if (empty) empty.remove();
         container.insertAdjacentHTML('afterbegin', data.html);
         txt.value = '';
+        txt.focus();
       })
       .catch(() => alert('Hiba a megjegyzés mentésekor'));
     });
