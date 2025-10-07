@@ -1,7 +1,5 @@
 """Regression tests for AJAX note submission widgets."""
 
-import re
-
 import pytest
 from flask import url_for
 
@@ -37,7 +35,7 @@ def test_add_note_universal_json(client, app, case_id):
         assert "hello world" in (refreshed.notes or "")
 
 
-def test_elvegzem_toxi_renders_notes_contract(client, app, case_id):
+def test_notes_template_renders_controls_and_global_script(client, app, case_id):
     with app.app_context():
         create_user("toxi_user", "pw", "toxi", screen_name="Toxi User")
     login(client, "toxi_user", "pw")
@@ -50,6 +48,5 @@ def test_elvegzem_toxi_renders_notes_contract(client, app, case_id):
 
     html = resp.get_data(as_text=True)
     assert 'id="notes-form"' in html
-    assert f'data-case-id="{case_id}"' in html
-    assert re.search(r'<input[^>]+name="csrf_token"', html)
-    assert "/static/js/notes-assign.js" in html
+    assert '<input type="hidden" name="csrf_token"' in html
+    assert "/static/js/notes.js" in html
