@@ -174,11 +174,11 @@
 
   <div class="row mb-4">
     <div class="col-md-6 d-flex flex-column">
-      <div class="card flex-fill d-flex flex-column h-100">
+      <div class="card mb-3 flex-fill" id="notes-form">
         <div class="card-header">Megjegyzések</div>
-        <div class="card-body flex-fill d-flex flex-column">
+        <div class="card-body">
           {% set can_post_inv_note = caps.get('can_post_investigation_notes_effective', caps.get('can_post_investigation_notes')) %}
-          <ul id="notes-list" class="list-group list-group-flush mb-3 flex-grow-1">
+          <ul id="notes-list" class="list-group list-group-flush mb-3">
             {% if notes %}
               {% for note in notes %}
                 {% set author = note.author %}
@@ -188,15 +188,15 @@
               <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
             {% endif %}
           </ul>
-          {% if can_post_inv_note %}
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <textarea name="text" class="form-control mb-2" rows="2"></textarea>
-          <button type="button"
-                  id="add-note-btn"
-                  class="btn btn-primary align-self-start"
-                  data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">
-            Hozzáadás
-          </button>
+          {% if can_post_inv_note %}
+            <textarea name="text" class="form-control mb-2" rows="2"></textarea>
+            <button type="button"
+                    id="add-note-btn"
+                    class="btn btn-primary"
+                    data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">
+              Hozzáadás
+            </button>
           {% endif %}
         </div>
       </div>
@@ -304,5 +304,5 @@
 
 {% block scripts %}
   {{ super() }}
-  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" type="module" src="{{ url_for('static', filename='js/investigation_detail.js') }}"></script>
 {% endblock %}

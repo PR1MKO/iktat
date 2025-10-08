@@ -17,7 +17,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 # Load environment variables early
 load_dotenv()
 
-from app.utils.time_utils import BUDAPEST_TZ, fmt_date  # noqa: E402
+from app.utils.time_utils import BUDAPEST_TZ, fmt_budapest, fmt_date  # noqa: E402
 from config import Config  # noqa: E402
 
 # Instantiate extensions
@@ -215,6 +215,8 @@ def create_app(test_config=None):
     flask_app.jinja_env.filters["fmt_date"] = fmt_date
     flask_app.jinja_env.globals["fmt_date"] = fmt_date
     flask_app.jinja_env.globals["BUDAPEST_TZ"] = BUDAPEST_TZ
+    # expose fmt_budapest for templates (used on /cases/<id> changelog block)
+    flask_app.jinja_env.globals["fmt_budapest"] = fmt_budapest
 
     TOX_ORDER_RE = re.compile(
         r"^(?P<name>.+?) rendelve: (?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}) [\u2013-] (?P<user>.+)$"

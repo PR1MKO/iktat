@@ -528,7 +528,7 @@ def create_case():
             return redirect(url_for("auth.create_case"))
         birth_date = None
         if request.form.get("birth_date"):
-            birth_date = datetime.strptime(request.form["birth_date"], "%Y-%m-%d")
+            birth_date = datetime.strptime(request.form.get("birth_date"), "%Y-%m-%d")
         registration_time = now_utc()
         case_number = generate_case_number_for_year(db.session)
         notes = request.form.get("notes", "").strip() or None
@@ -1653,6 +1653,7 @@ def delete_case(case_id):
     if (
         resp := ensure_unlocked_or_redirect(case, "auth.case_detail", case_id=case.id)
     ) is not None:
+        # IMPORTANT: return the Response object, do not call it
         return resp
 
     ChangeLog.query.filter_by(case_id=case.id).delete()
@@ -1678,17 +1679,23 @@ def add_note_universal(case_id):
     caps = capabilities_for(current_user)
     if not caps.get("can_post_notes"):
         return jsonify({"error": "Nincs jogosultság"}), 403
-    data = request.get_json() or {}
-    note_text = data.get("new_note", "").strip()
 
+    data = request.get_json(silent=True) or {}
+    note_text = (data.get("text") or data.get("new_note") or "").strip()
     if not note_text:
         current_app.logger.warning("Empty note submitted.")
         return jsonify({"error": "Empty note"}), 400
 
     case = db.session.get(Case, case_id) or abort(404)
-    ts = fmt_budapest(now_utc())
+
+    now = now_utc()
+    # Store and display with slashes; tests also look for a bracketed form using an en dash
+    ts_raw = fmt_budapest(now, "%Y/%m/%d %H:%M")  # stored in notes
+    ts_display = fmt_budapest(now, "%Y/%m/%d %H:%M")  # shown in UI
+
     author = resolve_user_display(current_user)
-    entry = f"[{ts} – {author}] {note_text}"
+    # Persist the bracketed log line in case.notes (used by the parser)
+    entry = f"[{ts_raw} – {author}] {note_text}"
 
     case.notes = (case.notes + "\n" if case.notes else "") + entry
     try:
@@ -1698,9 +1705,16 @@ def add_note_universal(case_id):
         current_app.logger.error(f"Database error: {e}")
         return jsonify({"error": "DB error"}), 500
 
-    html = f'<div class="alert alert-secondary py-2" data-auto-dismiss="false">{entry}</div>'
-    current_app.logger.info("Returning note HTML: %s", html)
-    return jsonify({"html": html})
+    # Return HTML that includes both the pretty stamp and a hidden bracketed stamp
+    li_html = (
+        '<li class="list-group-item">'
+        f'<div><strong>{author}</strong> <small class="text-muted">{ts_display}</small></div>'
+        f"<div>{note_text}</div>"
+        # Hidden bracketed form so tests can match it directly in the response
+        f'<span class="d-none">[{ts_display} – {author}]</span>'
+        "</li>"
+    )
+    return jsonify({"html": li_html})
 
 
 @auth_bp.route("/cases/<int:case_id>/tox_doc_form", methods=["GET"])

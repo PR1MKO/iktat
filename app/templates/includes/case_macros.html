@@ -138,17 +138,17 @@
               {% if parsed %}
                 <span class="text-muted small">{{ parsed.ts }} — {{ parsed.user }}</span> {{ parsed.name }} rendelve
               {% else %}
-                <span class="text-muted small">{{ entry.timestamp_str }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
+                <span class="text-muted small">{{ (entry.timestamp_str|default('')) or fmt_budapest(entry.timestamp, "%Y/%m/%d %H:%M") }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
               {% endif %}
             {% elif entry.field_name == 'notes' %}
-            {% set parsed = entry.new_value | parse_note_changelog %}
-            {% if parsed %}
-              <span class="text-muted small">{{ parsed.ts }} — {{ parsed.user }}</span> {{ parsed.text }}
-            {% else %}
+              {% set parsed = entry.new_value | parse_note_changelog %}
+              {% if parsed %}
+                <span class="text-muted small">{{ parsed.ts }} — {{ parsed.user }}</span> {{ parsed.text }}
+              {% else %}
                 {{ entry.new_value or '–' }}
               {% endif %}
             {% else %}
-              <span class="text-muted small">{{ entry.timestamp_str }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
+              <span class="text-muted small">{{ (entry.timestamp_str|default('')) or fmt_budapest(entry.timestamp, "%Y/%m/%d %H:%M") }} — {{ entry.edited_by }}</span> {{ entry.new_value or '–' }}
             {% endif %}
           </li>
         {% endfor %}

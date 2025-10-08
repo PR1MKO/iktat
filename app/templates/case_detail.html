@@ -40,44 +40,76 @@
     </div>
   </div>
 
-  <!-- Jegyzetek & Változásnapló -->
+  <!-- Megjegyzések & Változásnapló -->
   <div class="row mb-4">
-    <div class="col-md-6 d-flex flex-column" id="notes-form" data-case-id="{{ case.id }}">
-      <div class="card flex-fill d-flex flex-column h-100">
-        <div class="card-header">Jegyzetek</div>
-        <div class="card-body flex-fill overflow-auto">
+    <!-- Megjegyzések -->
+    <div class="col-md-6 d-flex flex-column">
+      <div class="card mb-3" id="notes-form" data-case-id="{{ case.id }}">
+        <div class="card-header">Megjegyzések</div>
+        <div class="card-body">
           <ul id="notes-list" class="list-group list-group-flush mb-3">
             {% if case.notes %}
               {% for line in case.notes.split('\n')|reverse %}
-                <li class="list-group-item">
-                  {{ line }}
-                </li>
+                {% set parsed = line|parse_note_changelog %}
+                {% if parsed %}
+                  <li class="list-group-item">
+                    <div>
+                      <strong>{{ parsed.user }}</strong>
+                      <small class="text-muted">{{ parsed.ts.replace('-', '/') }}</small>
+                    </div>
+                    <div>{{ parsed.text }}</div>
+                  </li>
+                {% else %}
+                  <li class="list-group-item">{{ line }}</li>
+                {% endif %}
               {% endfor %}
             {% else %}
               <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
             {% endif %}
           </ul>
+
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <textarea id="new_note" name="text" class="form-control mb-2" rows="2"></textarea>
+          <textarea id="new_note" name="new_note" class="form-control mb-2" rows="2" aria-label="Új megjegyzés"></textarea>
           {% if caps['can_post_notes'] %}
-          <button type="button"
-                  id="add-note-btn"
-                  class="btn btn-primary"
-                  data-notes-url="{{ url_for('auth.add_note_universal', case_id=case.id) }}">
+          <button
+            type="button"
+            id="add-note-btn"
+            class="btn btn-primary"
+            data-notes-url="{{ url_for('auth.add_note_universal', case_id=case.id) }}">
             Hozzáadás
           </button>
           {% endif %}
         </div>
       </div>
     </div>
+
+    <!-- Változásnapló -->
     <div class="col-md-6 d-flex">
-      {{ cm.changelog_block(changelog_entries) }}
+      <div class="card mb-3 flex-fill">
+        <div class="card-header">Változásnapló</div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush mb-0">
+            {% if changelog_entries and changelog_entries|length %}
+              {% for e in changelog_entries %}
+                <li class="list-group-item">
+                  {{ fmt_budapest(e.timestamp, "%Y/%m/%d %H:%M") }} — {{ e.edited_by }}
+                  <div class="small">
+                    <code>{{ e.field_name }}</code>:
+                    {{ e.old_value or "" }} → {{ e.new_value or "" }}
+                  </div>
+                </li>
+              {% endfor %}
+            {% else %}
+              <li class="list-group-item text-muted empty-state">Nincs változás.</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Navigation buttons -->
-    <a href="{{ request.referrer or url_for('auth.list_cases') }}" class="btn btn-secondary">Vissza</a>
+  <a href="{{ request.referrer or url_for('auth.list_cases') }}" class="btn btn-secondary">Vissza</a>
   {{ cm.elvegzem_button(case, current_user) }}
 </div>
 {% endblock %}
- 

@@ -79,5 +79,6 @@
 
 {% block scripts %}
 {{ super() }}
-<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
+<script nonce="{{ csp_nonce }}" type="module" src="{{ url_for('static', filename='js/investigation_detail.js') }}"></script>
 {% endblock %}
+

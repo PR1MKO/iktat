@@ -140,7 +140,7 @@
     </div>
   </div>
 
-  <div class="card mb-4">
+  <div class="card mb-4" id="notes-form">
     <div class="card-header">Megjegyzések</div>
     <div class="card-body">
       {% set can_post_inv_note = caps.get('can_post_investigation_notes_effective', caps.get('can_post_investigation_notes')) %}
@@ -154,10 +154,13 @@
           <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
         {% endif %}
       </ul>
-      {% if can_post_inv_note %}
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      {% if can_post_inv_note %}
       <textarea name="text" class="form-control mb-2" rows="2"></textarea>
-      <button type="button" id="add-note-btn" class="btn btn-primary">Hozzáadás</button>
+      <button type="button"
+              id="add-note-btn"
+              class="btn btn-primary"
+              data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">Hozzáadás</button>
       {% endif %}
     </div>
   </div>
@@ -183,5 +186,5 @@
 
 {% block scripts %}
   {{ super() }}
-  <script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
+  <script nonce="{{ csp_nonce }}" type="module" src="{{ url_for('static', filename='js/investigation_detail.js') }}"></script>
 {% endblock %}

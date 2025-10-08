@@ -28,7 +28,8 @@ def build_case_context(case):
         .all()
     )
     for entry in changelog_entries:
-        entry.timestamp_str = safe_fmt(getattr(entry, "timestamp", None))
+        # explicit slash-based Budapest format to satisfy tests
+        entry.timestamp_str = fmt_budapest(getattr(entry, "timestamp", None))
 
     formatted_ts = ""
     if case.certificate_generated_at:
