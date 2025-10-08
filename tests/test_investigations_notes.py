@@ -100,7 +100,7 @@ def test_investigation_view_hides_composer_for_penzugy(app, client):
     resp = client.get(f"/investigations/{inv_id}/view")
     assert resp.status_code == 200
     html = resp.get_data(as_text=True)
-    assert 'id="notes"' in html
+    assert 'id="notes-list"' in html
     assert 'id="add-note-btn"' not in html
 
 

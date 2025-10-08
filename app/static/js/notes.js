@@ -27,9 +27,17 @@
     if (!start) return null;
     var wrap = start.closest && start.closest('#notes-form');
     if (wrap) {
-      return wrap.querySelector('#new_note');
+      return (
+        wrap.querySelector('textarea[name="text"]') ||
+        wrap.querySelector('#new_note') ||
+        wrap.querySelector('textarea')
+      );
     }
-    return document.querySelector('#new_note');
+    return (
+      document.querySelector('#new_note') ||
+      document.querySelector('textarea[name="text"]') ||
+      document.querySelector('#notes-form textarea')
+    );
   }
 
   function findNotesRoot(start) {
@@ -49,20 +57,27 @@
     if (!input) return;
     var note = (input.value || '').trim();
     if (!note) return;
+    var payloadKey = (btn.dataset && btn.dataset.notesPayloadKey) || 'new_note';
+    var targetUrl = (btn.dataset && btn.dataset.notesUrl) || null;
     var caseId = getCaseId(btn);
-    if (!caseId) {
-      console.warn('notes: case id not resolved');
-      return;
+    if (!targetUrl) {
+      if (!caseId) {
+        console.warn('notes: case id not resolved');
+        return;
+      }
+      targetUrl = '/cases/' + caseId + '/add_note';
     }
     var headers = { 'Content-Type': 'application/json' };
     var csrf = getCsrf(btn);
     if (csrf) {
       headers['X-CSRFToken'] = csrf;
     }
-    fetch('/cases/' + caseId + '/add_note', {
+    var body = {};
+    body[payloadKey] = note;
+    fetch(targetUrl, {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify({ new_note: note })
+      body: JSON.stringify(body)
     })
       .then(function (resp) {
         if (!resp.ok) {
@@ -77,7 +92,9 @@
         var root = findNotesRoot(btn);
         var list = (root && root.querySelector && root.querySelector('#notes-list')) || (root && root.querySelector && root.querySelector('.card-body')) || document.querySelector('#notes-list') || document.querySelector('.card-body');
         if (list) {
-          var empty = list.querySelector && list.querySelector('[data-notes-empty]');
+          var empty =
+            (list.querySelector && list.querySelector('[data-notes-empty]')) ||
+            (list.querySelector && list.querySelector('.empty-state'));
           if (empty) {
             empty.remove();
           }
@@ -113,7 +130,7 @@
   }
 
   function initNotes() {
-    var buttons = document.querySelectorAll('#add_note_btn');
+    var buttons = document.querySelectorAll('#add_note_btn, #add-note-btn');
     if (!buttons.length) {
       return;
     }

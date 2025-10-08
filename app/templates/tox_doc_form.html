@@ -43,5 +43,5 @@
 {% endblock %}
 
 {% block scripts %}{{ super() }}
-<script type="module" src="{{ url_for('static', filename='js/pages/tox_doc_form.js') }}"></script>
+<script nonce="{{ csp_nonce }}" type="module" src="{{ url_for('static', filename='js/pages/tox_doc_form.js') }}"></script>
 {% endblock %}

@@ -96,9 +96,31 @@
 <!-- Notes & Change-log -->
 <div class="row mb-4 align-items-stretch">
   <!-- Notes -->
-  <div class="col-md-6 mb-3 d-flex flex-column" id="notes-form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {{ cm.notes_block(case) }}
+  <div class="col-md-6 mb-3 d-flex flex-column" id="notes-form" data-case-id="{{ case.id }}">
+    <div class="card flex-fill d-flex flex-column h-100">
+      <div class="card-header">Jegyzetek</div>
+      <div class="card-body flex-fill overflow-auto">
+        <ul id="notes-list" class="list-group list-group-flush mb-3">
+          {% if case.notes %}
+            {% for line in case.notes.split('\n')|reverse %}
+              <li class="list-group-item">{{ line }}</li>
+            {% endfor %}
+          {% else %}
+            <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
+          {% endif %}
+        </ul>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea id="new_note" name="text" class="form-control mb-2" rows="2"></textarea>
+        {% if caps['can_post_notes'] %}
+        <button type="button"
+                id="add-note-btn"
+                class="btn btn-primary"
+                data-notes-url="{{ url_for('auth.add_note_universal', case_id=case.id) }}">
+          Hozzáadás
+        </button>
+        {% endif %}
+      </div>
+    </div>
   </div>
 
   <!-- Change-log -->
@@ -139,38 +161,5 @@
   </div>
 
 </div>
-
-<script>
-  // Chat-style note submit via AJAX
-  document.getElementById('add_note_btn').addEventListener('click', function() {
-    const txt = document.getElementById('new_note');
-    if (!txt.value.trim()) {
-      txt.classList.add('is-invalid');
-      return;
-    }
-    fetch("/cases/{{ case.id }}/add_note", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ new_note: txt.value.trim() })
-    })
-    .then(r => {
-      if (!r.ok) throw new Error();
-      return r.json();
-    })
-    .then(data => {
-      const container = document.querySelector('#notes-form .card-body');
-      if (container && data.html) {
-        container.insertAdjacentHTML('afterbegin', data.html);
-        txt.value = '';
-      } else {
-        alert('Nem található notes container vagy üres válasz.');
-      }
-    })
-    .catch(() => alert('Hiba a megjegyzés mentésekor'));
-  });
-</script>
 
 {% endblock %}

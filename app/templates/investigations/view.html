@@ -45,50 +45,39 @@
   </ul>
 </div>
 
-<div class="card mb-3">
-  <div class="card-header">Notes</div>
+<div class="card mb-3" id="notes-form">
+  <div class="card-header">Megjegyzések</div>
   <div class="card-body">
     {% set can_post_inv_note = caps.get('can_post_investigation_notes_effective', caps.get('can_post_investigation_notes')) %}
-    {% if can_post_inv_note %}
-    <div class="mb-3">
-      <textarea id="note-text" class="form-control" rows="3"></textarea>
-      <button type="button" id="add-note-btn" class="btn btn-secondary mt-2">Add</button>
-    </div>
-    {% endif %}
-    <ul id="notes" class="list-group">
-      {% for note in notes %}
-        {% set author = note.author %}
-        {% include 'investigations/_note.html' %}
-      {% endfor %}
+    <ul id="notes-list" class="list-group list-group-flush mb-3">
+      {% if notes %}
+        {% for note in notes %}
+          {% set author = note.author %}
+          {% include 'investigations/_note.html' %}
+        {% endfor %}
+      {% else %}
+        <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
+      {% endif %}
     </ul>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if can_post_inv_note %}
+    <textarea name="text" class="form-control mb-2" rows="2"></textarea>
+    <button type="button"
+            id="add-note-btn"
+            class="btn btn-primary"
+            data-notes-url="{{ url_for('investigations.add_investigation_note', id=investigation.id) }}">
+      Hozzáadás
+    </button>
+    {% endif %}
   </div>
 </div>
 
 <div class="mt-3">
   {{ cm.changelog_block(changelog_entries) }}
 </div>
+{% endblock %}
 
-<script>
-  document.getElementById('add-note-btn')?.addEventListener('click', function() {
-    const txt = document.getElementById('note-text');
-    if (!txt.value.trim()) {
-      txt.classList.add('is-invalid');
-      return;
-    }
-    fetch('{{ url_for('investigations.add_investigation_note', id=investigation.id) }}', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({text: txt.value.trim()})
-    })
-    .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-    .then(html => {
-      document.getElementById('notes').insertAdjacentHTML('afterbegin', html);
-      txt.value = '';
-    })
-    .catch(() => alert('Error saving note'));
-  });
-</script>
+{% block scripts %}
+{{ super() }}
+<script nonce="{{ csp_nonce }}" src="{{ url_for('static', filename='js/investigation_detail.js') }}" defer></script>
 {% endblock %}

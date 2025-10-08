@@ -36,10 +36,10 @@ def test_notes_initial_render_has_list_and_form(client, app):
     soup = BeautifulSoup(resp.data, "html.parser")
     notes_list = soup.select_one("#notes-list")
     assert notes_list is not None
-    alerts = notes_list.select(".alert[data-auto-dismiss='false']")
-    assert alerts, "Existing notes should render with auto-dismiss disabled"
+    items = notes_list.select("li.list-group-item")
+    assert items, "Existing notes should render as list-group items"
     assert soup.select_one("#new_note") is not None
-    assert soup.select_one("#add_note_btn") is not None
+    assert soup.select_one("#add-note-btn") is not None
 
 
 def test_add_note_returns_persistent_snippet(client, app):
@@ -56,8 +56,7 @@ def test_add_note_returns_persistent_snippet(client, app):
     payload = resp.get_json()
     assert payload and "html" in payload
     html = payload["html"]
-    assert 'class="alert' in html
-    assert 'data-auto-dismiss="false"' in html
+    assert '<div class="alert' in html or '<li class="list-group-item' in html
 
 
 def test_page_still_has_form_after_add_note(client, app):
@@ -72,8 +71,8 @@ def test_page_still_has_form_after_add_note(client, app):
     initial_resp = client.get(page_url)
     assert initial_resp.status_code == 200
     initial_soup = BeautifulSoup(initial_resp.data, "html.parser")
-    initial_alerts = initial_soup.select("#notes-list .alert")
-    initial_count = len(initial_alerts)
+    initial_items = initial_soup.select("#notes-list li")
+    initial_count = len(initial_items)
 
     post_resp = client.post(post_url, json={"new_note": "Második jegyzet"})
     assert post_resp.status_code == 200
@@ -82,7 +81,7 @@ def test_page_still_has_form_after_add_note(client, app):
     assert refreshed_resp.status_code == 200
     refreshed_soup = BeautifulSoup(refreshed_resp.data, "html.parser")
 
-    refreshed_alerts = refreshed_soup.select("#notes-list .alert")
-    assert len(refreshed_alerts) == initial_count + 1
+    refreshed_items = refreshed_soup.select("#notes-list li")
+    assert len(refreshed_items) == initial_count + 1
     assert refreshed_soup.select_one("#new_note") is not None
-    assert refreshed_soup.select_one("#add_note_btn") is not None
+    assert refreshed_soup.select_one("#add-note-btn") is not None

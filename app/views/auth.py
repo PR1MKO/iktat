@@ -1344,8 +1344,15 @@ def _collect_admin_changelog(filters: AdminChangelogFilters, *, limit: Optional[
     combined = [_serialize_case_log(row) for row in case_rows]
     combined.extend(_serialize_investigation_log(row) for row in inv_rows)
 
+    # Sort newest first; break ties by prioritizing investigations over cases
     zero = datetime.min.replace(tzinfo=timezone.utc)
-    combined.sort(key=lambda item: item.get("timestamp") or zero, reverse=True)
+
+    def _sort_key(item):
+        ts = item.get("timestamp") or zero
+        priority = 1 if item.get("type") == "investigation" else 0
+        return (ts, priority)
+
+    combined.sort(key=_sort_key, reverse=True)
 
     return combined, total
 
