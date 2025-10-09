@@ -8,6 +8,7 @@ import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Optional
 
 from flask import (
     abort,
@@ -1970,6 +1971,29 @@ def _log_changes(inv: Investigation, form: InvestigationForm):
     return logs
 
 
+def _expert_select_choices(include_id: Optional[int] = None):
+    rows = db.session.execute(
+        text(
+            "SELECT id, screen_name, username FROM user "
+            "WHERE role IN ('szak', 'szakértő', 'szakerto') "
+            "ORDER BY screen_name, username"
+        )
+    ).all()
+    choices = [(0, "— Válasszon —")] + [
+        (row.id, row.screen_name or row.username) for row in rows
+    ]
+
+    if include_id:
+        existing_ids = {choice_id for choice_id, _ in choices if choice_id}
+        if include_id not in existing_ids:
+            user = get_user_safe(include_id)
+            if user is not None:
+                label = user_display_name(user) or getattr(user, "username", None)
+                choices.append((include_id, label or str(include_id)))
+
+    return choices
+
+
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
@@ -2053,18 +2077,7 @@ def list_investigations():
 @roles_required("admin", "iroda")
 def new_investigation():
     form = InvestigationForm()
-
-    # Include canonical and legacy labels so tests using "szakértő" are covered
-    experts = db.session.execute(
-        text(
-            "SELECT id, screen_name, username FROM user "
-            "WHERE role IN ('szak', 'szakértő', 'szakerto') "
-            "ORDER BY screen_name, username"
-        )
-    ).all()
-    form.assigned_expert_id.choices = [(0, "— Válasszon —")] + [
-        (row.id, row.screen_name or row.username) for row in experts
-    ]
+    form.assigned_expert_id.choices = _expert_select_choices()
 
     if form.validate_on_submit():
         assignment_type = form.assignment_type.data
@@ -2365,7 +2378,7 @@ def detail_investigation(id):
     )
 
 
-@investigations_bp.route("/<int:id>/edit", methods=["POST"])
+@investigations_bp.route("/<int:id>/edit", methods=["GET", "POST"])
 @login_required
 @roles_required("admin", "iroda")
 def edit_investigation(id):
@@ -2376,10 +2389,37 @@ def edit_investigation(id):
     if not caps.get("can_edit_investigation"):
         flash("Nincs jogosultság", "danger")
         return redirect(url_for("investigations.detail_investigation", id=id))
+
+    if request.method == "GET":
+        form = InvestigationForm(obj=inv)
+        form.assigned_expert_id.choices = _expert_select_choices(
+            include_id=inv.assigned_expert_id
+        )
+        form.assigned_expert_id.data = inv.assigned_expert_id or 0
+        form.submit.label.text = "Mentés"
+        return render_template(
+            "investigations/edit.html",
+            investigation=inv,
+            form=form,
+            caps=caps,
+        )
+
     form = InvestigationForm()
+    form.assigned_expert_id.choices = _expert_select_choices(
+        include_id=inv.assigned_expert_id
+    )
+    form.submit.label.text = "Mentés"
     if not form.validate_on_submit():
         flash("Hibás űrlap", "error")
-        return redirect(url_for("investigations.detail_investigation", id=id))
+        return (
+            render_template(
+                "investigations/edit.html",
+                investigation=inv,
+                form=form,
+                caps=caps,
+            ),
+            400,
+        )
     logs = _log_changes(inv, form)
     db.session.add_all(logs)
     db.session.commit()
