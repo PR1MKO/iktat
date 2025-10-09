@@ -341,7 +341,7 @@ def leiro_elvegzem(id: int):
 
     notes = (
         InvestigationNote.query.filter_by(investigation_id=id)
-        .order_by(InvestigationNote.timestamp.desc())
+        .order_by(InvestigationNote.timestamp.asc())
         .all()
     )
     attachments = (
@@ -2224,7 +2224,7 @@ def view_investigation(id):
 
     notes = (
         InvestigationNote.query.filter_by(investigation_id=id)
-        .order_by(InvestigationNote.timestamp.desc())
+        .order_by(InvestigationNote.timestamp.asc())
         .all()
     )
     for note in notes:
@@ -2292,7 +2292,7 @@ def detail_investigation(id):
     inv.deadline_str = fmt_date(inv.deadline)
     notes = (
         InvestigationNote.query.filter_by(investigation_id=id)
-        .order_by(InvestigationNote.timestamp.desc())
+        .order_by(InvestigationNote.timestamp.asc())
         .all()
     )
     attachments = (
@@ -2628,7 +2628,7 @@ def assign_investigation_expert(id):
 
     notes = (
         InvestigationNote.query.filter_by(investigation_id=id)
-        .order_by(InvestigationNote.timestamp.desc())
+        .order_by(InvestigationNote.timestamp.asc())
         .all()
     )
     for note in notes:

@@ -231,9 +231,9 @@
       <div class="card flex-fill d-flex flex-column h-100">
         <div class="card-header">Jegyzetek</div>
         <div class="card-body flex-fill overflow-auto">
-          <ul id="notes-list" class="list-group list-group-flush mb-3">
+            <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll">
             {% if case.notes %}
-              {% for line in case.notes.split('\n')|reverse %}
+                {% for line in case.notes.split('\n') %}
                 <li class="list-group-item">
                   {{ line }}
                 </li>

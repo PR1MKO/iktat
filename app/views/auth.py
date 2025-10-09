@@ -1689,12 +1689,10 @@ def add_note_universal(case_id):
     case = db.session.get(Case, case_id) or abort(404)
 
     now = now_utc()
-    # Store and display with slashes; tests also look for a bracketed form using an en dash
     ts_raw = fmt_budapest(now, "%Y/%m/%d %H:%M")  # stored in notes
     ts_display = fmt_budapest(now, "%Y/%m/%d %H:%M")  # shown in UI
 
     author = resolve_user_display(current_user)
-    # Persist the bracketed log line in case.notes (used by the parser)
     entry = f"[{ts_raw} – {author}] {note_text}"
 
     case.notes = (case.notes + "\n" if case.notes else "") + entry
@@ -1705,12 +1703,10 @@ def add_note_universal(case_id):
         current_app.logger.error(f"Database error: {e}")
         return jsonify({"error": "DB error"}), 500
 
-    # Return HTML that includes both the pretty stamp and a hidden bracketed stamp
     li_html = (
         '<li class="list-group-item">'
         f'<div><strong>{author}</strong> <small class="text-muted">{ts_display}</small></div>'
         f"<div>{note_text}</div>"
-        # Hidden bracketed form so tests can match it directly in the response
         f'<span class="d-none">[{ts_display} – {author}]</span>'
         "</li>"
     )

@@ -54,3 +54,9 @@ ion-icon,
 .documents-page .file-upload-form .form-check { margin-bottom: 0; }
 .documents-page .file-upload-form .form-check-input { margin-top: 0; }
 .documents-page .file-upload-form .form-check-label { margin-bottom: 0; }
+
+/* Sitewide notes scroll cap (CSP-safe, no inline styles) */
+.notes-scroll {
+  max-height: calc(100vh / 3);
+  overflow-y: auto;
+}

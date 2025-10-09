@@ -1,3 +1,4 @@
+# app/__init__.py
 import logging
 import os
 import re
@@ -260,8 +261,8 @@ def create_app(test_config=None):
         response.headers.setdefault(
             "Referrer-Policy", "strict-origin-when-cross-origin"
         )
-        response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response_headers = response.headers
+        response_headers.setdefault("X-Content-Type-Options", "nosniff")
         response_headers.setdefault("X-Frame-Options", "DENY")
         response_headers.setdefault(
             "Permissions-Policy", "camera=(), microphone=(), geolocation=()"

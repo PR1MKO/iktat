@@ -1,3 +1,4 @@
+<!-- app/templates/case_detail.html -->
 {% extends "base.html" %}
 {% import 'includes/case_macros.html' as cm with context %}
 
@@ -47,9 +48,9 @@
       <div class="card mb-3" id="notes-form" data-case-id="{{ case.id }}">
         <div class="card-header">Megjegyzések</div>
         <div class="card-body">
-          <ul id="notes-list" class="list-group list-group-flush mb-3">
+          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll">
             {% if case.notes %}
-              {% for line in case.notes.split('\n')|reverse %}
+              {% for line in case.notes.split('\n') %}
                 {% set parsed = line|parse_note_changelog %}
                 {% if parsed %}
                   <li class="list-group-item">

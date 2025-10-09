@@ -90,7 +90,7 @@
 		
         const empty = list.querySelector('.empty-state');
         if (empty) empty.remove();
-        list.insertAdjacentHTML('afterbegin', html);
+        list.insertAdjacentHTML('beforeend', html);
         textarea.value = '';
         textarea.classList.remove('is-invalid');
         clearInlineWarning();

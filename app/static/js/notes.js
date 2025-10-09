@@ -98,7 +98,7 @@
           if (empty) {
             empty.remove();
           }
-          list.insertAdjacentHTML('afterbegin', data.html);
+          list.insertAdjacentHTML('beforeend', data.html);
         }
         if (input) {
           input.value = '';
