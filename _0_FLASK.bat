@@ -71,9 +71,20 @@ IF EXIST requirements-dev.txt (
 REM Quick sanity imports
 python -c "import sys, sqlalchemy, pytest; print('Py:',sys.version.split()[0],' SA:',getattr(sqlalchemy,'__version__','?'),' PYTEST:',pytest.__version__)" || exit /b 1
 
-REM 6) Run tests (live output + tee to log); on failure, tail + summary and offer Notepad
+REM 6) Run pre-commit (changed-only; one restage pass; fail-fast)
 echo.
-echo [6/10] Running tests...
+echo [6/10] Running pre-commit hooks (changed files)...
+git add -A
+pre-commit run --show-diff-on-failure || (
+    echo   Hooks applied fixes; re-staging...
+    git add -A
+    pre-commit run --show-diff-on-failure || (echo   pre-commit still failing. & exit /b 1)
+)
+echo   pre-commit completed.
+
+REM 7) Run tests (live output + tee to log); on failure, tail + summary and offer Notepad
+echo.
+echo [7/10] Running tests...
 set "LOG_DIR=logs"
 IF NOT EXIST "%LOG_DIR%" mkdir "%LOG_DIR%"
 set "LOG_FILE=%LOG_DIR%\pytest_%TS%.log"
@@ -120,22 +131,12 @@ if NOT "%RC%"=="0" (
 
 echo   Tests passed. Log: %LOG_FILE%
 
-REM 7) Run pre-commit (changed-only; one restage pass; fail-fast)
-echo.
-echo [7/10] Running pre-commit hooks (changed files)...
-git add -A
-pre-commit run --show-diff-on-failure || (
-    echo   Hooks applied fixes; re-staging...
-    git add -A
-    pre-commit run --show-diff-on-failure || (echo   pre-commit still failing. & exit /b 1)
-)
-echo   pre-commit completed.
 
 REM 8) Commit
 echo.
 echo [8/10] Committing latest changes...
 git add -A
-git commit -m "Safe deploy (NO-DB): test->hooks (%TS%)" || echo   Nothing to commit.
+git commit -m "Safe deploy (NO-DB): hooks->tests (%TS%)" || echo   Nothing to commit.
 
 REM 9) Push (push the CURRENT branch; set upstream if missing)
 echo.
