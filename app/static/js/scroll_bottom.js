@@ -1,51 +1,76 @@
-// Ensure notes lists stay scrolled to the latest entries.
 (function () {
-  function scrollToBottom(el) {
+  "use strict";
+
+  // How close to the bottom we consider "stuck" (px)
+  var STICKY_THRESHOLD = 120;
+
+  function isNearBottom(el) {
     try {
-      el.scrollTop = el.scrollHeight;
-    } catch (_) {
-      /* noop */
+      return (el.scrollHeight - el.clientHeight - el.scrollTop) <= STICKY_THRESHOLD;
+    } catch (e) {
+      return true;
     }
   }
 
-  var raf = typeof window !== 'undefined' && window.requestAnimationFrame
-    ? window.requestAnimationFrame.bind(window)
-    : function (cb) { return setTimeout(cb, 0); };
-
-  function initNode(el) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function handleLoad() {
-        scrollToBottom(el);
-      }, { once: true });
-    } else {
-      raf(function () {
-        scrollToBottom(el);
+  function scrollToBottom(el) {
+    // Use RAF twice to allow layout after mutations
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        try {
+          el.scrollTop = el.scrollHeight;
+        } catch (e) { /* no-op */ }
       });
-    }
+    });
+  }
 
-    var observer = new MutationObserver(function (mutations) {
-      for (var i = 0; i < mutations.length; i += 1) {
-        var mutation = mutations[i];
-        if (mutation.type === 'childList' && mutation.addedNodes && mutation.addedNodes.length) {
-          scrollToBottom(el);
+  function attachObserver(el) {
+    if (!el || el.__scrollBottomObserverAttached) return;
+    el.__scrollBottomObserverAttached = true;
+
+    // Initial snap to bottom on first load
+    scrollToBottom(el);
+
+    // Track user intent: if they scroll far up, we won't auto-stick
+    var userNearBottom = true;
+    el.addEventListener("scroll", function () {
+      userNearBottom = isNearBottom(el);
+    }, { passive: true });
+
+    var mo = new MutationObserver(function (mutations) {
+      var appended = false;
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === "childList" && (m.addedNodes && m.addedNodes.length)) {
+          appended = true;
           break;
         }
       }
+      if (appended && userNearBottom) {
+        scrollToBottom(el);
+      }
     });
 
-    observer.observe(el, { childList: true });
+    mo.observe(el, { childList: true, subtree: false });
   }
 
-  function initAll() {
-    var targets = document.querySelectorAll('[data-scroll-bottom="true"]');
-    Array.prototype.forEach.call(targets, function (el) {
-      initNode(el);
+  function init() {
+    var nodes = document.querySelectorAll('[data-scroll-bottom="true"]');
+    for (var i = 0; i < nodes.length; i++) {
+      attachObserver(nodes[i]);
+    }
+
+    // Optional: listen for a generic custom event in case pages already dispatch one
+    window.addEventListener("ikta:notes:appended", function () {
+      for (var j = 0; j < nodes.length; j++) {
+        // Force scroll if event explicitly says new note was appended
+        scrollToBottom(nodes[j]);
+      }
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAll, { once: true });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
   } else {
-    initAll();
+    init();
   }
 })();

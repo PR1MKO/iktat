@@ -144,7 +144,7 @@
     <div class="card-header">Megjegyzések</div>
     <div class="card-body">
       {% set can_post_inv_note = caps.get('can_post_investigation_notes_effective', caps.get('can_post_investigation_notes')) %}
-        <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll">
+        <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll" data-scroll-bottom="true">
         {% if notes %}
           {% for note in notes %}
             {% set author = note.author %}

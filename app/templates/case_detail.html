@@ -48,7 +48,7 @@
       <div class="card mb-3" id="notes-form" data-case-id="{{ case.id }}">
         <div class="card-header">Megjegyzések</div>
         <div class="card-body">
-          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll">
+          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll" data-scroll-bottom="true">
             {% if case.notes %}
               {% for line in case.notes.split('\n') %}
                 {% set parsed = line|parse_note_changelog %}
