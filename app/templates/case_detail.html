@@ -90,8 +90,10 @@
         <div class="card-header">Változásnapló</div>
         <div class="card-body">
           <ul class="list-group list-group-flush mb-0">
-            {% if changelog_entries and changelog_entries|length %}
-              {% for e in changelog_entries %}
+            {# Prefer controller-provided list, fall back to relationship if present #}
+            {% set _changes = (changelog_entries|default(None)) or (case.change_logs|default([])) %}
+            {% if _changes and _changes|length %}
+              {% for e in _changes %}
                 <li class="list-group-item">
                   {{ fmt_budapest(e.timestamp, "%Y/%m/%d %H:%M") }} — {{ e.edited_by }}
                   <div class="small">
