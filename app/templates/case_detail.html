@@ -6,49 +6,48 @@
 
 {% block content %}
 <div class="container py-4">
-
-  <!-- Alapadatok -->
-  <div class="row mb-4">
+  <div class="row g-4">
     <div class="col-12">
       {{ cm.alapadatok(case) }}
     </div>
   </div>
+</div>
 
-  {% if caps['can_upload_case'] %}
-  <div class="row mb-4">
+{% if caps['can_upload_case'] %}
+<div class="container py-4">
+  <div class="row g-4">
     <div class="col-12">
-      <div class="mb-3">
-        {{ cm.file_upload_block(
-          case_id=case.id,
-          input_name='file',
-          form_id='file-upload-form',
-          multiple=True,
-          label='Fájl feltöltése',
-          btn_label='Feltöltés'
-        ) }}
-      </div>
+      {{ cm.file_upload_block(
+        case_id=case.id,
+        input_name='file',
+        form_id='file-upload-form',
+        multiple=True,
+        label='Fájl feltöltése',
+        btn_label='Feltöltés'
+      ) }}
     </div>
   </div>
-  {% endif %}
+</div>
+{% endif %}
 
-  <!-- Vizsgálatok elrendelése & Feltöltött fájlok -->
-  <div class="row mb-4">
-    <div class="col-md-6 mb-3">
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-md-6">
       {{ cm.orders_block(case.tox_orders) }}
     </div>
-    <div class="col-md-6 mb-3">
+    <div class="col-md-6">
       {{ cm.uploaded_files(case) }}
     </div>
   </div>
+</div>
 
-  <!-- Megjegyzések & Változásnapló -->
-  <div class="row mb-4">
-    <!-- Megjegyzések -->
+<div class="container py-4">
+  <div class="row g-4">
     <div class="col-md-6 d-flex flex-column">
-      <div class="card mb-3" id="notes-form" data-case-id="{{ case.id }}">
+      <div class="card h-100" id="notes-form" data-case-id="{{ case.id }}">
         <div class="card-header">Megjegyzések</div>
-        <div class="card-body">
-          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll" data-scroll-bottom="true">
+        <div class="card-body d-flex flex-column">
+          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll flex-grow-1" data-scroll-bottom="true">
             {% if case.notes %}
               {% for line in case.notes.split('\n') %}
                 {% set parsed = line|parse_note_changelog %}
@@ -83,14 +82,11 @@
         </div>
       </div>
     </div>
-
-    <!-- Változásnapló -->
     <div class="col-md-6 d-flex">
-      <div class="card mb-3 flex-fill">
+      <div class="card flex-fill">
         <div class="card-header">Változásnapló</div>
         <div class="card-body">
           <ul class="list-group list-group-flush mb-0">
-            {# Prefer controller-provided list, fall back to relationship if present #}
             {% set _changes = (changelog_entries|default(None)) or (case.change_logs|default([])) %}
             {% if _changes and _changes|length %}
               {% for e in _changes %}
@@ -110,9 +106,12 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Navigation buttons -->
-  <a href="{{ request.referrer or url_for('auth.list_cases') }}" class="btn btn-secondary">Vissza</a>
-  {{ cm.elvegzem_button(case, current_user) }}
+<div class="container py-4">
+  <div class="d-flex gap-2">
+    <a href="{{ request.referrer or url_for('auth.list_cases') }}" class="btn btn-secondary">Vissza</a>
+    {{ cm.elvegzem_button(case, current_user) }}
+  </div>
 </div>
 {% endblock %}

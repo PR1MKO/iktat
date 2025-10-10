@@ -3,7 +3,6 @@
 {% block sidebar %}{% endblock %}
 
 {% block content %}
-<div class="container pt-2 pb-4">
 
   <!-- Alapadatok -->
   <div class="row">
@@ -11,7 +10,7 @@
       {{ cm.alapadatok(case) }}
     </div>
   </div>
-  
+
   {% if case.tox_ordered and not case.tox_viewed_by_expert and vegzes_file %}
     <div class="alert alert-danger w-100" id="tox-alert">
       Toxikológiai vizsgálatok kérvényezve –
@@ -23,11 +22,11 @@
       Meg kell tekintenie a végzést a szerkesztés engedélyezéséhez
     </div>
   {% elif case.tox_viewed_by_expert %}
-      <div class="alert alert-success w-100">
-        Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at_str }}
-      </div>
-    {% endif %}
-  
+    <div class="alert alert-success w-100">
+      Toxikológiai vizsgálatokat tartalmazó végzést megtekintettem {{ case.tox_viewed_at_str }}
+    </div>
+  {% endif %}
+
   <!-- Row #1: Order button & File‐picker side by side -->
   <div class="row">
     <div class="col-md-6 mb-3">
@@ -49,39 +48,38 @@
 
   <!-- Row #2: Vizsgálatok -->
   <div class="row">
-	<!-- Left: Toxikológia -->
-	<div class="col-md-6 mb-3">
-	  <div class="card h-100">
-		<div class="card-header">Toxikológiai vizsgálatok</div>
-		<div class="card-body small">
-		  <dl class="row mb-0">
-			{% for label, attr in [
-			  ('Alkohol vér', 'alkohol_ver'),
-			  ('Alkohol vizelet', 'alkohol_vizelet'),
-			  ('Alkohol liquor', 'alkohol_liquor'),
-			  ('Egyéb alkohol', 'egyeb_alkohol'),
-			  ('Gyógyszer vér', 'tox_gyogyszer_ver'),
-			  ('Gyógyszer vizelet', 'tox_gyogyszer_vizelet'),
-			  ('Gyógyszer gyomortartalom', 'tox_gyogyszer_gyomor'),
-			  ('Gyógyszer máj', 'tox_gyogyszer_maj'),
-			  ('Kábítószer vér', 'tox_kabitoszer_ver'),
-			  ('Kábítószer vizelet', 'tox_kabitoszer_vizelet'),
-			  ('CPK', 'tox_cpk'),
-			  ('Szárazanyagtartalom', 'tox_szarazanyag'),
-			  ('Diatóma', 'tox_diatoma'),
-			  ('CO', 'tox_co'),
-			  ('Egyéb toxikológia', 'egyeb_tox'),
-			] %}
-			{% if case[attr + '_ordered'] %}
-			  <dt class="col-6">{{ label }}</dt>
-			  <dd class="col-6">{{ case[attr] }}</dd>
-			{% endif %}
-			{% endfor %}
-		  </dl>
-		</div>
-	  </div>
-	</div>
-
+    <!-- Left: Toxikológia -->
+    <div class="col-md-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">Toxikológiai vizsgálatok</div>
+        <div class="card-body small">
+          <dl class="row mb-0">
+            {% for label, attr in [
+              ('Alkohol vér', 'alkohol_ver'),
+              ('Alkohol vizelet', 'alkohol_vizelet'),
+              ('Alkohol liquor', 'alkohol_liquor'),
+              ('Egyéb alkohol', 'egyeb_alkohol'),
+              ('Gyógyszer vér', 'tox_gyogyszer_ver'),
+              ('Gyógyszer vizelet', 'tox_gyogyszer_vizelet'),
+              ('Gyógyszer gyomortartalom', 'tox_gyogyszer_gyomor'),
+              ('Gyógyszer máj', 'tox_gyogyszer_maj'),
+              ('Kábítószer vér', 'tox_kabitoszer_ver'),
+              ('Kábítószer vizelet', 'tox_kabitoszer_vizelet'),
+              ('CPK', 'tox_cpk'),
+              ('Szárazanyagtartalom', 'tox_szarazanyag'),
+              ('Diatóma', 'tox_diatoma'),
+              ('CO', 'tox_co'),
+              ('Egyéb toxikológia', 'egyeb_tox'),
+            ] %}
+              {% if case[attr ~ '_ordered'] %}
+                <dt class="col-6">{{ label }}</dt>
+                <dd class="col-6">{{ case[attr] }}</dd>
+              {% endif %}
+            {% endfor %}
+          </dl>
+        </div>
+      </div>
+    </div>
 
     <!-- Right: Szervvizsgálat -->
     <div class="col-md-6 mb-3">
@@ -100,15 +98,15 @@
               ('Hasnyálmirigy', 'hasnyalmirigy'),
               ('Lép', 'lep'),
             ] %}
-            {% set spec = case[key ~ '_spec'] %}
-            {% set immun = case[key ~ '_immun'] %}
-            {% if spec or immun %}
-              <dt class="col-6">{{ label }}</dt>
-              <dd class="col-6">
-                {% if spec %}<span class="badge bg-info text-dark">Spec fest</span>{% endif %}
-                {% if immun %}<span class="badge bg-warning text-dark">Immun</span>{% endif %}
-              </dd>
-            {% endif %}
+              {% set spec = case[key ~ '_spec'] %}
+              {% set immun = case[key ~ '_immun'] %}
+              {% if spec or immun %}
+                <dt class="col-6">{{ label }}</dt>
+                <dd class="col-6">
+                  {% if spec %}<span class="badge bg-info text-dark">Spec fest</span>{% endif %}
+                  {% if immun %}<span class="badge bg-warning text-dark">Immun</span>{% endif %}
+                </dd>
+              {% endif %}
             {% endfor %}
             {% if case.egyeb_szerv %}
               <dt class="col-6">Egyéb szerv: {{ case.egyeb_szerv }}</dt>
@@ -153,14 +151,14 @@
             <div class="card-header">Leíró hozzárendelése</div>
             <div class="card-body p-3 d-flex">
               <label for="describer" class="form-label visually-hidden">Leíró</label>
-                <select id="describer" name="describer" class="form-select" aria-label="Leíró" title="Leíró">
-                  <option value="" {% if not case.describer %}selected{% endif %}>(válasszon)</option>
-                  {% for u in leiro_users %}
-                    <option value="{{ u.screen_name }}" {% if case.describer == u.screen_name %}selected{% endif %}>
-                      {{ u.screen_name or u.username }}
-                    </option>
-                  {% endfor %}
-                </select>
+              <select id="describer" name="describer" class="form-select" aria-label="Leíró" title="Leíró">
+                <option value="" {% if not case.describer %}selected{% endif %}>(válasszon)</option>
+                {% for u in leiro_users %}
+                  <option value="{{ u.screen_name }}" {% if case.describer == u.screen_name %}selected{% endif %}>
+                    {{ u.screen_name or u.username }}
+                  </option>
+                {% endfor %}
+              </select>
               <button id="assign-btn" class="btn btn-primary ms-2">Hozzárendelem</button>
             </div>
           </div>
@@ -174,217 +172,221 @@
         <div class="card-header fw-bold">Halottvizsgálati Bizonyítvány Generálása</div>
         <div class="card-body">
           {% if show_certificate_message %}
-          <div class="alert alert-success">
-            Halottvizsgálati Bizonyítvány generálva: {{ formatted_certificate_timestamp }}
-          </div>
+            <div class="alert alert-success">
+              Halottvizsgálati Bizonyítvány generálva: {{ formatted_certificate_timestamp }}
+            </div>
           {% else %}
-          {% set none_selected = not (case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos) %}
-          <div class="row mb-3">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">A halál okát megállapította:</label><br>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="det-path" name="halalt_megallap" value="pathologus" {% if case.halalt_megallap_pathologus or none_selected %}checked{% endif %} required>
-                <label class="form-check-label" for="det-path">pathológus</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="det-kez" name="halalt_megallap" value="kezeloorvos" {% if case.halalt_megallap_kezeloorvos %}checked{% endif %} required>
-                <label class="form-check-label" for="det-kez">kezelőorvos</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="det-mas" name="halalt_megallap" value="mas_orvos" {% if case.halalt_megallap_mas_orvos %}checked{% endif %} required>
-                <label class="form-check-label" for="det-mas">más orvos</label>
-              </div>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Történt-e boncolás?</label><br>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" required
-                       {% if case.boncolas_tortent %}checked{% endif %}>
-                <label class="form-check-label" for="bonc-igen">igen</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" required
-                       {% if case.boncolas_tortent is not none and not case.boncolas_tortent %}checked{% endif %}>
-                <label class="form-check-label" for="bonc-nem">nem</label>
-              </div>
-              <div id="tovabbi-vizsgalat-group" class="mt-2" style="display:none">
-                <label class="form-label">Ha igen, várhatók-e további vizsgálati eredmények?</label><br>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" id="further-igen" name="varhato_tovabbi_vizsgalat" value="igen">
-                  <label class="form-check-label" for="further-igen">igen</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" id="further-nem" name="varhato_tovabbi_vizsgalat" value="nem">
-                  <label class="form-check-label" for="further-nem">nem</label>
-                </div>
-              </div>
-            </div>
-          </div>
+            {% set none_selected = not (case.halalt_megallap_pathologus or case.halalt_megallap_kezeloorvos or case.halalt_megallap_mas_orvos) %}
 
-      <div class="row mb-3">
-        <div class="col-md-6 mb-3">
-          <label class="form-label">Közvetlen halálok:</label>
-          <input type="text" name="kozvetlen_halalok" class="form-control" value="{{ case.kozvetlen_halalok or '' }}" required>
-          <div class="invalid-feedback">Kérjük, adja meg.</div>
-        </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-            <input type="text" name="kozvetlen_halalok_ido" class="form-control" value="{{ case.kozvetlen_halalok_ido or '' }}" required>
-            <div class="invalid-feedback">Kérjük, adja meg.</div>
-        </div>
-	  </div>
-        <div class="row mb-3">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Alapbetegség szövődményei (ha voltak):</label>
-            <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}">
-            <div class="invalid-feedback">Kérjük, adja meg.</div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-            <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}">
-            <div class="invalid-feedback">Kérjük, adja meg.</div>
-          </div>
-      </div>
-        <div class="row mb-3">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Alapbetegség:</label>
-            <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}">
-            <div class="invalid-feedback">Kérjük, adja meg.</div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
-            <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}">
-            <div class="invalid-feedback">Kérjük, adja meg.</div>
-          </div>
-      <div class="row mb-3">
-        <div class="col-md-12">
-          <label class="form-label">Kísérő betegségek vagy állapotok, melyek az alapbetegségtől függetlenek, de hozzájárulhattak a halálhoz</label>
-          <textarea name="kiserobetegsegek" class="form-control" rows="3">{{ case.kiserobetegsegek or '' }}</textarea>
-          <div class="invalid-feedback">Kérjük, adja meg.</div>
-        </div>
-      </div>
-          <div class="row mb-3">
-            <div class="col-md-12">
-              <button type="submit" class="btn btn-warning">Bizonyítvány Generálása</button>
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">A halál okát megállapította:</label><br>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="det-path" name="halalt_megallap" value="pathologus" {% if case.halalt_megallap_pathologus or none_selected %}checked{% endif %} required>
+                  <label class="form-check-label" for="det-path">pathológus</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="det-kez" name="halalt_megallap" value="kezeloorvos" {% if case.halalt_megallap_kezeloorvos %}checked{% endif %} required>
+                  <label class="form-check-label" for="det-kez">kezelőorvos</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="det-mas" name="halalt_megallap" value="mas_orvos" {% if case.halalt_megallap_mas_orvos %}checked{% endif %} required>
+                  <label class="form-check-label" for="det-mas">más orvos</label>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Történt-e boncolás?</label><br>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="bonc-igen" name="boncolas_tortent" value="igen" required
+                         {% if case.boncolas_tortent %}checked{% endif %}>
+                  <label class="form-check-label" for="bonc-igen">igen</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input" type="radio" id="bonc-nem" name="boncolas_tortent" value="nem" required
+                         {% if case.boncolas_tortent is not none and not case.boncolas_tortent %}checked{% endif %}>
+                  <label class="form-check-label" for="bonc-nem">nem</label>
+                </div>
+                <div id="tovabbi-vizsgalat-group" class="mt-2" style="display:none">
+                  <label class="form-label">Ha igen, várhatók-e további vizsgálati eredmények?</label><br>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="further-igen" name="varhato_tovabbi_vizsgalat" value="igen">
+                    <label class="form-check-label" for="further-igen">igen</label>
+                  </div>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" id="further-nem" name="varhato_tovabbi_vizsgalat" value="nem">
+                    <label class="form-check-label" for="further-nem">nem</label>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Közvetlen halálok:</label>
+                <input type="text" name="kozvetlen_halalok" class="form-control" value="{{ case.kozvetlen_halalok or '' }}" required>
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+                <input type="text" name="kozvetlen_halalok_ido" class="form-control" value="{{ case.kozvetlen_halalok_ido or '' }}" required>
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Alapbetegség szövődményei (ha voltak):</label>
+                <input type="text" name="alapbetegseg_szovodmenyei" class="form-control" value="{{ case.alapbetegseg_szovodmenyei or '' }}">
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+                <input type="text" name="alapbetegseg_szovodmenyei_ido" class="form-control" value="{{ case.alapbetegseg_szovodmenyei_ido or '' }}">
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Alapbetegség:</label>
+                <input type="text" name="alapbetegseg" class="form-control" value="{{ case.alapbetegseg or '' }}">
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Esemény kezdete és halál között eltelt hozzávetőleges idő:</label>
+                <input type="text" name="alapbetegseg_ido" class="form-control" value="{{ case.alapbetegseg_ido or '' }}">
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <label class="form-label">Kísérő betegségek vagy állapotok, melyek az alapbetegségtől függetlenek, de hozzájárulhattak a halálhoz</label>
+                <textarea name="kiserobetegsegek" class="form-control" rows="3">{{ case.kiserobetegsegek or '' }}</textarea>
+                <div class="invalid-feedback">Kérjük, adja meg.</div>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-12">
+                <button type="submit" class="btn btn-warning">Bizonyítvány Generálása</button>
+              </div>
+            </div>
           {% endif %}
-                </div>
+        </div> <!-- /.card-body -->
+      </div> <!-- /.card -->
+    </div> <!-- /.col-12 -->
+  </form>
+
+  {% if current_user.is_authenticated and current_user.role in ['szakértő', 'admin'] %}
+    <form method="post" action="{{ url_for('main.complete_expert', case_id=case.id) }}" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="d-flex gap-2 mb-4">
+        <button type="submit" class="btn btn-success">Elvégezve</button>
+        <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
       </div>
-    </div>
-		</div>
+    </form>
+  {% endif %}
 
-  </form>
-
-{% if current_user.is_authenticated and current_user.role in ['szakértő', 'admin'] %}
-  <form method="post" action="{{ url_for('main.complete_expert', case_id=case.id) }}" class="mt-2">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="d-flex gap-2 mb-4">
-      <button type="submit" class="btn btn-success">Elvégezve</button>
-      <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
-    </div>
-  </form>
-{% endif %}
-
-<script>
-
-  const toxLocked = {{ 'true' if current_user.role=='szakértő' and case.tox_ordered and not case.tox_viewed_by_expert else 'false' }};
-  if (toxLocked) {
-    document.querySelectorAll('input, select, textarea, button').forEach(el => {
-      if (el.id !== 'tox-view-link') {
-        el.disabled = true;
-      }
-    });
-    document.querySelectorAll('a').forEach(el => {
-      if (el.id !== 'tox-view-link' && !el.classList.contains('btn-outline-secondary')) {
-        el.classList.add('disabled');
-        el.addEventListener('click', e => e.preventDefault());
-      }
-    });
-  }
-  document.getElementById('assign-btn').addEventListener('click', function(e) {
-    e.preventDefault();
-    const descr = document.getElementById('describer').value;
-    if (!descr) {
-      alert('Válasszon leírót!');
-      return;
+  <script>
+    const toxLocked = {{ 'true' if current_user.role=='szakértő' and case.tox_ordered and not case.tox_viewed_by_expert else 'false' }};
+    if (toxLocked) {
+      document.querySelectorAll('input, select, textarea, button').forEach(el => {
+        if (el.id !== 'tox-view-link') {
+          el.disabled = true;
+        }
+      });
+      document.querySelectorAll('a').forEach(el => {
+        if (el.id !== 'tox-view-link' && !el.classList.contains('btn-outline-secondary')) {
+          el.classList.add('disabled');
+          el.addEventListener('click', e => e.preventDefault());
+        }
+      });
     }
-    fetch("{{ url_for('main.assign_describer', case_id=case.id) }}", {
-      method: 'POST',
-      headers: {
-        'Content-Type':'application/json',
-        'X-CSRFToken':'{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ describer: descr })
-    }).then(r => {
-      if (r.ok) {
-        location.reload();
-      } else {
-        alert('Hiba történt');
+
+    document.getElementById('assign-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      const descr = document.getElementById('describer').value;
+      if (!descr) {
+        alert('Válasszon leírót!');
+        return;
       }
-    });
-  });
-
-  document.getElementById('add_note_btn').addEventListener('click', function() {
-    const txt = document.getElementById('new_note');
-    if (!txt.value.trim()) {
-      txt.classList.add('is-invalid');
-      return;
-    }
-    fetch("/cases/{{ case.id }}/add_note", {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ new_note: txt.value.trim() })
-    })
-    .then(r => {
-      if (!r.ok) throw new Error();
-      return r.json();
-    })
-    .then(data => {
-      const container = document.querySelector('#notes-form .card-body');
-      if (container && data.html) {
-        container.insertAdjacentHTML('afterbegin', data.html);
-        txt.value = '';
-      } else {
-        alert('Nem található notes container vagy üres válasz.');
-      }
-    })
-    .catch(() => alert('Hiba a megjegyzés mentésekor'));
-  });
-
-  const boncolasRadios = document.querySelectorAll('input[name="boncolas_tortent"]');
-  const tovabbiBox = document.getElementById('tovabbi-vizsgalat-group');
-  const tovabbiRadios = document.querySelectorAll('input[name="varhato_tovabbi_vizsgalat"]');
-
-  function updateTovabbi() {
-    const selected = document.querySelector('input[name="boncolas_tortent"]:checked');
-    if (selected && selected.value === 'igen') {
-      tovabbiBox.style.display = 'block';
-      tovabbiRadios.forEach(x => x.required = true);
-    } else {
-      tovabbiBox.style.display = 'none';
-      tovabbiRadios.forEach(x => x.required = false);
-    }
-  }
-
-  boncolasRadios.forEach(r => {
-    r.addEventListener('change', updateTovabbi);
-  });
-  updateTovabbi();
-
-  (function() {
-    'use strict';
-    document.querySelectorAll('.needs-validation').forEach(form => {
-      form.addEventListener('submit', e => {
-        if (!form.checkValidity()) {
-          e.preventDefault();
-          form.classList.add('was-validated');
+      fetch("{{ url_for('main.assign_describer', case_id=case.id) }}", {
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json',
+          'X-CSRFToken':'{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ describer: descr })
+      }).then(r => {
+        if (r.ok) {
+          location.reload();
+        } else {
+          alert('Hiba történt');
         }
       });
     });
-  })();
-</script>
+
+    document.getElementById('add_note_btn').addEventListener('click', function() {
+      const txt = document.getElementById('new_note');
+      if (!txt.value.trim()) {
+        txt.classList.add('is-invalid');
+        return;
+      }
+      fetch("/cases/{{ case.id }}/add_note", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ new_note: txt.value.trim() })
+      })
+      .then(r => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then(data => {
+        const container = document.querySelector('#notes-form .card-body');
+        if (container && data.html) {
+          container.insertAdjacentHTML('afterbegin', data.html);
+          txt.value = '';
+        } else {
+          alert('Nem található notes container vagy üres válasz.');
+        }
+      })
+      .catch(() => alert('Hiba a megjegyzés mentésekor'));
+    });
+
+    const boncolasRadios = document.querySelectorAll('input[name="boncolas_tortent"]');
+    const tovabbiBox = document.getElementById('tovabbi-vizsgalat-group');
+    const tovabbiRadios = document.querySelectorAll('input[name="varhato_tovabbi_vizsgalat"]');
+
+    function updateTovabbi() {
+      const selected = document.querySelector('input[name="boncolas_tortent"]:checked');
+      if (selected && selected.value === 'igen') {
+        tovabbiBox.style.display = 'block';
+        tovabbiRadios.forEach(x => x.required = true);
+      } else {
+        tovabbiBox.style.display = 'none';
+        tovabbiRadios.forEach(x => x.required = false);
+      }
+    }
+
+    boncolasRadios.forEach(r => {
+      r.addEventListener('change', updateTovabbi);
+    });
+    updateTovabbi();
+
+    (function() {
+      'use strict';
+      document.querySelectorAll('.needs-validation').forEach(form => {
+        form.addEventListener('submit', e => {
+          if (!form.checkValidity()) {
+            e.preventDefault();
+            form.classList.add('was-validated');
+          }
+        });
+      });
+    })();
+  </script>
 {% endblock %}

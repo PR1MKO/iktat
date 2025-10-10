@@ -2,60 +2,66 @@
 {% block title %}Vizsgálat – Dokumentumok{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h2 class="h5 mb-0">Dokumentumok – {{ investigation.case_number }}</h2>
-  <a class="btn btn-outline-secondary" href="{{ url_for('investigations.detail_investigation', id=investigation.id) }}">
-    Vissza a vizsgálathoz
-  </a>
-</div>
-
-<div class="card mb-4">
-  <div class="card-header">Fájl feltöltése</div>
-  <div class="card-body">
-    {% if can_upload_ui %}
-    <form id="file-upload-form"
-          class="file-upload-form needs-validation d-flex align-items-center"
-          method="post" enctype="multipart/form-data"
-          action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
-      {{ upload_form.hidden_tag() }}
-      <label for="file" class="form-label me-2 visually-hidden">Fájl feltöltése</label>
-      <input type="file" id="file" name="file" class="form-control me-2" multiple required aria-label="Fájl feltöltése" title="Fájl feltöltése">
-      <select name="category" id="upload-category-file-upload-form" class="form-select me-2 category-select" required aria-invalid="false" aria-describedby="category-help-file-upload-form">
-        <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
-        {% for val, label in upload_form.category.choices %}
-          <option value="{{ val }}">{{ label }}</option>
-        {% endfor %}
-      </select>
-      <div id="category-help-file-upload-form" class="invalid-feedback category-warning d-none" role="alert">
-        Kategória megadása kötelező.
-      </div>
-      <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
-    </form>
-    {% else %}
-    <div class="alert alert-info mb-3" role="alert">
-      {{ cannot_upload_reason or "Nincs jogosultság a feltöltéshez." }}
-    </div>
-    {% endif %}
+<div class="container py-4">
+  <div class="d-flex align-items-center justify-content-between">
+    <h2 class="h5 mb-0">Dokumentumok – {{ investigation.case_number }}</h2>
+    <a class="btn btn-outline-secondary" href="{{ url_for('investigations.detail_investigation', id=investigation.id) }}">
+      Vissza a vizsgálathoz
+    </a>
   </div>
 </div>
 
-<div class="card">
-  <div class="card-header">Feltöltött fájlok</div>
-  <ul id="attachments-list" class="list-group list-group-flush">
-    {% for a in attachments %}
-      <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
-        <span class="flex-grow-1 text-break">
-          <a class="text-break" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=a.id) }}">
-            {{ a.filename }}
-          </a>
-          <small class="text-muted">({{ a.category }})</small>
-        </span>
-        <small class="text-muted text-nowrap">{{ a.uploaded_at_str }}</small>
-      </li>
-    {% else %}
-      <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
-    {% endfor %}
-  </ul>
+<div class="container py-4">
+  <div class="card mb-4">
+    <div class="card-header">Fájl feltöltése</div>
+    <div class="card-body">
+      {% if can_upload_ui %}
+      <form id="file-upload-form"
+            class="file-upload-form needs-validation d-flex flex-wrap align-items-center gap-2"
+            method="post" enctype="multipart/form-data"
+            action="{{ url_for('investigations.upload_investigation_file', id=investigation.id) }}">
+        {{ upload_form.hidden_tag() }}
+        <label for="file" class="form-label visually-hidden">Fájl feltöltése</label>
+        <input type="file" id="file" name="file" class="form-control" multiple required aria-label="Fájl feltöltése" title="Fájl feltöltése">
+        <select name="category" id="upload-category-file-upload-form" class="form-select category-select" required aria-invalid="false" aria-describedby="category-help-file-upload-form">
+          <option value="" disabled selected hidden>-- Válasszon kategóriát --</option>
+          {% for val, label in upload_form.category.choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <div id="category-help-file-upload-form" class="invalid-feedback category-warning d-none" role="alert">
+          Kategória megadása kötelező.
+        </div>
+        <button type="submit" class="btn btn-outline-success upload-btn" disabled>Feltöltés</button>
+      </form>
+      {% else %}
+      <div class="alert alert-info mb-3" role="alert">
+        {{ cannot_upload_reason or "Nincs jogosultság a feltöltéshez." }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header">Feltöltött fájlok</div>
+    <ul id="attachments-list" class="list-group list-group-flush">
+      {% for a in attachments %}
+        <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center">
+          <span class="flex-grow-1 text-break">
+            <a class="text-break" href="{{ url_for('investigations.download_investigation_file', inv_id=investigation.id, file_id=a.id) }}">
+              {{ a.filename }}
+            </a>
+            <small class="text-muted">({{ a.category }})</small>
+          </span>
+          <small class="text-muted text-nowrap">{{ a.uploaded_at_str }}</small>
+        </li>
+      {% else %}
+        <li class="list-group-item text-muted">Nincs feltöltött fájl.</li>
+      {% endfor %}
+    </ul>
+  </div>
 </div>
 {% endblock %}
 

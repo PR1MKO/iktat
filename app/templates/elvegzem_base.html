@@ -6,21 +6,20 @@
 {% block title %}Ügy elvégzése – {{ case.case_number }}{% endblock %}
 
 {% block content %}
-<div class="container pt-2 pb-4">
-
-  <!-- Page header -->
-  <div class="card-body d-flex align-items-center py-3">
+<div class="container py-4">
+  <div class="d-flex align-items-center py-3">
     <i class="bi bi-clipboard-check fs-3 me-3 text-primary"></i>
     <div>
       <h3 class="h4 mb-0"><small>Ügy elvégzése – {{ case.case_number }}</small></h3>
     </div>
   </div>
+</div>
 
-  <!-- Alapadatok -->
+<div class="container py-4">
   <div class="card mb-4">
     <div class="card-header">Alapadatok</div>
     <div class="card-body">
-      <div class="row">
+      <div class="row g-4">
         <div class="col-md-6">
           <table class="table table-borderless mb-0">
             <tr><th>Boncszám:</th><td>{{ case.case_number }}</td></tr>
@@ -33,133 +32,95 @@
           </table>
         </div>
         <div class="col-md-6">
-            <table class="table table-borderless mb-0">
-              <tr>
-                <th>Regisztrálva:</th>
-                <td>
-                    {% if case.registration_time %}
-                      {{ case.registration_time_str }}
-                    {% else %}
-                      –
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Határidő:</th>
-                  <td>
-                    {% if case.deadline %}
-                      {{ case.deadline_str }}
-                    {% else %}
-                      –
-                    {% endif %}
-                  </td>
-                </tr>
-              <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
-              <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
-              <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
-            </table>
-          </div>
+          <table class="table table-borderless mb-0">
+            <tr>
+              <th>Regisztrálva:</th>
+              <td>{% if case.registration_time %}{{ case.registration_time_str }}{% else %}–{% endif %}</td>
+            </tr>
+            <tr>
+              <th>Határidő:</th>
+              <td>{% if case.deadline %}{{ case.deadline_str }}{% else %}–{% endif %}</td>
+            </tr>
+            <tr><th>Szakértő 1:</th><td>{{ case.expert_1 or '–' }}</td></tr>
+            <tr><th>Szakértő 2:</th><td>{{ case.expert_2 or '–' }}</td></tr>
+            <tr><th>Leíró:</th><td>{{ case.describer or '–' }}</td></tr>
+          </table>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-  <!-- Expert actions placeholder -->
+<div class="container py-4">
   {% block expert_actions %}{% endblock %}
+</div>
 
-  <!-- Orders & Uploaded files -->
-  <div class="row mb-4">
-    <!-- Expert orders placeholder -->
-    {% block expert_orders %}{% endblock %}
-
-    <!-- Uploaded files -->
-    <div class="col-md-6 mb-3">
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-md-6">
+      {% block expert_orders %}{% endblock %}
+    </div>
+    <div class="col-md-6">
       <div class="card h-100">
         <div class="card-header">Feltöltött fájlok</div>
         <div class="card-body">
           {% if case.uploaded_file_records %}
-            <ul class="list-group list-group-flush mb-0">
-              {% for rec in case.uploaded_file_records %}
-                <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
-                  <a class="flex-grow-1 text-break" href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
-                  <small class="text-muted text-nowrap">{{ rec.uploader }}{% if rec.upload_time_str %} · {{ rec.upload_time_str }}{% endif %}</small>
-                </li>
-              {% endfor %}
-            </ul>
+          <ul class="list-group list-group-flush mb-0">
+            {% for rec in case.uploaded_file_records %}
+              <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <a class="flex-grow-1 text-break" href="{{ url_for('auth.download_file', case_id=case.id, filename=rec.filename) }}">{{ rec.filename }}</a>
+                <small class="text-muted text-nowrap">{{ rec.uploader }}{% if rec.upload_time_str %} · {{ rec.upload_time_str }}{% endif %}</small>
+              </li>
+            {% endfor %}
+          </ul>
           {% else %}
-            <div class="text-muted">Nincs feltöltött fájl.</div>
+          <div class="text-muted">Nincs feltöltött fájl.</div>
           {% endif %}
         </div>
       </div>
     </div>
   </div>
+</div>
 
-<!-- Notes & Change-log -->
-<div class="row mb-4 align-items-stretch">
-  <!-- Notes -->
-  <div class="col-md-6 mb-3 d-flex flex-column" id="notes-form" data-case-id="{{ case.id }}">
-    <div class="card flex-fill d-flex flex-column h-100">
-      <div class="card-header">Jegyzetek</div>
-      <div class="card-body flex-fill overflow-auto">
-          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll" data-scroll-bottom="true">
-          {% if case.notes %}
+<div class="container py-4">
+  <div class="row g-4 align-items-stretch">
+    <div class="col-md-6 d-flex flex-column" id="notes-form" data-case-id="{{ case.id }}">
+      <div class="card flex-fill">
+        <div class="card-header">Jegyzetek</div>
+        <div class="card-body d-flex flex-column">
+          <ul id="notes-list" class="list-group list-group-flush mb-3 notes-scroll flex-grow-1" data-scroll-bottom="true">
+            {% if case.notes %}
               {% for line in case.notes.split('\n') %}
               <li class="list-group-item">{{ line }}</li>
-            {% endfor %}
-          {% else %}
-            <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
-          {% endif %}
-        </ul>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <textarea id="new_note" name="text" class="form-control mb-2" rows="2"></textarea>
-        {% if caps['can_post_notes'] %}
-        <button type="button"
-                id="add-note-btn"
-                class="btn btn-primary"
-                data-notes-url="{{ url_for('auth.add_note_universal', case_id=case.id) }}">
-          Hozzáadás
-        </button>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Change-log -->
-  <div class="col-md-6 d-flex">
-    {{ cm.changelog_block(changelog_entries) }}
-  </div>
-</div>
-
-    <!-- Change-log placeholder -->
-    <div class="col-md-6 mb-3 d-flex">
-      <div class="card flex-fill d-flex flex-column h-100">
-        <div class="card-header">Változásnapló</div>
-        <div class="card-body flex-fill overflow-auto p-3">
-          <div class="list-group list-group-flush">
-            {% for entry in changelog_entries %}
-              <div class="list-group-item py-2">
-                {{ entry.timestamp_str }} — {{ entry.edited_by }} {{ entry.new_value or '–' }}
-              </div>
-            {% endfor %}
-            {% if not changelog_entries %}
-              <div class="list-group-item text-center text-muted">Nincs rögzített változás.</div>
+              {% endfor %}
+            {% else %}
+              <li class="list-group-item text-muted empty-state">Nincsenek megjegyzések.</li>
             {% endif %}
-          </div>
+          </ul>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea id="new_note" name="text" class="form-control mb-2" rows="2"></textarea>
+          {% if caps['can_post_notes'] %}
+          <button type="button"
+                  id="add-note-btn"
+                  class="btn btn-primary"
+                  data-notes-url="{{ url_for('auth.add_note_universal', case_id=case.id) }}">
+            Hozzáadás
+          </button>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Assign describer placeholder -->
+<div class="container py-4">
   {% block assign_describer %}{% endblock %}
-
-  <!-- Submit -->
-  <div class="row mb-4">
-    <div class="col-12 d-flex gap-2">
-      <button type="submit" class="btn btn-success">Elvégezve</button>
-      <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
-    </div>
-  </div>
-
 </div>
 
+<div class="container py-4">
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-success">Elvégezve</button>
+    <a href="{{ url_for('main.ugyeim') }}" class="btn btn-outline-secondary">Mégse</a>
+    </div>
+  </div>
+</div>
 {% endblock %}
